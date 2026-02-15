@@ -124,6 +124,14 @@ a {
   letter-spacing: 0.08em;
 }
 
+.sidebar-project-search {
+  border: 1px solid #355895;
+  border-radius: 10px;
+  background: #12295a;
+  color: #e4edff;
+  padding: 8px 10px;
+}
+
 .project-list {
   display: grid;
   gap: 8px;
@@ -254,6 +262,45 @@ a {
   cursor: pointer;
 }
 
+.filter-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.filter-row-wrap {
+  flex-wrap: wrap;
+}
+
+.filter-row select,
+.filter-row input,
+.form-grid input,
+.form-grid select,
+.form-grid textarea {
+  border: 1px solid #355895;
+  border-radius: 10px;
+  background: #12295a;
+  color: #e4edff;
+  padding: 8px 10px;
+}
+
+.form-box {
+  margin-bottom: 12px;
+}
+
+.form-grid {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.detail-inline-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
 .tab.active {
   border-color: #2db67c;
   background: #113931;
@@ -361,6 +408,10 @@ a {
   grid-template-columns: 1fr 190px 190px;
 }
 
+.search-controls-wide {
+  grid-template-columns: 1fr repeat(4, 170px);
+}
+
 .search-controls input,
 .search-controls select,
 .settings-grid input,
@@ -399,6 +450,10 @@ a {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
+.result-item {
+  color: #d4def8;
+}
+
 .import-dropzone {
   margin-top: 12px;
   border: 1px dashed #4266a8;
@@ -431,6 +486,29 @@ a {
   display: grid;
   gap: 8px;
   color: #9cb4df;
+}
+
+.toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 999;
+  border: 1px solid #3f629f;
+  border-radius: 10px;
+  background: #132a57;
+  color: #ecf4ff;
+  padding: 10px 14px;
+  box-shadow: 0 16px 44px #0208188a;
+}
+
+.toast-success {
+  border-color: #2ba66f;
+  background: #123b2f;
+}
+
+.toast-error {
+  border-color: #8e3d50;
+  background: #4b1b2a;
 }
 
 @media (max-width: 1260px) {

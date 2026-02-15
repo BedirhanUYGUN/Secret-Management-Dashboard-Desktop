@@ -23,6 +23,14 @@ CREATE TABLE projects (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE project_tags (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  tag TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (project_id, tag)
+);
+
 CREATE TABLE project_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -68,6 +76,16 @@ CREATE TABLE secrets (
   UNIQUE (environment_id, key_name)
 );
 
+CREATE TABLE secret_versions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  secret_id UUID NOT NULL REFERENCES secrets(id) ON DELETE CASCADE,
+  version INTEGER NOT NULL,
+  value_encrypted BYTEA NOT NULL,
+  created_by UUID REFERENCES users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (secret_id, version)
+);
+
 CREATE TABLE secret_notes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   secret_id UUID NOT NULL REFERENCES secrets(id) ON DELETE CASCADE,
@@ -97,9 +115,11 @@ CREATE TABLE audit_events (
 );
 
 CREATE INDEX idx_project_members_user_id ON project_members(user_id);
+CREATE INDEX idx_project_tags_project_id ON project_tags(project_id);
 CREATE INDEX idx_environments_project_id ON environments(project_id);
 CREATE INDEX idx_secrets_project_id ON secrets(project_id);
 CREATE INDEX idx_secrets_environment_id ON secrets(environment_id);
+CREATE INDEX idx_secret_versions_secret_id ON secret_versions(secret_id);
 CREATE INDEX idx_secret_tags_tag ON secret_tags(tag);
 CREATE INDEX idx_audit_events_project_id ON audit_events(project_id);
 CREATE INDEX idx_audit_events_created_at ON audit_events(created_at DESC);

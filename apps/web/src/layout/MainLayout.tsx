@@ -1,15 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import { fetchProjects } from "../api/client";
-import type { Project } from "../types";
-
-type ProjectSummary = Project & { keyCount: number };
+import { fetchProjects, type ProjectSummary } from "../api/client";
 
 export function MainLayout() {
   const { pathname } = useLocation();
   const { user, logout } = useAuth();
   const [assignedProjects, setAssignedProjects] = useState<ProjectSummary[]>([]);
+  const [projectQuery, setProjectQuery] = useState("");
 
   useEffect(() => {
     if (!user) {
@@ -24,6 +22,10 @@ export function MainLayout() {
   if (!user) {
     return null;
   }
+
+  const filteredProjects = assignedProjects.filter((project) =>
+    project.name.toLowerCase().includes(projectQuery.trim().toLowerCase()),
+  );
 
   return (
     <div className="app-frame">
@@ -52,8 +54,14 @@ export function MainLayout() {
         </nav>
 
         <div className="project-list-title">Assigned Projects</div>
+        <input
+          className="sidebar-project-search"
+          placeholder="Find project"
+          value={projectQuery}
+          onChange={(event) => setProjectQuery(event.target.value)}
+        />
         <div className="project-list">
-          {assignedProjects.map((project) => (
+          {filteredProjects.map((project) => (
             <Link key={project.id} className="project-item" to={`/projects?project=${project.id}`}>
               <div>
                 <strong>{project.name}</strong>

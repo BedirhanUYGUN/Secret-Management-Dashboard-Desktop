@@ -1,34 +1,39 @@
 import { createContext, useContext, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { users } from "../data/mockData";
+import { fetchMe } from "../api/client";
 import type { Role, User } from "../types";
 
 type AuthContextValue = {
   isAuthenticated: boolean;
   user: User | null;
-  loginAsRole: (role: Role) => void;
+  loading: boolean;
+  loginAsRole: (role: Role) => Promise<void>;
   logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const roleToUserKey: Record<Role, keyof typeof users> = {
-  admin: "admin",
-  member: "member",
-  viewer: "viewer",
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(users.admin);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       isAuthenticated: user !== null,
       user,
-      loginAsRole: (role: Role) => setUser(users[roleToUserKey[role]]),
+      loading,
+      loginAsRole: async (role: Role) => {
+        setLoading(true);
+        try {
+          const profile = await fetchMe(role);
+          setUser(profile);
+        } finally {
+          setLoading(false);
+        }
+      },
       logout: () => setUser(null),
     }),
-    [user],
+    [loading, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
