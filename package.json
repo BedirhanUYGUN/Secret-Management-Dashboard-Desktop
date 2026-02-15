@@ -1,0 +1,16 @@
+{
+  "name": "api-key-organizer",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w apps/web",
+    "dev:api": "npm run dev -w apps/api",
+    "build:web": "npm run build -w apps/web",
+    "build:api": "npm run build -w apps/api",
+    "typecheck": "npm run typecheck -w apps/web && npm run typecheck -w apps/api"
+  }
+}
