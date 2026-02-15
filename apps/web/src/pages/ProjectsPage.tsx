@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { projects, secrets } from "../data/mockData";
+import { exportProject, fetchProjectSecrets, fetchProjects } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
-import type { Environment, Secret } from "../types";
+import type { Environment, Project, Secret } from "../types";
 
 const envTabs: Environment[] = ["local", "dev", "prod"];
 
@@ -11,10 +11,12 @@ function getSnippet(secret: Secret, format: "json" | "python" | "node") {
     return JSON.stringify({ [secret.keyName]: secret.valueMasked }, null, 2);
   }
   if (format === "python") {
-    return `${secret.keyName} = \"${secret.valueMasked}\"`;
+    return `${secret.keyName} = "${secret.valueMasked}"`;
   }
-  return `process.env.${secret.keyName} = \"${secret.valueMasked}\";`;
+  return `process.env.${secret.keyName} = "${secret.valueMasked}";`;
 }
+
+type ProjectSummary = Project & { keyCount: number };
 
 export function ProjectsPage() {
   const { user } = useAuth();
@@ -24,31 +26,60 @@ export function ProjectsPage() {
   const [revealed, setRevealed] = useState(false);
   const [snippetFormat, setSnippetFormat] = useState<"json" | "python" | "node">("json");
   const [selectedSecretId, setSelectedSecretId] = useState<string>("");
+  const [projects, setProjects] = useState<ProjectSummary[]>([]);
+  const [visibleSecrets, setVisibleSecrets] = useState<Secret[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  if (!user) {
-    return null;
-  }
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    void fetchProjects(user.role)
+      .then((response) => {
+        setProjects(response);
+      })
+      .catch((error: Error) => {
+        setErrorMessage(error.message || "Projects could not be loaded.");
+      });
+  }, [user]);
 
-  const assignmentSet = new Set(user.assignments.map((item) => item.projectId));
-  const assignedProjects = projects.filter((project) => assignmentSet.has(project.id));
-  const activeProject =
-    assignedProjects.find((project) => project.id === projectFromQuery) ?? assignedProjects[0] ?? null;
+  const activeProject = projects.find((project) => project.id === projectFromQuery) ?? projects[0] ?? null;
 
   const canAccessProd =
     activeProject === null
       ? false
-      : (user.assignments.find((item) => item.projectId === activeProject.id)?.prodAccess ?? false);
+      : (user?.assignments.find((item) => item.projectId === activeProject.id)?.prodAccess ?? false);
 
-  const visibleSecrets = useMemo(() => {
-    if (!activeProject) {
-      return [];
+  useEffect(() => {
+    if (!user || !activeProject) {
+      return;
     }
-    return secrets.filter(
-      (item) => item.projectId === activeProject.id && item.environment === activeEnv && (activeEnv !== "prod" || canAccessProd),
-    );
-  }, [activeEnv, activeProject, canAccessProd]);
 
-  const selectedSecret = visibleSecrets.find((item) => item.id === selectedSecretId) ?? visibleSecrets[0] ?? null;
+    setLoading(true);
+    setErrorMessage("");
+
+    void fetchProjectSecrets({
+      role: user.role,
+      projectId: activeProject.id,
+      env: activeEnv,
+    })
+      .then((response) => {
+        setVisibleSecrets(response);
+      })
+      .catch((error: Error) => {
+        setVisibleSecrets([]);
+        setErrorMessage(error.message || "Secrets could not be loaded.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [activeEnv, activeProject, user]);
+
+  const selectedSecret = useMemo(
+    () => visibleSecrets.find((item) => item.id === selectedSecretId) ?? visibleSecrets[0] ?? null,
+    [selectedSecretId, visibleSecrets],
+  );
 
   const copy = async (value: string) => {
     try {
@@ -57,6 +88,30 @@ export function ProjectsPage() {
       // no-op for clipboard unavailable contexts
     }
   };
+
+  const runExport = async (format: "env" | "json") => {
+    if (!user || !activeProject) {
+      return;
+    }
+
+    try {
+      const payload = await exportProject({
+        role: user.role,
+        projectId: activeProject.id,
+        env: activeEnv,
+        format,
+      });
+      await copy(payload);
+    } catch (error) {
+      if (error instanceof Error) {
+        setErrorMessage(error.message);
+      }
+    }
+  };
+
+  if (!user) {
+    return null;
+  }
 
   if (!activeProject) {
     return <div className="page-panel">No assigned projects.</div>;
@@ -88,10 +143,17 @@ export function ProjectsPage() {
             <button type="button" disabled={user.role === "viewer"}>
               Add Secret
             </button>
-            <button type="button">Export .env</button>
-            <button type="button">Export JSON</button>
+            <button type="button" onClick={() => void runExport("env")}>
+              Export .env
+            </button>
+            <button type="button" onClick={() => void runExport("json")}>
+              Export JSON
+            </button>
           </div>
         </div>
+
+        {errorMessage && <p className="inline-error">{errorMessage}</p>}
+        {loading && <p className="inline-muted">Loading secrets...</p>}
 
         <div className="table-head">
           <span>Name</span>

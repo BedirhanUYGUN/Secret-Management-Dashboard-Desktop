@@ -30,6 +30,16 @@ export type Secret = {
   valueMasked: string;
   updatedAt: string;
   tags: string[];
+  notes: string;
+};
+
+export type AuditEvent = {
+  id: string;
+  action: "secret_created" | "secret_updated" | "secret_copied" | "secret_exported";
+  actor: string;
+  projectId: string;
+  secretName: string;
+  occurredAt: string;
 };
 
 export const users: User[] = [
@@ -78,6 +88,7 @@ export const secrets: Secret[] = [
     valueMasked: "sk_live_...8Xy9",
     updatedAt: "2026-02-15T09:00:00Z",
     tags: ["billing", "prod"],
+    notes: "Primary production key for billing.",
   },
   {
     id: "s2",
@@ -90,6 +101,7 @@ export const secrets: Secret[] = [
     valueMasked: "https://api.ver...",
     updatedAt: "2026-02-14T09:00:00Z",
     tags: ["deploy"],
+    notes: "Used for dev deploy trigger.",
   },
   {
     id: "s3",
@@ -102,12 +114,41 @@ export const secrets: Secret[] = [
     valueMasked: "search_only_...a1b",
     updatedAt: "2026-02-10T09:00:00Z",
     tags: ["search"],
+    notes: "Search key for Atlas index.",
   },
 ];
 
-export const auditEvents = [
-  { id: "a1", action: "secret_created", actor: "admin@company.local", occurredAt: "2026-02-10T11:00:00Z" },
-  { id: "a2", action: "secret_updated", actor: "admin@company.local", occurredAt: "2026-02-14T09:10:00Z" },
-  { id: "a3", action: "secret_copied", actor: "member@company.local", occurredAt: "2026-02-15T09:15:00Z" },
-  { id: "a4", action: "secret_exported", actor: "admin@company.local", occurredAt: "2026-02-15T09:20:00Z" },
+export const auditEvents: AuditEvent[] = [
+  {
+    id: "a1",
+    action: "secret_created",
+    actor: "admin@company.local",
+    projectId: "apollo",
+    secretName: "Stripe Payments",
+    occurredAt: "2026-02-10T11:00:00Z",
+  },
+  {
+    id: "a2",
+    action: "secret_updated",
+    actor: "admin@company.local",
+    projectId: "apollo",
+    secretName: "Vercel Deploy Hook",
+    occurredAt: "2026-02-14T09:10:00Z",
+  },
+  {
+    id: "a3",
+    action: "secret_copied",
+    actor: "member@company.local",
+    projectId: "atlas",
+    secretName: "Algolia Search",
+    occurredAt: "2026-02-15T09:15:00Z",
+  },
+  {
+    id: "a4",
+    action: "secret_exported",
+    actor: "admin@company.local",
+    projectId: "apollo",
+    secretName: "Apollo API",
+    occurredAt: "2026-02-15T09:20:00Z",
+  },
 ];

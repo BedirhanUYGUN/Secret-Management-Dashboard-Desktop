@@ -1,35 +1,53 @@
-import { useMemo, useState } from "react";
-import { projects, secrets } from "../data/mockData";
+import { useEffect, useMemo, useState } from "react";
+import { fetchProjects, searchSecrets } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import type { Project, Secret } from "../types";
+
+type ProjectSummary = Project & { keyCount: number };
 
 export function SearchPage() {
   const { user } = useAuth();
   const [query, setQuery] = useState("");
   const [providerFilter, setProviderFilter] = useState("all");
   const [tagFilter, setTagFilter] = useState("all");
+  const [projects, setProjects] = useState<ProjectSummary[]>([]);
+  const [results, setResults] = useState<Secret[]>([]);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    void fetchProjects(user.role)
+      .then(setProjects)
+      .catch((error: Error) => setErrorMessage(error.message));
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    setErrorMessage("");
+
+    void searchSecrets({
+      role: user.role,
+      query,
+      provider: providerFilter === "all" ? undefined : providerFilter,
+      tag: tagFilter === "all" ? undefined : tagFilter,
+    })
+      .then(setResults)
+      .catch((error: Error) => {
+        setResults([]);
+        setErrorMessage(error.message || "Search failed.");
+      });
+  }, [providerFilter, query, tagFilter, user]);
+
+  const providers = useMemo(() => Array.from(new Set(results.map((item) => item.provider))), [results]);
+  const tags = useMemo(() => Array.from(new Set(results.flatMap((item) => item.tags))), [results]);
 
   if (!user) {
     return null;
   }
-
-  const assignments = new Set(user.assignments.map((item) => item.projectId));
-  const providers = Array.from(new Set(secrets.map((item) => item.provider)));
-  const tags = Array.from(new Set(secrets.flatMap((item) => item.tags)));
-
-  const results = useMemo(() => {
-    return secrets.filter((item) => {
-      if (!assignments.has(item.projectId)) {
-        return false;
-      }
-      const textMatch = [item.name, item.provider, item.keyName, item.tags.join(" ")]
-        .join(" ")
-        .toLowerCase()
-        .includes(query.toLowerCase());
-      const providerMatch = providerFilter === "all" || item.provider === providerFilter;
-      const tagMatch = tagFilter === "all" || item.tags.includes(tagFilter);
-      return textMatch && providerMatch && tagMatch;
-    });
-  }, [assignments, providerFilter, query, tagFilter]);
 
   return (
     <section className="page-panel">
@@ -53,6 +71,8 @@ export function SearchPage() {
           ))}
         </select>
       </div>
+
+      {errorMessage && <p className="inline-error">{errorMessage}</p>}
 
       <div className="search-results">
         {results.map((item) => (

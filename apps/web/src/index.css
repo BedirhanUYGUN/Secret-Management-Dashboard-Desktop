@@ -379,6 +379,16 @@ a {
   gap: 8px;
 }
 
+.inline-error {
+  margin: 10px 0;
+  color: #ff9e9e;
+}
+
+.inline-muted {
+  margin: 10px 0;
+  color: #8ca8d9;
+}
+
 .result-item,
 .audit-item {
   border: 1px solid #2a477c;
@@ -393,10 +403,21 @@ a {
   margin-top: 12px;
   border: 1px dashed #4266a8;
   border-radius: 12px;
-  min-height: 140px;
+  min-height: 80px;
   display: grid;
-  place-items: center;
+  place-items: start;
   color: #8ea8d7;
+  padding: 12px;
+}
+
+.import-textarea {
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid #355895;
+  border-radius: 10px;
+  background: #12295a;
+  color: #e4edff;
+  padding: 10px;
 }
 
 .settings-grid {

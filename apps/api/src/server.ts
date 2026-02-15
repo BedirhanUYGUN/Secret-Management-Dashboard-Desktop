@@ -24,7 +24,19 @@ app.get("/me", async (request) => {
 
 app.get("/projects", async (request, reply) => {
   const user = getUserFromHeaders(request);
-  const result = projects.filter((project) => canAccessProject(user, project.id));
+  const result = projects
+    .filter((project) => canAccessProject(user, project.id))
+    .map((project) => {
+      const keyCount = secrets.filter(
+        (secret) =>
+          secret.projectId === project.id && canAccessEnvironment(user, project.id, secret.environment),
+      ).length;
+
+      return {
+        ...project,
+        keyCount,
+      };
+    });
   return reply.send(result);
 });
 

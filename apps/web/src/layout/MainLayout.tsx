@@ -1,21 +1,29 @@
+import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
-import { projects, secrets } from "../data/mockData";
 import { useAuth } from "../auth/AuthContext";
+import { fetchProjects } from "../api/client";
+import type { Project } from "../types";
 
-function countKeys(projectId: string) {
-  return secrets.filter((item) => item.projectId === projectId).length;
-}
+type ProjectSummary = Project & { keyCount: number };
 
 export function MainLayout() {
   const { pathname } = useLocation();
   const { user, logout } = useAuth();
+  const [assignedProjects, setAssignedProjects] = useState<ProjectSummary[]>([]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    void fetchProjects(user.role)
+      .then(setAssignedProjects)
+      .catch(() => setAssignedProjects([]));
+  }, [user]);
 
   if (!user) {
     return null;
   }
-
-  const assignedIds = new Set(user.assignments.map((item) => item.projectId));
-  const assignedProjects = projects.filter((project) => assignedIds.has(project.id));
 
   return (
     <div className="app-frame">
@@ -51,7 +59,7 @@ export function MainLayout() {
                 <strong>{project.name}</strong>
                 <small>{project.tags.join(" • ")}</small>
               </div>
-              <span>{countKeys(project.id)}</span>
+              <span>{project.keyCount}</span>
             </Link>
           ))}
         </div>
