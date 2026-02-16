@@ -1,6 +1,11 @@
 import type { Assignment, AuditEvent, Environment, Project, Role, Secret, SecretType, User } from "../types";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
+const RAW_API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
+const API_BASE_URL = RAW_API_BASE_URL.startsWith("http://") || RAW_API_BASE_URL.startsWith("https://")
+  ? RAW_API_BASE_URL
+  : `https://${RAW_API_BASE_URL}`;
+const ACCESS_TOKEN_KEY = "api-key-organizer-access-token";
+const REFRESH_TOKEN_KEY = "api-key-organizer-refresh-token";
 
 type RequestOptions = {
   role: Role;
@@ -47,6 +52,37 @@ type MeResponse = {
   assignments: Assignment[];
 };
 
+type AuthTokensResponse = {
+  accessToken: string;
+  refreshToken: string;
+  tokenType: string;
+  expiresAt: string;
+};
+
+const roleCredentials: Record<Role, { email: string; password: string }> = {
+  admin: { email: "admin@company.local", password: "admin123" },
+  member: { email: "member@company.local", password: "member123" },
+  viewer: { email: "viewer@company.local", password: "viewer123" },
+};
+
+function getAccessToken() {
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
+function getRefreshToken() {
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+function setTokens(payload: AuthTokensResponse) {
+  localStorage.setItem(ACCESS_TOKEN_KEY, payload.accessToken);
+  localStorage.setItem(REFRESH_TOKEN_KEY, payload.refreshToken);
+}
+
+export function clearTokens() {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+}
+
 function buildUrl(path: string, query?: Record<string, string | undefined>) {
   const url = new URL(path, API_BASE_URL);
   if (!query) {
@@ -61,11 +97,13 @@ function buildUrl(path: string, query?: Record<string, string | undefined>) {
 }
 
 async function request<T>(path: string, options: RequestOptions): Promise<T> {
+  const accessToken = getAccessToken();
+
   const response = await fetch(buildUrl(path, options.query), {
     method: options.method ?? "GET",
     headers: {
       "Content-Type": "application/json",
-      "x-user-role": options.role,
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : { "x-user-role": options.role }),
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
@@ -84,6 +122,41 @@ async function request<T>(path: string, options: RequestOptions): Promise<T> {
   }
 
   return (await response.json()) as T;
+}
+
+export async function loginByRole(role: Role) {
+  const credentials = roleCredentials[role];
+  const response = await request<AuthTokensResponse>("/auth/login", {
+    role,
+    method: "POST",
+    body: credentials,
+  });
+  setTokens(response);
+}
+
+export async function refreshSession(role: Role) {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    throw new Error("No refresh token");
+  }
+  const response = await request<AuthTokensResponse>("/auth/refresh", {
+    role,
+    method: "POST",
+    body: { refreshToken },
+  });
+  setTokens(response);
+}
+
+export async function logoutSession(role: Role) {
+  const refreshToken = getRefreshToken();
+  if (refreshToken) {
+    await request<{ message: string }>("/auth/logout", {
+      role,
+      method: "POST",
+      body: { refreshToken },
+    });
+  }
+  clearTokens();
 }
 
 export async function fetchMe(role: Role): Promise<User> {

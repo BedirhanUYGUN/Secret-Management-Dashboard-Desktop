@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { fetchMe } from "../api/client";
+import { fetchMe, loginByRole, logoutSession } from "../api/client";
 import type { Role, User } from "../types";
 
 type AuthContextValue = {
@@ -25,13 +25,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loginAsRole: async (role: Role) => {
         setLoading(true);
         try {
+          await loginByRole(role);
           const profile = await fetchMe(role);
           setUser(profile);
         } finally {
           setLoading(false);
         }
       },
-      logout: () => setUser(null),
+      logout: () => {
+        const role = user?.role;
+        if (role) {
+          void logoutSession(role);
+        }
+        setUser(null);
+      },
     }),
     [loading, user],
   );

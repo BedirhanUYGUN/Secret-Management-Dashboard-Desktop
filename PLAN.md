@@ -8,6 +8,10 @@ Context:
 - Primary interface: web app
 - Optional interface: thin desktop client using the same backend API
 
+Current backend direction:
+- Primary backend: `apps/api_py` (FastAPI + JWT + PostgreSQL)
+- Legacy Node backend in `apps/api` is kept temporarily for transition
+
 ## MVP Goals
 
 - Organize API keys, tokens, and endpoints by project and environment.

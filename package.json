@@ -8,11 +8,13 @@
   ],
   "scripts": {
     "dev:web": "npm run dev -w apps/web",
-    "dev:api": "npm run dev -w apps/api",
+    "dev:api:py": "python apps/api_py/scripts/run_dev.py",
+    "dev:api": "python apps/api_py/scripts/run_dev.py",
     "build:web": "npm run build -w apps/web",
-    "build:api": "npm run build -w apps/api",
-    "typecheck": "npm run typecheck -w apps/web && npm run typecheck -w apps/api",
-    "db:migrate:api": "npm run db:migrate -w apps/api",
-    "db:seed:api": "npm run db:seed -w apps/api"
+    "typecheck": "npm run typecheck -w apps/web",
+    "db:migrate:api:py": "python apps/api_py/scripts/migrate.py",
+    "db:seed:api:py": "python apps/api_py/scripts/seed_dev.py",
+    "db:migrate:api": "python apps/api_py/scripts/migrate.py",
+    "db:seed:api": "python apps/api_py/scripts/seed_dev.py"
   }
 }
