@@ -26,7 +26,6 @@ services:
   - type: web
     name: api-key-organizer-web
     env: static
-    plan: free
     buildCommand: npm install && npm run build:web
     staticPublishPath: apps/web/dist
     envVars:
