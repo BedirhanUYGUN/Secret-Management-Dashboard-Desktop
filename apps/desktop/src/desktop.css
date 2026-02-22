@@ -1,0 +1,27 @@
+.tauri-desktop {
+  overflow: hidden;
+}
+
+.desktop-titlebar {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border-bottom: 1px solid #1f3564;
+  background: linear-gradient(180deg, #08132f, #060f24);
+  color: #8ca7d9;
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  user-select: none;
+}
+
+.desktop-titlebar strong {
+  color: #d4def8;
+  font-size: 0.8rem;
+}
+
+.tauri-desktop .login-shell,
+.tauri-desktop .app-frame {
+  min-height: calc(100vh - 30px);
+}

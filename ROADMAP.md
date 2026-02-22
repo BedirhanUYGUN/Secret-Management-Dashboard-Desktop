@@ -1,6 +1,6 @@
 # Kalan Fazlar — Yapilacaklar
 
-> Tamamlanan: Faz 1 (Login, Guvenlik, Lokalizasyon) + Faz 2 (Kullanici & Proje Yonetimi) + Faz 3 (Import / Export Gelistirmeleri) + Faz 4 (Settings & UX Iyilestirmeleri) + Faz 5 (Test Altyapisi)
+> Tamamlanan: Faz 1 (Login, Guvenlik, Lokalizasyon) + Faz 2 (Kullanici & Proje Yonetimi) + Faz 3 (Import / Export Gelistirmeleri) + Faz 4 (Settings & UX Iyilestirmeleri) + Faz 5 (Test Altyapisi) + Faz 6 (Desktop Entegrasyonu)
 
 ---
 
@@ -71,17 +71,17 @@
   - Web API client'in Tauri uygulamasina entegrasyonu
   - Tauri `invoke` yerine HTTP istekleri veya paylasilmis client kullanimi
 
-- [ ] **6.2 Desktop Auth**
+- [x] **6.2 Desktop Auth**
   - Tauri secure storage (keychain/credential store) ile token yonetimi
   - localStorage yerine native guvenli depolama
   - Oturum surekliligi (uygulama kapanip acildiginda)
 
-- [ ] **6.3 Desktop UI Senkronizasyonu**
+- [x] **6.3 Desktop UI Senkronizasyonu**
   - Web uygulamasindaki componentlerin desktop ile paylasimi
   - Tauri-ozel CSS ayarlamalari (pencere kontrolu, baslik cubugu)
   - Desktop-ozel ozellikler (sistem tepsisi, kisayollar)
 
-- [ ] **6.4 Tauri Guvenlik Ayarlari**
+- [x] **6.4 Tauri Guvenlik Ayarlari**
   - CSP (Content Security Policy) konfigurasyonu
   - Izin verilen API URL'lerinin tanimlanmasi
   - IPC guvenlik ayarlari

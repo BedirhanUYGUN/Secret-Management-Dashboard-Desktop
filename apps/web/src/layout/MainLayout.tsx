@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, NavLink, Outlet, useLocation, useSearchParams } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { fetchProjects, type ProjectSummary } from "../api/client";
+import { isTauriRuntime } from "../platform/runtime";
 
 const pageTitles: Record<string, string> = {
   "/projects": "Projeler",
@@ -15,6 +16,7 @@ const pageTitles: Record<string, string> = {
 
 export function MainLayout() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, logout } = useAuth();
   const [assignedProjects, setAssignedProjects] = useState<ProjectSummary[]>([]);
@@ -29,6 +31,60 @@ export function MainLayout() {
       .then(setAssignedProjects)
       .catch(() => setAssignedProjects([]));
   }, [user]);
+
+  useEffect(() => {
+    if (!isTauriRuntime()) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      const isModifierPressed = event.ctrlKey || event.metaKey;
+      if (!isModifierPressed || event.altKey) {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+      const tagName = target?.tagName ?? "";
+      const isTypingTarget = tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT";
+      if (isTypingTarget || target?.isContentEditable) {
+        return;
+      }
+
+      switch (event.key) {
+        case "1":
+          event.preventDefault();
+          navigate("/projects");
+          break;
+        case "2":
+          event.preventDefault();
+          navigate("/search");
+          break;
+        case "3":
+          event.preventDefault();
+          navigate("/settings");
+          break;
+        case "4":
+          if (user?.role === "admin") {
+            event.preventDefault();
+            navigate("/users");
+          }
+          break;
+        case "l":
+        case "L":
+          if (event.shiftKey) {
+            event.preventDefault();
+            logout();
+          }
+          break;
+        default:
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [navigate, logout, user?.role]);
 
   if (!user) {
     return null;
@@ -129,11 +185,14 @@ export function MainLayout() {
               {part}
             </span>
           ))}</div>
-          {user.role === "viewer" ? (
-            <span className="readonly-pill">Salt okunur mod</span>
-          ) : (
-            <span className="readonly-pill editable">Duzenleme aktif</span>
-          )}
+          <div className="content-header-right">
+            {isTauriRuntime() && <small className="desktop-shortcut-hint">Ctrl+1-4 hizli gecis, Ctrl+Shift+L cikis</small>}
+            {user.role === "viewer" ? (
+              <span className="readonly-pill">Salt okunur mod</span>
+            ) : (
+              <span className="readonly-pill editable">Duzenleme aktif</span>
+            )}
+          </div>
         </header>
         <Outlet />
       </main>

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { clearTokens, fetchMe, loginWithCredentials, logoutSession } from "../api/client";
+import { hasStoredAccessToken } from "../platform/tokenStorage";
 import type { User } from "../types";
 
 type AuthContextValue = {
@@ -13,7 +14,6 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-const ACCESS_TOKEN_KEY = "api-key-organizer-access-token";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -22,18 +22,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Sayfa yenilendiginde mevcut token ile oturum kontrolu
   useEffect(() => {
-    const token = localStorage.getItem(ACCESS_TOKEN_KEY);
-    if (!token) {
-      setInitializing(false);
-      return;
-    }
+    let cancelled = false;
 
-    fetchMe()
-      .then(setUser)
-      .catch(() => {
-        clearTokens();
-      })
-      .finally(() => setInitializing(false));
+    void (async () => {
+      const hasToken = await hasStoredAccessToken();
+      if (!hasToken) {
+        if (!cancelled) {
+          setInitializing(false);
+        }
+        return;
+      }
+
+      try {
+        const profile = await fetchMe();
+        if (!cancelled) {
+          setUser(profile);
+        }
+      } catch {
+        await clearTokens();
+      } finally {
+        if (!cancelled) {
+          setInitializing(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const value = useMemo<AuthContextValue>(

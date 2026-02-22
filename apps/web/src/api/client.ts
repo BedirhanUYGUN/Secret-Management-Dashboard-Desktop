@@ -1,11 +1,23 @@
 import type { Assignment, AuditEvent, Environment, ManagedUser, Project, ProjectDetail, ProjectMemberOut, Role, Secret, SecretType, User, UserPreferences } from "../types";
+import { isTauriRuntime } from "../platform/runtime";
+import {
+  clearStoredTokens,
+  getStoredAccessToken,
+  getStoredRefreshToken,
+  setStoredTokens,
+} from "../platform/tokenStorage";
 
 const RAW_API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
 const API_BASE_URL = RAW_API_BASE_URL.startsWith("http://") || RAW_API_BASE_URL.startsWith("https://")
   ? RAW_API_BASE_URL
   : `https://${RAW_API_BASE_URL}`;
-const ACCESS_TOKEN_KEY = "api-key-organizer-access-token";
-const REFRESH_TOKEN_KEY = "api-key-organizer-refresh-token";
+
+const DESKTOP_ALLOWED_API_ORIGINS = new Set(
+  String(import.meta.env.VITE_ALLOWED_API_ORIGINS ?? "http://localhost:4000,https://localhost:4000")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean),
+);
 
 type RequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
@@ -59,22 +71,25 @@ type AuthTokensResponse = {
   expiresAt: string;
 };
 
-function getAccessToken() {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+function assertDesktopApiUrlAllowed() {
+  if (!isTauriRuntime()) {
+    return;
+  }
+
+  const origin = new URL(API_BASE_URL).origin;
+  if (!DESKTOP_ALLOWED_API_ORIGINS.has(origin)) {
+    throw new Error(`Desktop modunda izin verilmeyen API origin: ${origin}`);
+  }
 }
 
-function getRefreshToken() {
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
-}
+assertDesktopApiUrlAllowed();
 
 function setTokens(payload: AuthTokensResponse) {
-  localStorage.setItem(ACCESS_TOKEN_KEY, payload.accessToken);
-  localStorage.setItem(REFRESH_TOKEN_KEY, payload.refreshToken);
+  return setStoredTokens({ accessToken: payload.accessToken, refreshToken: payload.refreshToken });
 }
 
 export function clearTokens() {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  return clearStoredTokens();
 }
 
 function buildUrl(path: string, query?: Record<string, string | undefined>) {
@@ -91,7 +106,7 @@ function buildUrl(path: string, query?: Record<string, string | undefined>) {
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const accessToken = getAccessToken();
+  const accessToken = await getStoredAccessToken();
 
   const response = await fetch(buildUrl(path, options.query), {
     method: options.method ?? "GET",
@@ -123,11 +138,11 @@ export async function loginWithCredentials(email: string, password: string) {
     method: "POST",
     body: { email, password },
   });
-  setTokens(response);
+  await setTokens(response);
 }
 
 export async function refreshSession() {
-  const refreshToken = getRefreshToken();
+  const refreshToken = await getStoredRefreshToken();
   if (!refreshToken) {
     throw new Error("No refresh token");
   }
@@ -135,18 +150,18 @@ export async function refreshSession() {
     method: "POST",
     body: { refreshToken },
   });
-  setTokens(response);
+  await setTokens(response);
 }
 
 export async function logoutSession() {
-  const refreshToken = getRefreshToken();
+  const refreshToken = await getStoredRefreshToken();
   if (refreshToken) {
     await request<{ message: string }>("/auth/logout", {
       method: "POST",
       body: { refreshToken },
     });
   }
-  clearTokens();
+  await clearTokens();
 }
 
 export async function fetchMe(): Promise<User> {

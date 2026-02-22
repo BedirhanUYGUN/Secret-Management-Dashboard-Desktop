@@ -236,6 +236,17 @@ a {
   color: #8fa6d2;
 }
 
+.content-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.desktop-shortcut-hint {
+  color: #7f96c2;
+  font-size: 0.78rem;
+}
+
 .breadcrumb {
   display: flex;
   align-items: center;
