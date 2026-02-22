@@ -6,9 +6,11 @@ import { AuditPage } from "./pages/AuditPage";
 import { ImportPage } from "./pages/ImportPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { ProjectManagePage } from "./pages/ProjectManagePage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { SearchPage } from "./pages/SearchPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { UsersPage } from "./pages/UsersPage";
 import { AppUiProvider } from "./ui/AppUiContext";
 import { ToastViewport } from "./ui/ToastViewport";
 
@@ -27,6 +29,8 @@ function App() {
                 <Route path="/search" element={<SearchPage />} />
 
                 <Route element={<RequireRole allowed={["admin"]} />}>
+                  <Route path="/users" element={<UsersPage />} />
+                  <Route path="/project-manage" element={<ProjectManagePage />} />
                   <Route path="/import" element={<ImportPage />} />
                   <Route path="/audit" element={<AuditPage />} />
                   <Route path="/settings" element={<SettingsPage />} />

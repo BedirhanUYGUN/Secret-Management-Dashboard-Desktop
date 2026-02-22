@@ -1,4 +1,4 @@
-import type { Assignment, AuditEvent, Environment, Project, Role, Secret, SecretType, User } from "../types";
+import type { Assignment, AuditEvent, Environment, ManagedUser, Project, ProjectDetail, ProjectMemberOut, Role, Secret, SecretType, User } from "../types";
 
 const RAW_API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
 const API_BASE_URL = RAW_API_BASE_URL.startsWith("http://") || RAW_API_BASE_URL.startsWith("https://")
@@ -288,6 +288,87 @@ export function exportProject(params: { projectId: string; env: Environment; for
     query: {
       env: params.env,
       format: params.format,
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// User Management (admin only)
+// ---------------------------------------------------------------------------
+
+export function fetchUsers() {
+  return request<ManagedUser[]>("/users");
+}
+
+export function createUser(params: { email: string; displayName: string; role: Role; password: string }) {
+  return request<ManagedUser>("/users", {
+    method: "POST",
+    body: params,
+  });
+}
+
+export function updateUser(params: { userId: string; displayName?: string; role?: Role; isActive?: boolean; password?: string }) {
+  const { userId, ...body } = params;
+  return request<ManagedUser>(`/users/${userId}`, {
+    method: "PATCH",
+    body,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Project Management (admin only)
+// ---------------------------------------------------------------------------
+
+export function fetchProjectDetails() {
+  return request<ProjectDetail[]>("/projects/manage");
+}
+
+export function createProject(params: { name: string; slug: string; description: string; tags: string[] }) {
+  return request<ProjectDetail>("/projects/manage", {
+    method: "POST",
+    body: params,
+  });
+}
+
+export function updateProject(params: { projectId: string; name?: string; description?: string; tags?: string[] }) {
+  const { projectId, ...body } = params;
+  return request<ProjectDetail>(`/projects/manage/${projectId}`, {
+    method: "PATCH",
+    body,
+  });
+}
+
+export function deleteProject(projectId: string) {
+  return request<void>(`/projects/manage/${projectId}`, { method: "DELETE" });
+}
+
+export function addProjectMember(params: { projectId: string; userId: string; role: Role }) {
+  return request<ProjectMemberOut>(`/projects/manage/${params.projectId}/members`, {
+    method: "POST",
+    body: { userId: params.userId, role: params.role },
+  });
+}
+
+export function removeProjectMember(params: { projectId: string; userId: string }) {
+  return request<void>(`/projects/manage/${params.projectId}/members/${params.userId}`, {
+    method: "DELETE",
+  });
+}
+
+export function updateEnvironmentAccess(params: {
+  projectId: string;
+  userId: string;
+  environment: Environment;
+  canRead: boolean;
+  canExport: boolean;
+}) {
+  return request<{ ok: boolean }>(`/projects/manage/${params.projectId}/access`, {
+    method: "POST",
+    body: {
+      userId: params.userId,
+      environment: params.environment,
+      canRead: params.canRead,
+      canExport: params.canExport,
     },
   });
 }

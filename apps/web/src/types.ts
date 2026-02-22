@@ -36,6 +36,31 @@ export type Secret = {
   notes: string;
 };
 
+export type ManagedUser = {
+  id: string;
+  email: string;
+  displayName: string;
+  role: Role;
+  isActive: boolean;
+  createdAt: string;
+};
+
+export type ProjectDetail = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  tags: string[];
+  members: ProjectMemberOut[];
+};
+
+export type ProjectMemberOut = {
+  userId: string;
+  email: string;
+  displayName: string;
+  role: Role;
+};
+
 export type AuditAction = "secret_created" | "secret_updated" | "secret_copied" | "secret_exported";
 
 export type AuditEvent = {

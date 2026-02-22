@@ -529,3 +529,263 @@ def list_audit_events(
         }
         for event, email, slug in rows
     ]
+
+
+# ---------------------------------------------------------------------------
+# Project CRUD (admin only)
+# ---------------------------------------------------------------------------
+
+
+def _project_detail(db: Session, project: Project) -> Dict:
+    tags = [
+        item.tag
+        for item in db.execute(
+            select(ProjectTag).where(ProjectTag.project_id == project.id)
+        ).scalars()
+    ]
+    members_rows = db.execute(
+        select(ProjectMember, User)
+        .join(User, User.id == ProjectMember.user_id)
+        .where(ProjectMember.project_id == project.id)
+    ).all()
+    members = [
+        {
+            "userId": str(pm.user_id),
+            "email": u.email,
+            "displayName": u.display_name,
+            "role": pm.role,
+        }
+        for pm, u in members_rows
+    ]
+    return {
+        "id": str(project.id),
+        "slug": project.slug,
+        "name": project.name,
+        "description": project.description or "",
+        "tags": tags,
+        "members": members,
+    }
+
+
+def list_all_projects(db: Session) -> List[Dict]:
+    projects = db.execute(select(Project).order_by(Project.name.asc())).scalars().all()
+    return [_project_detail(db, p) for p in projects]
+
+
+def create_project(
+    db: Session,
+    *,
+    slug: str,
+    name: str,
+    description: str,
+    tags: List[str],
+    created_by: str,
+) -> Dict:
+    existing = db.scalar(select(Project).where(Project.slug == slug))
+    if existing:
+        raise ValueError("Bu slug zaten kullanilmaktadir")
+
+    project = Project(
+        slug=slug,
+        name=name,
+        description=description,
+        created_by=_to_uuid(created_by),
+    )
+    db.add(project)
+    db.flush()
+
+    # Default ortamlar olustur (local, dev, prod)
+    for env_name in EnvironmentEnum:
+        db.add(
+            Environment(
+                project_id=project.id,
+                name=env_name,
+                restricted=(env_name == EnvironmentEnum.prod),
+            )
+        )
+
+    for tag in tags:
+        db.add(ProjectTag(project_id=project.id, tag=tag))
+
+    db.commit()
+    db.refresh(project)
+    return _project_detail(db, project)
+
+
+def update_project(
+    db: Session,
+    project_id: str,
+    *,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    tags: Optional[List[str]] = None,
+) -> Optional[Dict]:
+    project = db.get(Project, _to_uuid(project_id))
+    if not project:
+        return None
+
+    if name is not None:
+        project.name = name
+    if description is not None:
+        project.description = description
+
+    if tags is not None:
+        db.query(ProjectTag).filter(ProjectTag.project_id == project.id).delete()
+        for tag in tags:
+            db.add(ProjectTag(project_id=project.id, tag=tag))
+
+    db.add(project)
+    db.commit()
+    db.refresh(project)
+    return _project_detail(db, project)
+
+
+def delete_project(db: Session, project_id: str) -> bool:
+    project = db.get(Project, _to_uuid(project_id))
+    if not project:
+        return False
+    db.delete(project)
+    db.commit()
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Project member management
+# ---------------------------------------------------------------------------
+
+
+def add_member_to_project(
+    db: Session, project_id: str, user_id: str, role: str
+) -> Optional[Dict]:
+    project = db.get(Project, _to_uuid(project_id))
+    if not project:
+        return None
+
+    user = db.get(User, _to_uuid(user_id))
+    if not user:
+        return None
+
+    existing = db.scalar(
+        select(ProjectMember).where(
+            ProjectMember.project_id == project.id,
+            ProjectMember.user_id == _to_uuid(user_id),
+        )
+    )
+    if existing:
+        existing.role = role
+        db.add(existing)
+    else:
+        db.add(
+            ProjectMember(
+                project_id=project.id,
+                user_id=_to_uuid(user_id),
+                role=role,
+            )
+        )
+
+    # Non-prod ortamlara otomatik erisim ver
+    envs = (
+        db.execute(select(Environment).where(Environment.project_id == project.id))
+        .scalars()
+        .all()
+    )
+    for env in envs:
+        if env.restricted:
+            continue
+        existing_access = db.scalar(
+            select(EnvironmentAccess).where(
+                EnvironmentAccess.environment_id == env.id,
+                EnvironmentAccess.user_id == _to_uuid(user_id),
+            )
+        )
+        if not existing_access:
+            db.add(
+                EnvironmentAccess(
+                    environment_id=env.id,
+                    user_id=_to_uuid(user_id),
+                    can_read=True,
+                    can_export=True,
+                )
+            )
+
+    db.commit()
+    return {
+        "userId": str(user.id),
+        "email": user.email,
+        "displayName": user.display_name,
+        "role": role,
+    }
+
+
+def remove_member_from_project(db: Session, project_id: str, user_id: str) -> bool:
+    member = db.scalar(
+        select(ProjectMember).where(
+            ProjectMember.project_id == _to_uuid(project_id),
+            ProjectMember.user_id == _to_uuid(user_id),
+        )
+    )
+    if not member:
+        return False
+
+    # Ortam erisimlerini de temizle
+    envs = (
+        db.execute(
+            select(Environment).where(Environment.project_id == _to_uuid(project_id))
+        )
+        .scalars()
+        .all()
+    )
+    for env in envs:
+        access = db.scalar(
+            select(EnvironmentAccess).where(
+                EnvironmentAccess.environment_id == env.id,
+                EnvironmentAccess.user_id == _to_uuid(user_id),
+            )
+        )
+        if access:
+            db.delete(access)
+
+    db.delete(member)
+    db.commit()
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Environment access management
+# ---------------------------------------------------------------------------
+
+
+def set_environment_access(
+    db: Session,
+    project_id: str,
+    user_id: str,
+    env: EnvironmentEnum,
+    can_read: bool,
+    can_export: bool,
+) -> bool:
+    project_uuid = _to_uuid(project_id)
+    env_id = resolve_environment_id(db, project_uuid, env)
+    if not env_id:
+        return False
+
+    existing = db.scalar(
+        select(EnvironmentAccess).where(
+            EnvironmentAccess.environment_id == env_id,
+            EnvironmentAccess.user_id == _to_uuid(user_id),
+        )
+    )
+    if existing:
+        existing.can_read = can_read
+        existing.can_export = can_export
+        db.add(existing)
+    else:
+        db.add(
+            EnvironmentAccess(
+                environment_id=env_id,
+                user_id=_to_uuid(user_id),
+                can_read=can_read,
+                can_export=can_export,
+            )
+        )
+    db.commit()
+    return True

@@ -40,6 +40,12 @@ export function MainLayout() {
           </NavLink>
           {user.role === "admin" && (
             <>
+              <NavLink to="/users" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+                Kullanicilar
+              </NavLink>
+              <NavLink to="/project-manage" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+                Proje Yonetimi
+              </NavLink>
               <NavLink to="/import" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
                 Iceri Aktar
               </NavLink>

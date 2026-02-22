@@ -551,6 +551,76 @@ a {
   background: #4b1b2a;
 }
 
+/* User management table */
+.user-table-head,
+.user-table-row {
+  grid-template-columns: 1.2fr 1.5fr 0.8fr 0.6fr 1fr;
+}
+
+.status-active {
+  color: #4de0b4;
+}
+
+.status-inactive {
+  color: #ff9e9e;
+}
+
+/* Project management */
+.project-manage-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.project-manage-item {
+  border: 1px solid #2b477c;
+  border-radius: 10px;
+  padding: 10px;
+  color: #d8e6ff;
+  background: #0f244f;
+  cursor: pointer;
+}
+
+.project-manage-item.selected {
+  border-color: #2db67c;
+  box-shadow: 0 0 0 1px #2db67c4f;
+}
+
+.project-manage-item small {
+  display: block;
+  color: #88a0cf;
+  margin-top: 2px;
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid #1e3560;
+}
+
+.member-row span {
+  flex: 1;
+}
+
+.member-row button {
+  border: 1px solid #8e3d50;
+  border-radius: 8px;
+  background: #4b1b2a;
+  color: #ff9e9e;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.filter-row label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #9cb4df;
+}
+
 @media (max-width: 1260px) {
   .workspace-grid {
     grid-template-columns: 1fr;
