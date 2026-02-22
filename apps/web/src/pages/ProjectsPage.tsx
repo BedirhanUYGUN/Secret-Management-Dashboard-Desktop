@@ -3,7 +3,6 @@ import { useSearchParams } from "react-router-dom";
 import {
   createProjectSecret,
   deleteProjectSecret,
-  exportProject,
   fetchProjectSecrets,
   fetchProjects,
   revealSecretValue,
@@ -14,6 +13,7 @@ import {
 import { useAuth } from "../auth/AuthContext";
 import type { Environment, Secret, SecretType } from "../types";
 import { useAppUi } from "../ui/AppUiContext";
+import { ExportModal } from "../ui/ExportModal";
 
 const envTabs: Environment[] = ["local", "dev", "prod"];
 const typeOptions: SecretType[] = ["key", "token", "endpoint"];
@@ -67,6 +67,8 @@ export function ProjectsPage() {
     tags: "",
     notes: "",
   });
+
+  const [showExportModal, setShowExportModal] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -243,40 +245,6 @@ export function ProjectsPage() {
     setRevealedValue(null);
   };
 
-  const runExport = async (format: "env" | "json") => {
-    if (!user || !activeProject) {
-      return;
-    }
-    if (user.role === "viewer") {
-      showToast("Salt okunur kullanici disari aktarim yapamaz", "error");
-      return;
-    }
-
-    if (activeEnv === "prod") {
-      const confirmed = window.confirm("Prod disari aktarimi hassas veri icerir. Devam edilsin mi?");
-      if (!confirmed) {
-        return;
-      }
-    }
-
-    try {
-      const payload = await exportProject({
-        projectId: activeProject.id,
-        env: activeEnv,
-        format,
-      });
-
-      await copyWithTimer({
-        value: payload,
-        successMessage: `${format.toUpperCase()} disari aktarimi panoya kopyalandi`,
-      });
-    } catch (error) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
-      }
-    }
-  };
-
   const submitCreate = async () => {
     if (!user || !activeProject) {
       return;
@@ -394,11 +362,8 @@ export function ProjectsPage() {
             <button type="button" disabled={user.role === "viewer"} onClick={() => setShowCreateForm(true)}>
               Anahtar Ekle
             </button>
-            <button type="button" onClick={() => void runExport("env")} disabled={user.role === "viewer"}>
-              .env Aktar
-            </button>
-            <button type="button" onClick={() => void runExport("json")} disabled={user.role === "viewer"}>
-              JSON Aktar
+            <button type="button" onClick={() => setShowExportModal(true)} disabled={user.role === "viewer"}>
+              Disari Aktar
             </button>
           </div>
         </div>
@@ -668,6 +633,15 @@ export function ProjectsPage() {
           <div className="page-panel">Bu ortamda anahtar bulunmuyor.</div>
         )}
       </aside>
+
+      <ExportModal
+        open={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        projectId={activeProject.id}
+        projectName={activeProject.name}
+        activeEnv={activeEnv}
+        availableTags={tags}
+      />
     </div>
   );
 }

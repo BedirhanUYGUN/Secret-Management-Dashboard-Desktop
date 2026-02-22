@@ -505,6 +505,55 @@ a {
   padding: 12px;
 }
 
+.import-upload-zone {
+  position: relative;
+  place-items: center;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.import-upload-zone:hover {
+  border-color: #5a8ad8;
+  background: #0e2350;
+}
+
+.import-drag-active {
+  border-color: #2db67c;
+  background: #0f2e2a;
+  box-shadow: 0 0 0 2px #2db67c33;
+}
+
+.import-upload-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.import-upload-title {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #d4def8;
+  margin: 0;
+}
+
+.import-upload-hint {
+  font-size: 0.82rem;
+  color: #7b96c9;
+  margin: 0;
+}
+
+.import-file-name {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: #5ce9bd;
+}
+
+.import-file-input {
+  display: none;
+}
+
 .import-textarea {
   width: 100%;
   margin-top: 8px;
@@ -619,6 +668,111 @@ a {
   align-items: center;
   gap: 4px;
   color: #9cb4df;
+}
+
+/* Modal */
+.modal-dialog {
+  border: 1px solid #2a4579;
+  border-radius: 16px;
+  background: #0b1737eb;
+  color: #d4def8;
+  padding: 0;
+  max-width: 520px;
+  width: 90vw;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 30px 70px #010717cc;
+}
+
+.modal-dialog::backdrop {
+  background: #060f24cc;
+  backdrop-filter: blur(3px);
+}
+
+.modal-content {
+  padding: 20px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #233c6b;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.modal-close {
+  border: none;
+  background: none;
+  color: #8ea8d7;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: #ff9e9e;
+}
+
+.modal-body {
+  display: grid;
+  gap: 12px;
+}
+
+/* Export Modal */
+.export-modal-form {
+  display: grid;
+  gap: 14px;
+}
+
+.export-modal-label {
+  display: grid;
+  gap: 6px;
+  color: #9cb4df;
+  font-size: 0.9rem;
+}
+
+.export-modal-label select {
+  border: 1px solid #355895;
+  border-radius: 10px;
+  background: #12295a;
+  color: #e4edff;
+  padding: 8px 10px;
+  font: inherit;
+}
+
+.export-prod-warning {
+  border: 1px solid #8f6b35;
+  border-radius: 10px;
+  background: #3d2e0f;
+  padding: 12px;
+}
+
+.export-prod-confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffd28f;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.export-prod-confirm input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #2db67c;
+  cursor: pointer;
+}
+
+.export-modal-actions {
+  margin-top: 4px;
+  flex-wrap: wrap;
 }
 
 @media (max-width: 1260px) {

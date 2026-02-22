@@ -282,12 +282,23 @@ export function commitImport(params: {
   });
 }
 
-export function exportProject(params: { projectId: string; env: Environment; format: "env" | "json" }) {
+export function exportProject(params: { projectId: string; env: Environment; format: "env" | "json"; tag?: string }) {
   return request<string>(`/exports/${params.projectId}`, {
     responseType: "text",
     query: {
       env: params.env,
       format: params.format,
+      tag: params.tag,
+    },
+  });
+}
+
+export function exportProjectAllEnvs(params: { projectId: string; format: "env" | "json"; tag?: string }) {
+  return request<string>(`/exports/${params.projectId}/all`, {
+    responseType: "text",
+    query: {
+      format: params.format,
+      tag: params.tag,
     },
   });
 }

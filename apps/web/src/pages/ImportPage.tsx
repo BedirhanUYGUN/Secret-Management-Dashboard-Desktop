@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { commitImport, fetchProjects, previewImport, type ImportCommitResponse, type ImportPreviewResponse, type ProjectSummary } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import type { Environment, SecretType } from "../types";
@@ -6,6 +6,14 @@ import { useAppUi } from "../ui/AppUiContext";
 
 const environmentOptions: Environment[] = ["local", "dev", "prod"];
 const typeOptions: SecretType[] = ["key", "token", "endpoint"];
+
+/** Dosya uzantisina bakarak format algilar */
+function detectFileFormat(fileName: string): "env" | "txt" | "unknown" {
+  const lower = fileName.toLowerCase();
+  if (lower.endsWith(".env") || lower.startsWith(".env")) return "env";
+  if (lower.endsWith(".txt")) return "txt";
+  return "unknown";
+}
 
 export function ImportPage() {
   const { user } = useAuth();
@@ -26,6 +34,11 @@ export function ImportPage() {
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [loadingCommit, setLoadingCommit] = useState(false);
 
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragCounterRef = useRef(0);
+
   useEffect(() => {
     if (!user) {
       return;
@@ -38,6 +51,86 @@ export function ImportPage() {
       })
       .catch((error: Error) => setErrorMessage(error.message));
   }, [user]);
+
+  /** Dosya icerigini okuyup state'e yazar */
+  const handleFileContent = useCallback(
+    (file: File) => {
+      const format = detectFileFormat(file.name);
+      if (format === "unknown") {
+        showToast("Desteklenmeyen dosya formati. .env veya .txt dosyasi secin.", "error");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target?.result;
+        if (typeof text === "string") {
+          setContent(text);
+          setFileName(file.name);
+          setPreview(null);
+          setSummary(null);
+          setErrorMessage("");
+          showToast(`${file.name} dosyasi yuklendi (${format.toUpperCase()})`, "success");
+        }
+      };
+      reader.onerror = () => {
+        setErrorMessage("Dosya okunamadi.");
+      };
+      reader.readAsText(file);
+    },
+    [showToast],
+  );
+
+  /** Dosya secme input handler */
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleFileContent(file);
+    }
+    // Input'u sifirla ki ayni dosya tekrar secilebilsin
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  /** Drag & drop handler'lari */
+  const handleDragEnter = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    dragCounterRef.current += 1;
+    if (event.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current === 0) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setIsDragging(false);
+      dragCounterRef.current = 0;
+
+      const file = event.dataTransfer.files[0];
+      if (file) {
+        handleFileContent(file);
+      }
+    },
+    [handleFileContent],
+  );
 
   if (!user) {
     return null;
@@ -91,11 +184,18 @@ export function ImportPage() {
     }
   };
 
+  const clearFile = () => {
+    setFileName(null);
+    setContent("");
+    setPreview(null);
+    setSummary(null);
+  };
+
   return (
     <section className="page-panel">
-      <h2>TXT Iceri Aktarim Sihirbazi</h2>
+      <h2>Iceri Aktarim Sihirbazi</h2>
       <ol>
-        <li>TXT icerigini yukleyin veya yapistirin.</li>
+        <li>Dosya yukleyin, surukleyip birakin veya icerik yapistirin.</li>
         <li>Ayristirilan proje basliklari ve KEY=value satirlarini onizleyin.</li>
         <li>Proje/ortam ve catisma stratejisini secin.</li>
         <li>Iceri aktarimi onayla ve ozeti inceleyin.</li>
@@ -137,6 +237,40 @@ export function ImportPage() {
 
         <input value={provider} onChange={(event) => setProvider(event.target.value)} placeholder="Saglayici" />
         <input value={tags} onChange={(event) => setTags(event.target.value)} placeholder="etiket1, etiket2" />
+      </div>
+
+      {/* Dosya yukleme & surukle-birak alani */}
+      <div
+        className={`import-dropzone import-upload-zone${isDragging ? " import-drag-active" : ""}`}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        <div className="import-upload-content">
+          <p className="import-upload-title">
+            {isDragging ? "Dosyayi buraya birakin..." : "Dosyayi surukleyip birakin veya secin"}
+          </p>
+          <p className="import-upload-hint">Desteklenen formatlar: .env, .txt</p>
+          <div className="action-row">
+            <button type="button" onClick={() => fileInputRef.current?.click()}>
+              Dosya Sec
+            </button>
+            {fileName && (
+              <button type="button" onClick={clearFile}>
+                Temizle
+              </button>
+            )}
+          </div>
+          {fileName && <p className="import-file-name">Yuklenen: <strong>{fileName}</strong></p>}
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".env,.txt"
+          onChange={handleFileSelect}
+          className="import-file-input"
+        />
       </div>
 
       <textarea className="import-textarea" value={content} onChange={(event) => setContent(event.target.value)} rows={10} />

@@ -442,7 +442,11 @@ def find_secret_by_key(
 
 
 def export_secrets(
-    db: Session, user_id: str, project_slug: str, environment: EnvironmentEnum
+    db: Session,
+    user_id: str,
+    project_slug: str,
+    environment: EnvironmentEnum,
+    tag: Optional[str] = None,
 ) -> List[Dict]:
     if not has_environment_read_access(db, user_id, project_slug, environment):
         return []
@@ -459,13 +463,44 @@ def export_secrets(
             Secret.project_id == project_id, Secret.environment_id == env_id
         )
     ).scalars()
-    return [
-        {
-            "key_name": row.key_name,
-            "value_plain": decrypt_secret_value(row.value_encrypted),
-        }
-        for row in rows
-    ]
+
+    result: List[Dict] = []
+    for row in rows:
+        if tag:
+            secret_tags = [
+                t.tag
+                for t in db.execute(
+                    select(SecretTag).where(SecretTag.secret_id == row.id)
+                ).scalars()
+            ]
+            if tag not in secret_tags:
+                continue
+        result.append(
+            {
+                "key_name": row.key_name,
+                "value_plain": decrypt_secret_value(row.value_encrypted),
+            }
+        )
+    return result
+
+
+def export_secrets_all_envs(
+    db: Session,
+    user_id: str,
+    project_slug: str,
+    tag: Optional[str] = None,
+) -> Dict[str, List[Dict]]:
+    """Tum ortamlar icin secret'lari export eder."""
+    output: Dict[str, List[Dict]] = {}
+    for env in EnvironmentEnum:
+        if not has_environment_read_access(db, user_id, project_slug, env):
+            continue
+        if not has_environment_export_access(db, user_id, project_slug, env):
+            continue
+        rows = export_secrets(db, user_id, project_slug, env, tag=tag)
+        if rows:
+            output[env.value] = rows
+    return output
 
 
 def add_audit_event(
