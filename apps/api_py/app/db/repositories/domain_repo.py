@@ -540,7 +540,7 @@ def add_audit_event(
         action=action,
         target_type=target_type,
         target_id=_to_uuid(target_id) if target_id else None,
-        metadata=metadata or {},
+        meta=metadata or {},
     )
     db.add(event)
     db.commit()
@@ -579,7 +579,7 @@ def list_audit_events(
             "action": event.action,
             "actor": email or "unknown",
             "projectId": slug or "unknown",
-            "secretName": (event.metadata or {}).get("secretName", ""),
+            "secretName": (event.meta or {}).get("secretName", ""),
             "occurredAt": event.created_at,
         }
         for event, email, slug in rows

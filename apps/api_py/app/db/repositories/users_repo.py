@@ -31,7 +31,10 @@ def get_valid_refresh_token(db: Session, token_hash: str) -> Optional[RefreshTok
         return None
     if token.revoked_at is not None:
         return None
-    if token.expires_at <= datetime.now(timezone.utc):
+    expires = token.expires_at
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if expires <= datetime.now(timezone.utc):
         return None
     return token
 

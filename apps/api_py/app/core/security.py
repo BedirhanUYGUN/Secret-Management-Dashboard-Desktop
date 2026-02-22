@@ -20,10 +20,12 @@ def get_password_hash(password: str) -> str:
 
 
 def _create_token(payload: Dict[str, str], expires_delta: timedelta) -> str:
+    import uuid
+
     settings = get_settings()
     to_encode = payload.copy()
     expire = datetime.now(timezone.utc) + expires_delta
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "jti": uuid.uuid4().hex})
     return jwt.encode(
         to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
     )

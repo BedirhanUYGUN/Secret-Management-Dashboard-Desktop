@@ -21,7 +21,7 @@ class AuditEvent(Base):
     action: Mapped[str] = mapped_column(String(100), nullable=False)
     target_type: Mapped[str] = mapped_column(String(100), nullable=False)
     target_id: Mapped[uuid.UUID] = mapped_column(nullable=True)
-    metadata: Mapped[dict] = mapped_column(JSONB, nullable=True)
+    meta: Mapped[dict] = mapped_column("metadata", JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

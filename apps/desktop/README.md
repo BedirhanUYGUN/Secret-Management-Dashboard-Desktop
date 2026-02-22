@@ -1,7 +1,9 @@
-# Tauri + React + Typescript
+# Desktop (Tauri)
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+Bu uygulama artik `apps/web` arayuzunu ve API client'ini paylasir.
 
-## Recommended IDE Setup
+## Calistirma
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+- API icin `VITE_API_BASE_URL` tanimli olmali (varsayilan: `http://localhost:4000`)
+- Gelistirme: `npm run dev -w apps/desktop`
+- Masaustu (Tauri): `npm run tauri -w apps/desktop`

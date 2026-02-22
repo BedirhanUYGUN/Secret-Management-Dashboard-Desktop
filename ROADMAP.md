@@ -1,6 +1,6 @@
 # Kalan Fazlar — Yapilacaklar
 
-> Tamamlanan: Faz 1 (Login, Guvenlik, Lokalizasyon) + Faz 2 (Kullanici & Proje Yonetimi) + Faz 3 (Import / Export Gelistirmeleri) + Faz 4 (Settings & UX Iyilestirmeleri)
+> Tamamlanan: Faz 1 (Login, Guvenlik, Lokalizasyon) + Faz 2 (Kullanici & Proje Yonetimi) + Faz 3 (Import / Export Gelistirmeleri) + Faz 4 (Settings & UX Iyilestirmeleri) + Faz 5 (Test Altyapisi)
 
 ---
 
@@ -44,7 +44,7 @@
 
 ## Faz 5: Test Altyapisi
 
-- [ ] **5.1 Backend Testleri (pytest)**
+- [x] **5.1 Backend Testleri (pytest)**
   - Auth endpoint testleri (login, refresh, logout)
   - Kullanici CRUD testleri
   - Proje CRUD testleri
@@ -54,7 +54,7 @@
   - Yetkilendirme testleri (rol bazli erisim kontrolleri)
   - Test DB fixture'lari ve seed verileri
 
-- [ ] **5.2 Frontend Testleri (Vitest + React Testing Library)**
+- [x] **5.2 Frontend Testleri (Vitest + React Testing Library)**
   - LoginPage testi (form submit, hata gosterimi)
   - AuthContext testi (login/logout akisi)
   - UsersPage testi (listeleme, olusturma)
@@ -66,7 +66,7 @@
 
 ## Faz 6: Desktop Entegrasyonu (Tauri)
 
-- [ ] **6.1 Tauri API Client**
+- [x] **6.1 Tauri API Client**
   - Hardcoded mock verilerin kaldirilmasi
   - Web API client'in Tauri uygulamasina entegrasyonu
   - Tauri `invoke` yerine HTTP istekleri veya paylasilmis client kullanimi
