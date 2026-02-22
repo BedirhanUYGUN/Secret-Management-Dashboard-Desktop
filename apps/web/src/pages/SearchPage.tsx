@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { fetchProjects, searchSecrets, type ProjectSummary } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import type { Environment, Secret, SecretType } from "../types";
+import { Spinner } from "../ui/Spinner";
 
 const environments: Array<Environment | "all"> = ["all", "local", "dev", "prod"];
 const secretTypes: Array<SecretType | "all"> = ["all", "key", "token", "endpoint"];
@@ -17,6 +18,7 @@ export function SearchPage() {
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [results, setResults] = useState<Secret[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -32,6 +34,7 @@ export function SearchPage() {
       return;
     }
     setErrorMessage("");
+    setLoading(true);
 
     void searchSecrets({
       query,
@@ -44,7 +47,8 @@ export function SearchPage() {
       .catch((error: Error) => {
         setResults([]);
         setErrorMessage(error.message || "Arama basarisiz.");
-      });
+      })
+      .finally(() => setLoading(false));
   }, [environmentFilter, providerFilter, query, tagFilter, typeFilter, user]);
 
   const providers = useMemo(() => Array.from(new Set(results.map((item) => item.provider))), [results]);
@@ -92,6 +96,7 @@ export function SearchPage() {
       </div>
 
       {errorMessage && <p className="inline-error">{errorMessage}</p>}
+      {loading && <Spinner text="Arama yapiliyor..." />}
 
       <div className="search-results">
         {results.map((item) => (

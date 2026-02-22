@@ -193,6 +193,24 @@ def _to_secret_out(db: Session, secret: Secret, env_name: EnvironmentEnum) -> Di
         or ""
     )
 
+    # Son guncelleyen kullanici
+    updated_by_name: Optional[str] = None
+    if secret.updated_by:
+        updated_by_name = db.scalar(
+            select(User.display_name).where(User.id == secret.updated_by)
+        )
+
+    # Son kopyalanma tarihi (audit tablosundan)
+    last_copied_at = db.scalar(
+        select(AuditEvent.created_at)
+        .where(
+            AuditEvent.action == "secret_copied",
+            AuditEvent.target_id == secret.id,
+        )
+        .order_by(AuditEvent.created_at.desc())
+        .limit(1)
+    )
+
     return {
         "id": str(secret.id),
         "projectId": project_slug,
@@ -205,6 +223,8 @@ def _to_secret_out(db: Session, secret: Secret, env_name: EnvironmentEnum) -> Di
         "updatedAt": secret.updated_at,
         "tags": tags,
         "notes": note,
+        "updatedByName": updated_by_name,
+        "lastCopiedAt": last_copied_at,
     }
 
 

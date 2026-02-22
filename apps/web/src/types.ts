@@ -15,11 +15,17 @@ export type Assignment = {
   prodAccess: boolean;
 };
 
+export type UserPreferences = {
+  maskValues?: boolean;
+  clipboardSeconds?: number;
+};
+
 export type User = {
   id: string;
   name: string;
   role: Role;
   assignments: Assignment[];
+  preferences: UserPreferences;
 };
 
 export type Secret = {
@@ -34,6 +40,8 @@ export type Secret = {
   updatedAt: string;
   tags: string[];
   notes: string;
+  updatedByName: string | null;
+  lastCopiedAt: string | null;
 };
 
 export type ManagedUser = {

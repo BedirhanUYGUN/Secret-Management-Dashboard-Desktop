@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
+from typing import Dict
 
 from sqlalchemy import Boolean, DateTime, Enum, String, func
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -19,6 +21,9 @@ class User(Base):
     )
     password_hash: Mapped[str] = mapped_column(String(500), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    preferences: Mapped[Dict] = mapped_column(
+        JSONB, nullable=False, server_default="{}"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

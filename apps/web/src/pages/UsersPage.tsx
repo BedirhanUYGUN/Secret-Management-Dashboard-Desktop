@@ -3,6 +3,7 @@ import { createUser, fetchUsers, updateUser } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import type { ManagedUser, Role } from "../types";
 import { useAppUi } from "../ui/AppUiContext";
+import { Spinner } from "../ui/Spinner";
 
 const roleOptions: Role[] = ["admin", "member", "viewer"];
 
@@ -181,7 +182,7 @@ export function UsersPage() {
       )}
 
       {errorMessage && <p className="inline-error">{errorMessage}</p>}
-      {loading && <p className="inline-muted">Kullanicilar yukleniyor...</p>}
+      {loading && <Spinner text="Kullanicilar yukleniyor..." />}
 
       <div className="table-head user-table-head">
         <span>Ad Soyad</span>

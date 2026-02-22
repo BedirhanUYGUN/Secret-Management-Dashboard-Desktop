@@ -1,6 +1,6 @@
 # Kalan Fazlar — Yapilacaklar
 
-> Tamamlanan: Faz 1 (Login, Guvenlik, Lokalizasyon) + Faz 2 (Kullanici & Proje Yonetimi) + Faz 3 (Import / Export Gelistirmeleri)
+> Tamamlanan: Faz 1 (Login, Guvenlik, Lokalizasyon) + Faz 2 (Kullanici & Proje Yonetimi) + Faz 3 (Import / Export Gelistirmeleri) + Faz 4 (Settings & UX Iyilestirmeleri)
 
 ---
 
@@ -22,21 +22,21 @@
 
 ## Faz 4: Settings & UX Iyilestirmeleri
 
-- [ ] **4.1 Settings Persistence**
+- [x] **4.1 Settings Persistence**
   - "Degerleri varsayilan olarak maskele" ayarinin backend'de saklanmasi
   - Kullanici bazli tercih tablosu (veya mevcut user modeline alan eklenmesi)
   - Kaydet butonunun gercekten calismasi
 
-- [ ] **4.2 Loading Skeleton / Spinner**
+- [x] **4.2 Loading Skeleton / Spinner**
   - Tum sayfalara yukleme animasyonu eklenmesi
   - Mevcut "Yukleniyor..." text'lerinin gorsel spinner ile degistirilmesi
 
-- [ ] **4.3 "Updated by" ve "Last used" Bilgileri**
+- [x] **4.3 "Updated by" ve "Last used" Bilgileri**
   - Secret detay panelinde "Son guncelleyen" kullanici bilgisinin gosterilmesi
   - "Son kopyalanma / kullanilma" tarihinin gosterilmesi
   - Backend'den bu verilerin frontend'e iletilmesi
 
-- [ ] **4.4 Breadcrumb / Sayfa Basligi**
+- [x] **4.4 Breadcrumb / Sayfa Basligi**
   - Content header'daki ham pathname yerine anlamli breadcrumb gosterimi
   - Ornek: Projeler > Apollo API > DEV
 

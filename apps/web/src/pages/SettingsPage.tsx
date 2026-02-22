@@ -1,7 +1,36 @@
+import { useState } from "react";
+import { updatePreferences } from "../api/client";
+import { useAuth } from "../auth/AuthContext";
 import { useAppUi } from "../ui/AppUiContext";
 
 export function SettingsPage() {
+  const { user, refreshUser } = useAuth();
   const { clipboardSeconds, setClipboardSeconds, showToast } = useAppUi();
+
+  const [maskValues, setMaskValues] = useState<boolean>(user?.preferences.maskValues ?? true);
+  const [localClipboard, setLocalClipboard] = useState(clipboardSeconds);
+  const [saving, setSaving] = useState(false);
+
+  if (!user) return null;
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      await updatePreferences({
+        maskValues,
+        clipboardSeconds: localClipboard,
+      });
+      setClipboardSeconds(localClipboard);
+      await refreshUser();
+      showToast("Ayarlar kaydedildi", "success");
+    } catch (error) {
+      if (error instanceof Error) {
+        showToast(error.message || "Ayarlar kaydedilemedi", "error");
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <section className="page-panel">
@@ -11,28 +40,23 @@ export function SettingsPage() {
           Pano temizleme suresi (saniye)
           <input
             type="number"
-            value={clipboardSeconds}
+            value={localClipboard}
             min={5}
             max={300}
-            onChange={(event) => setClipboardSeconds(Number(event.target.value))}
+            onChange={(event) => setLocalClipboard(Number(event.target.value))}
           />
         </label>
         <label>
           Degerleri varsayilan olarak maskele
-          <select defaultValue="yes">
+          <select value={maskValues ? "yes" : "no"} onChange={(event) => setMaskValues(event.target.value === "yes")}>
             <option value="yes">Evet</option>
             <option value="no">Hayir</option>
           </select>
         </label>
       </div>
       <div className="action-row">
-        <button
-          type="button"
-          onClick={() => {
-            showToast("Ayarlar kaydedildi", "success");
-          }}
-        >
-          Tercihleri Kaydet
+        <button type="button" onClick={() => void handleSave()} disabled={saving}>
+          {saving ? "Kaydediliyor..." : "Tercihleri Kaydet"}
         </button>
       </div>
     </section>

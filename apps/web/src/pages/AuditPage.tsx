@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { fetchAudit, fetchProjects, type ProjectSummary } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import type { AuditEvent } from "../types";
+import { Spinner } from "../ui/Spinner";
 
 const actionOptions = ["all", "secret_created", "secret_updated", "secret_copied", "secret_exported"] as const;
 
@@ -23,6 +24,7 @@ export function AuditPage() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const loadAudit = async () => {
     if (!user) {
@@ -30,6 +32,7 @@ export function AuditPage() {
     }
 
     setErrorMessage("");
+    setLoading(true);
     try {
       const [events, projectRows] = await Promise.all([
         fetchAudit({
@@ -47,6 +50,8 @@ export function AuditPage() {
       if (error instanceof Error) {
         setErrorMessage(error.message || "Denetim verileri yuklenemedi.");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -90,6 +95,7 @@ export function AuditPage() {
       </div>
 
       {errorMessage && <p className="inline-error">{errorMessage}</p>}
+      {loading && <Spinner text="Denetim kayitlari yukleniyor..." />}
       <div className="audit-list">
         {auditEvents.map((event) => (
           <div key={event.id} className="audit-item">

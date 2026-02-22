@@ -236,6 +236,23 @@ a {
   color: #8fa6d2;
 }
 
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.breadcrumb span:first-child {
+  color: #d4def8;
+}
+
+.breadcrumb-separator {
+  color: #4a6a9e;
+  margin: 0 2px;
+}
+
 .readonly-pill {
   border-radius: 999px;
   padding: 5px 12px;
@@ -668,6 +685,34 @@ a {
   align-items: center;
   gap: 4px;
   color: #9cb4df;
+}
+
+/* Spinner */
+.spinner-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  color: #8ca8d9;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #2a4579;
+  border-top-color: #2db67c;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner-text {
+  font-size: 0.9rem;
 }
 
 /* Modal */

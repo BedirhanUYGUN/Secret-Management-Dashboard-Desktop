@@ -3,6 +3,7 @@ import { commitImport, fetchProjects, previewImport, type ImportCommitResponse, 
 import { useAuth } from "../auth/AuthContext";
 import type { Environment, SecretType } from "../types";
 import { useAppUi } from "../ui/AppUiContext";
+import { Spinner } from "../ui/Spinner";
 
 const environmentOptions: Environment[] = ["local", "dev", "prod"];
 const typeOptions: SecretType[] = ["key", "token", "endpoint"];
@@ -284,6 +285,7 @@ export function ImportPage() {
         </button>
       </div>
 
+      {(loadingPreview || loadingCommit) && <Spinner text={loadingPreview ? "Onizleme hazirlaniyor..." : "Iceri aktarim yapiliyor..."} />}
       {errorMessage && <p className="inline-error">{errorMessage}</p>}
 
       {preview && (

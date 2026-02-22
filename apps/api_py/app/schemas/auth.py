@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, EmailStr
 
@@ -29,7 +29,13 @@ class AuthUserOut(BaseModel):
     name: str
     role: RoleEnum
     assignments: List[AssignmentOut]
+    preferences: Dict[str, Any] = {}
 
 
 class RefreshRequest(BaseModel):
     refreshToken: str
+
+
+class PreferencesUpdateRequest(BaseModel):
+    maskValues: Optional[bool] = None
+    clipboardSeconds: Optional[int] = None

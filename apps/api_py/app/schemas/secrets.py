@@ -18,6 +18,8 @@ class SecretOut(BaseModel):
     updatedAt: datetime
     tags: List[str]
     notes: str
+    updatedByName: Optional[str] = None
+    lastCopiedAt: Optional[datetime] = None
 
 
 class SecretCreateRequest(BaseModel):

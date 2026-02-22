@@ -70,4 +70,5 @@ def user_profile_response(user, db: Session):
         "name": user.display_name,
         "role": user.role,
         "assignments": get_assignments(db, str(user.id)),
+        "preferences": user.preferences or {},
     }

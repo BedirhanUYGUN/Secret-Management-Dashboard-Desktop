@@ -1,10 +1,21 @@
-import { useEffect, useState } from "react";
-import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, NavLink, Outlet, useLocation, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { fetchProjects, type ProjectSummary } from "../api/client";
 
+const pageTitles: Record<string, string> = {
+  "/projects": "Projeler",
+  "/search": "Arama",
+  "/settings": "Ayarlar",
+  "/users": "Kullanicilar",
+  "/project-manage": "Proje Yonetimi",
+  "/import": "Iceri Aktar",
+  "/audit": "Denetim Kaydi",
+};
+
 export function MainLayout() {
   const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
   const { user, logout } = useAuth();
   const [assignedProjects, setAssignedProjects] = useState<ProjectSummary[]>([]);
   const [projectQuery, setProjectQuery] = useState("");
@@ -27,6 +38,27 @@ export function MainLayout() {
     project.name.toLowerCase().includes(projectQuery.trim().toLowerCase()),
   );
 
+  const breadcrumb = useMemo(() => {
+    const pageTitle = pageTitles[pathname] ?? pathname;
+    const parts: string[] = [pageTitle];
+
+    if (pathname === "/projects") {
+      const projectId = searchParams.get("project");
+      const env = searchParams.get("env");
+      if (projectId) {
+        const project = assignedProjects.find((p) => p.id === projectId);
+        if (project) {
+          parts.push(project.name);
+        }
+      }
+      if (env) {
+        parts.push(env.toUpperCase());
+      }
+    }
+
+    return parts;
+  }, [pathname, searchParams, assignedProjects]);
+
   return (
     <div className="app-frame">
       <aside className="sidebar">
@@ -37,6 +69,9 @@ export function MainLayout() {
           </NavLink>
           <NavLink to="/search" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Arama
+          </NavLink>
+          <NavLink to="/settings" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Ayarlar
           </NavLink>
           {user.role === "admin" && (
             <>
@@ -51,9 +86,6 @@ export function MainLayout() {
               </NavLink>
               <NavLink to="/audit" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
                 Denetim Kaydi
-              </NavLink>
-              <NavLink to="/settings" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-                Ayarlar
               </NavLink>
             </>
           )}
@@ -91,7 +123,12 @@ export function MainLayout() {
 
       <main className="content-area">
         <header className="content-header">
-          <div>{pathname}</div>
+          <div className="breadcrumb">{breadcrumb.map((part, index) => (
+            <span key={index}>
+              {index > 0 && <span className="breadcrumb-separator"> &rsaquo; </span>}
+              {part}
+            </span>
+          ))}</div>
           {user.role === "viewer" ? (
             <span className="readonly-pill">Salt okunur mod</span>
           ) : (

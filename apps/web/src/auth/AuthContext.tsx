@@ -9,6 +9,7 @@ type AuthContextValue = {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -54,12 +55,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         void logoutSession();
         setUser(null);
       },
+      refreshUser: async () => {
+        const profile = await fetchMe();
+        setUser(profile);
+      },
     }),
     [loading, initializing, user],
   );
 
   if (initializing) {
-    return null;
+    return (
+      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
+        <div className="spinner-container">
+          <div className="spinner" />
+          <span className="spinner-text">Oturum kontrol ediliyor...</span>
+        </div>
+      </div>
+    );
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

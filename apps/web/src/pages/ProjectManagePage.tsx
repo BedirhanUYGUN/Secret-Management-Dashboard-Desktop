@@ -12,6 +12,7 @@ import {
 import { useAuth } from "../auth/AuthContext";
 import type { Environment, ManagedUser, ProjectDetail, Role } from "../types";
 import { useAppUi } from "../ui/AppUiContext";
+import { Spinner } from "../ui/Spinner";
 
 const roleOptions: Role[] = ["admin", "member", "viewer"];
 const roleLabels: Record<Role, string> = { admin: "Yonetici", member: "Uye", viewer: "Izleyici" };
@@ -205,7 +206,7 @@ export function ProjectManagePage() {
         )}
 
         {errorMessage && <p className="inline-error">{errorMessage}</p>}
-        {loading && <p className="inline-muted">Yukleniyor...</p>}
+        {loading && <Spinner />}
 
         <div className="project-manage-list">
           {projects.map((p) => (

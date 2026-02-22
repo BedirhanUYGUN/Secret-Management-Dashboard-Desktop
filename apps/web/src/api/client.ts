@@ -1,4 +1,4 @@
-import type { Assignment, AuditEvent, Environment, ManagedUser, Project, ProjectDetail, ProjectMemberOut, Role, Secret, SecretType, User } from "../types";
+import type { Assignment, AuditEvent, Environment, ManagedUser, Project, ProjectDetail, ProjectMemberOut, Role, Secret, SecretType, User, UserPreferences } from "../types";
 
 const RAW_API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
 const API_BASE_URL = RAW_API_BASE_URL.startsWith("http://") || RAW_API_BASE_URL.startsWith("https://")
@@ -49,6 +49,7 @@ type MeResponse = {
   name: string;
   role: Role;
   assignments: Assignment[];
+  preferences: UserPreferences;
 };
 
 type AuthTokensResponse = {
@@ -155,6 +156,21 @@ export async function fetchMe(): Promise<User> {
     name: response.name,
     role: response.role,
     assignments: response.assignments,
+    preferences: response.preferences ?? {},
+  };
+}
+
+export async function updatePreferences(params: UserPreferences): Promise<User> {
+  const response = await request<MeResponse>("/me/preferences", {
+    method: "PATCH",
+    body: params,
+  });
+  return {
+    id: response.id,
+    name: response.name,
+    role: response.role,
+    assignments: response.assignments,
+    preferences: response.preferences ?? {},
   };
 }
 

@@ -14,6 +14,7 @@ import { useAuth } from "../auth/AuthContext";
 import type { Environment, Secret, SecretType } from "../types";
 import { useAppUi } from "../ui/AppUiContext";
 import { ExportModal } from "../ui/ExportModal";
+import { Spinner } from "../ui/Spinner";
 
 const envTabs: Environment[] = ["local", "dev", "prod"];
 const typeOptions: SecretType[] = ["key", "token", "endpoint"];
@@ -449,7 +450,7 @@ export function ProjectsPage() {
         </div>
 
         {errorMessage && <p className="inline-error">{errorMessage}</p>}
-        {loading && <p className="inline-muted">Anahtarlar yukleniyor...</p>}
+        {loading && <Spinner text="Anahtarlar yukleniyor..." />}
 
         <div className="table-head">
           <span>Ad</span>
@@ -567,6 +568,10 @@ export function ProjectsPage() {
                   </button>
                 )}
               </div>
+              <strong>Son Guncelleyen</strong>
+              <p>{selectedSecret.updatedByName || "-"}</p>
+              <strong>Son Kopyalanma</strong>
+              <p>{selectedSecret.lastCopiedAt ? new Date(selectedSecret.lastCopiedAt).toLocaleString() : "-"}</p>
               <strong>Etiketler</strong>
               <p>{selectedSecret.tags.join(", ") || "-"}</p>
               <strong>Notlar</strong>

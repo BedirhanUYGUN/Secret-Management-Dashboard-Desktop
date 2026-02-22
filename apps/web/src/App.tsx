@@ -27,13 +27,13 @@ function App() {
                 <Route path="/" element={<Navigate to="/projects" replace />} />
                 <Route path="/projects" element={<ProjectsPage />} />
                 <Route path="/search" element={<SearchPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
 
                 <Route element={<RequireRole allowed={["admin"]} />}>
                   <Route path="/users" element={<UsersPage />} />
                   <Route path="/project-manage" element={<ProjectManagePage />} />
                   <Route path="/import" element={<ImportPage />} />
                   <Route path="/audit" element={<AuditPage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
                 </Route>
 
                 <Route path="*" element={<NotFoundPage />} />
