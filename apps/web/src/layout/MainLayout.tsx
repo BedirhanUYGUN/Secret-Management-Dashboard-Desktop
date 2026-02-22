@@ -14,7 +14,7 @@ export function MainLayout() {
       return;
     }
 
-    void fetchProjects(user.role)
+    void fetchProjects()
       .then(setAssignedProjects)
       .catch(() => setAssignedProjects([]));
   }, [user]);
@@ -30,33 +30,33 @@ export function MainLayout() {
   return (
     <div className="app-frame">
       <aside className="sidebar">
-        <div className="sidebar-title">API Key Organizer</div>
+        <div className="sidebar-title">Anahtar Yoneticisi</div>
         <nav className="main-nav">
           <NavLink to="/projects" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-            Projects
+            Projeler
           </NavLink>
           <NavLink to="/search" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-            Search
+            Arama
           </NavLink>
           {user.role === "admin" && (
             <>
               <NavLink to="/import" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-                Import
+                Iceri Aktar
               </NavLink>
               <NavLink to="/audit" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-                Audit
+                Denetim Kaydi
               </NavLink>
               <NavLink to="/settings" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-                Settings
+                Ayarlar
               </NavLink>
             </>
           )}
         </nav>
 
-        <div className="project-list-title">Assigned Projects</div>
+        <div className="project-list-title">Atanan Projeler</div>
         <input
           className="sidebar-project-search"
-          placeholder="Find project"
+          placeholder="Proje ara..."
           value={projectQuery}
           onChange={(event) => setProjectQuery(event.target.value)}
         />
@@ -78,7 +78,7 @@ export function MainLayout() {
             <small>{user.role.toUpperCase()}</small>
           </div>
           <button type="button" onClick={logout}>
-            Log Out
+            Cikis Yap
           </button>
         </div>
       </aside>
@@ -87,9 +87,9 @@ export function MainLayout() {
         <header className="content-header">
           <div>{pathname}</div>
           {user.role === "viewer" ? (
-            <span className="readonly-pill">Read-only mode</span>
+            <span className="readonly-pill">Salt okunur mod</span>
           ) : (
-            <span className="readonly-pill editable">Edit enabled</span>
+            <span className="readonly-pill editable">Duzenleme aktif</span>
           )}
         </header>
         <Outlet />

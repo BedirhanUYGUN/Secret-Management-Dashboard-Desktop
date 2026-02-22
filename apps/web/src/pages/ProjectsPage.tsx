@@ -96,12 +96,12 @@ export function ProjectsPage() {
       return;
     }
 
-    void fetchProjects(user.role)
+    void fetchProjects()
       .then((rows) => {
         setProjects(rows);
       })
       .catch((error: Error) => {
-        setErrorMessage(error.message || "Projects could not be loaded.");
+        setErrorMessage(error.message || "Projeler yuklenemedi.");
       });
   }, [user]);
 
@@ -130,7 +130,6 @@ export function ProjectsPage() {
     setErrorMessage("");
     try {
       const rows = await fetchProjectSecrets({
-        role: user.role,
         projectId: activeProject.id,
         env: activeEnv,
         provider: providerFilter === "all" ? undefined : providerFilter,
@@ -140,7 +139,7 @@ export function ProjectsPage() {
       setVisibleSecrets(rows);
     } catch (error) {
       if (error instanceof Error) {
-        setErrorMessage(error.message || "Secrets could not be loaded.");
+        setErrorMessage(error.message || "Anahtarlar yuklenemedi.");
       }
       setVisibleSecrets([]);
     } finally {
@@ -182,10 +181,7 @@ export function ProjectsPage() {
   const tags = useMemo(() => Array.from(new Set(visibleSecrets.flatMap((item) => item.tags))), [visibleSecrets]);
 
   const readSecretValue = async (secretId: string) => {
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
-    const revealed = await revealSecretValue({ role: user.role, secretId });
+    const revealed = await revealSecretValue({ secretId });
     return revealed.value;
   };
 
@@ -213,9 +209,9 @@ export function ProjectsPage() {
 
       await copyWithTimer({
         value: payload,
-        successMessage: `${secret.keyName} kopyalandi`,
+        successMessage: `${secret.keyName} panoya kopyalandi`,
         onCopied: async () => {
-          await trackCopyEvent({ role: user.role, projectId: secret.projectId, secretId: secret.id });
+          await trackCopyEvent({ projectId: secret.projectId, secretId: secret.id });
         },
       });
     } catch (error) {
@@ -252,12 +248,12 @@ export function ProjectsPage() {
       return;
     }
     if (user.role === "viewer") {
-      showToast("Read-only kullanici export yapamaz", "error");
+      showToast("Salt okunur kullanici disari aktarim yapamaz", "error");
       return;
     }
 
     if (activeEnv === "prod") {
-      const confirmed = window.confirm("Prod export islemi hassas veri icerir. Devam edilsin mi?");
+      const confirmed = window.confirm("Prod disari aktarimi hassas veri icerir. Devam edilsin mi?");
       if (!confirmed) {
         return;
       }
@@ -265,7 +261,6 @@ export function ProjectsPage() {
 
     try {
       const payload = await exportProject({
-        role: user.role,
         projectId: activeProject.id,
         env: activeEnv,
         format,
@@ -273,7 +268,7 @@ export function ProjectsPage() {
 
       await copyWithTimer({
         value: payload,
-        successMessage: `${format.toUpperCase()} export panoya kopyalandi`,
+        successMessage: `${format.toUpperCase()} disari aktarimi panoya kopyalandi`,
       });
     } catch (error) {
       if (error instanceof Error) {
@@ -289,7 +284,6 @@ export function ProjectsPage() {
 
     try {
       await createProjectSecret({
-        role: user.role,
         projectId: activeProject.id,
         payload: {
           name: createForm.name,
@@ -304,7 +298,7 @@ export function ProjectsPage() {
       });
       setShowCreateForm(false);
       setCreateForm({ name: "", provider: "", type: "key", keyName: "", value: "", tags: "", notes: "" });
-      showToast("Secret olusturuldu", "success");
+      showToast("Anahtar olusturuldu", "success");
       await reloadSecrets();
     } catch (error) {
       if (error instanceof Error) {
@@ -320,7 +314,6 @@ export function ProjectsPage() {
 
     try {
       await updateProjectSecret({
-        role: user.role,
         secretId: selectedSecret.id,
         payload: {
           name: editForm.name,
@@ -333,7 +326,7 @@ export function ProjectsPage() {
         },
       });
       setIsEditing(false);
-      showToast("Secret guncellendi", "success");
+      showToast("Anahtar guncellendi", "success");
       await reloadSecrets();
     } catch (error) {
       if (error instanceof Error) {
@@ -346,14 +339,14 @@ export function ProjectsPage() {
     if (!user || !selectedSecret) {
       return;
     }
-    const confirmed = window.confirm("Secret silinsin mi?");
+    const confirmed = window.confirm("Bu anahtar silinsin mi?");
     if (!confirmed) {
       return;
     }
 
     try {
-      await deleteProjectSecret({ role: user.role, secretId: selectedSecret.id });
-      showToast("Secret silindi", "success");
+      await deleteProjectSecret({ secretId: selectedSecret.id });
+      showToast("Anahtar silindi", "success");
       await reloadSecrets();
       setSelectedSecretId("");
       updateQuery({ secret: null });
@@ -369,7 +362,7 @@ export function ProjectsPage() {
   }
 
   if (!activeProject) {
-    return <div className="page-panel">No assigned projects.</div>;
+    return <div className="page-panel">Atanmis proje bulunmuyor.</div>;
   }
 
   return (
@@ -392,31 +385,31 @@ export function ProjectsPage() {
                   type="button"
                 >
                   {env.toUpperCase()}
-                  {restricted ? " (restricted)" : ""}
+                  {restricted ? " (kisitli)" : ""}
                 </button>
               );
             })}
           </div>
           <div className="action-row">
             <button type="button" disabled={user.role === "viewer"} onClick={() => setShowCreateForm(true)}>
-              Add Secret
+              Anahtar Ekle
             </button>
             <button type="button" onClick={() => void runExport("env")} disabled={user.role === "viewer"}>
-              Export .env
+              .env Aktar
             </button>
             <button type="button" onClick={() => void runExport("json")} disabled={user.role === "viewer"}>
-              Export JSON
+              JSON Aktar
             </button>
           </div>
         </div>
 
         {showCreateForm && (
           <div className="detail-box form-box">
-            <strong>Create Secret</strong>
+            <strong>Yeni Anahtar Olustur</strong>
             <div className="form-grid">
-              <input placeholder="Name" value={createForm.name} onChange={(event) => setCreateForm((prev) => ({ ...prev, name: event.target.value }))} />
+              <input placeholder="Ad" value={createForm.name} onChange={(event) => setCreateForm((prev) => ({ ...prev, name: event.target.value }))} />
               <input
-                placeholder="Provider"
+                placeholder="Saglayici"
                 value={createForm.provider}
                 onChange={(event) => setCreateForm((prev) => ({ ...prev, provider: event.target.value }))}
               />
@@ -431,22 +424,22 @@ export function ProjectsPage() {
                 ))}
               </select>
               <input
-                placeholder="KEY_NAME"
+                placeholder="ANAHTAR_ADI"
                 value={createForm.keyName}
                 onChange={(event) => setCreateForm((prev) => ({ ...prev, keyName: event.target.value }))}
               />
               <input
-                placeholder="Secret Value"
+                placeholder="Gizli Deger"
                 value={createForm.value}
                 onChange={(event) => setCreateForm((prev) => ({ ...prev, value: event.target.value }))}
               />
               <input
-                placeholder="tag1, tag2"
+                placeholder="etiket1, etiket2"
                 value={createForm.tags}
                 onChange={(event) => setCreateForm((prev) => ({ ...prev, tags: event.target.value }))}
               />
               <textarea
-                placeholder="Notes"
+                placeholder="Notlar"
                 rows={3}
                 value={createForm.notes}
                 onChange={(event) => setCreateForm((prev) => ({ ...prev, notes: event.target.value }))}
@@ -454,10 +447,10 @@ export function ProjectsPage() {
             </div>
             <div className="action-row">
               <button type="button" onClick={() => void submitCreate()}>
-                Create
+                Olustur
               </button>
               <button type="button" onClick={() => setShowCreateForm(false)}>
-                Cancel
+                Iptal
               </button>
             </div>
           </div>
@@ -465,7 +458,7 @@ export function ProjectsPage() {
 
         <div className="filter-row">
           <select value={providerFilter} onChange={(event) => setProviderFilter(event.target.value)}>
-            <option value="all">All providers</option>
+            <option value="all">Tum saglayicilar</option>
             {providers.map((provider) => (
               <option key={provider} value={provider}>
                 {provider}
@@ -473,7 +466,7 @@ export function ProjectsPage() {
             ))}
           </select>
           <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}>
-            <option value="all">All tags</option>
+            <option value="all">Tum etiketler</option>
             {tags.map((tag) => (
               <option key={tag} value={tag}>
                 {tag}
@@ -481,7 +474,7 @@ export function ProjectsPage() {
             ))}
           </select>
           <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as SecretType | "all")}>
-            <option value="all">All types</option>
+            <option value="all">Tum tipler</option>
             {typeOptions.map((type) => (
               <option key={type} value={type}>
                 {type.toUpperCase()}
@@ -491,16 +484,16 @@ export function ProjectsPage() {
         </div>
 
         {errorMessage && <p className="inline-error">{errorMessage}</p>}
-        {loading && <p className="inline-muted">Loading secrets...</p>}
+        {loading && <p className="inline-muted">Anahtarlar yukleniyor...</p>}
 
         <div className="table-head">
-          <span>Name</span>
-          <span>Provider</span>
-          <span>Type</span>
-          <span>Environment</span>
-          <span>Masked Value</span>
-          <span>Updated</span>
-          <span>Copy</span>
+          <span>Ad</span>
+          <span>Saglayici</span>
+          <span>Tip</span>
+          <span>Ortam</span>
+          <span>Maskeli Deger</span>
+          <span>Guncelleme</span>
+          <span>Kopyala</span>
         </div>
 
         {visibleSecrets.map((secret) => (
@@ -532,7 +525,7 @@ export function ProjectsPage() {
                 void copySecret(secret, "value");
               }}
             >
-              Copy
+              Kopyala
             </button>
           </div>
         ))}
@@ -547,7 +540,7 @@ export function ProjectsPage() {
             </p>
 
             <div className="detail-box">
-              <strong>Value</strong>
+              <strong>Deger</strong>
               <div className="reveal-row">
                 <code>{revealedValue ?? "••••••••••••"}</code>
                 <button
@@ -558,16 +551,16 @@ export function ProjectsPage() {
                   onTouchStart={() => void startReveal()}
                   onTouchEnd={stopReveal}
                 >
-                  {isRevealing ? "Loading..." : "Hold to Reveal"}
+                  {isRevealing ? "Yukleniyor..." : "Basili Tut ve Gor"}
                 </button>
               </div>
             </div>
 
             <div className="detail-box">
-              <strong>Copy As</strong>
+              <strong>Kopyalama Formati</strong>
               <div className="copy-grid">
                 <button type="button" onClick={() => void copySecret(selectedSecret, "value")}>
-                  Value
+                  Deger
                 </button>
                 <button type="button" onClick={() => void copySecret(selectedSecret, "env")}>
                   KEY=value
@@ -602,16 +595,16 @@ export function ProjectsPage() {
 
             <div className="detail-box">
               <div className="detail-inline-head">
-                <strong>Details</strong>
+                <strong>Detaylar</strong>
                 {user.role !== "viewer" && (
                   <button type="button" onClick={() => setIsEditing((prev) => !prev)}>
-                    {isEditing ? "Close Edit" : "Edit"}
+                    {isEditing ? "Duzenlemeyi Kapat" : "Duzenle"}
                   </button>
                 )}
               </div>
-              <strong>Tags</strong>
+              <strong>Etiketler</strong>
               <p>{selectedSecret.tags.join(", ") || "-"}</p>
-              <strong>Notes</strong>
+              <strong>Notlar</strong>
               <p>{selectedSecret.notes || "-"}</p>
 
               {isEditing && user.role !== "viewer" && (
@@ -619,12 +612,12 @@ export function ProjectsPage() {
                   <input
                     value={editForm.name}
                     onChange={(event) => setEditForm((prev) => ({ ...prev, name: event.target.value }))}
-                    placeholder="Name"
+                    placeholder="Ad"
                   />
                   <input
                     value={editForm.provider}
                     onChange={(event) => setEditForm((prev) => ({ ...prev, provider: event.target.value }))}
-                    placeholder="Provider"
+                    placeholder="Saglayici"
                   />
                   <select
                     value={editForm.type}
@@ -639,31 +632,31 @@ export function ProjectsPage() {
                   <input
                     value={editForm.keyName}
                     onChange={(event) => setEditForm((prev) => ({ ...prev, keyName: event.target.value }))}
-                    placeholder="KEY_NAME"
+                    placeholder="ANAHTAR_ADI"
                   />
                   <input
                     value={editForm.value}
                     onChange={(event) => setEditForm((prev) => ({ ...prev, value: event.target.value }))}
-                    placeholder="New value (optional)"
+                    placeholder="Yeni deger (istege bagli)"
                   />
                   <input
                     value={editForm.tags}
                     onChange={(event) => setEditForm((prev) => ({ ...prev, tags: event.target.value }))}
-                    placeholder="tag1, tag2"
+                    placeholder="etiket1, etiket2"
                   />
                   <textarea
                     rows={3}
                     value={editForm.notes}
                     onChange={(event) => setEditForm((prev) => ({ ...prev, notes: event.target.value }))}
-                    placeholder="Notes"
+                    placeholder="Notlar"
                   />
                   <div className="action-row">
                     <button type="button" onClick={() => void submitEdit()}>
-                      Save
+                      Kaydet
                     </button>
                     {user.role === "admin" && (
                       <button type="button" onClick={() => void removeSecret()}>
-                        Delete
+                        Sil
                       </button>
                     )}
                   </div>
@@ -672,7 +665,7 @@ export function ProjectsPage() {
             </div>
           </>
         ) : (
-          <div className="page-panel">No secrets in this environment.</div>
+          <div className="page-panel">Bu ortamda anahtar bulunmuyor.</div>
         )}
       </aside>
     </div>

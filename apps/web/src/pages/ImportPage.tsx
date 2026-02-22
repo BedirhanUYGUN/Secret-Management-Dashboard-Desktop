@@ -31,7 +31,7 @@ export function ImportPage() {
       return;
     }
 
-    void fetchProjects(user.role)
+    void fetchProjects()
       .then((rows) => {
         setProjects(rows);
         setProjectId((current) => current || rows[0]?.id || "");
@@ -48,11 +48,11 @@ export function ImportPage() {
       setLoadingPreview(true);
       setErrorMessage("");
       setSummary(null);
-      const response = await previewImport(user.role, content);
+      const response = await previewImport(content);
       setPreview(response);
     } catch (error) {
       if (error instanceof Error) {
-        setErrorMessage(error.message || "Preview failed.");
+        setErrorMessage(error.message || "Onizleme basarisiz.");
       }
     } finally {
       setLoadingPreview(false);
@@ -61,7 +61,7 @@ export function ImportPage() {
 
   const runCommit = async () => {
     if (!projectId) {
-      setErrorMessage("Project secimi zorunlu.");
+      setErrorMessage("Proje secimi zorunludur.");
       return;
     }
 
@@ -69,7 +69,6 @@ export function ImportPage() {
       setLoadingCommit(true);
       setErrorMessage("");
       const result = await commitImport({
-        role: user.role,
         projectId,
         environment,
         content,
@@ -82,10 +81,10 @@ export function ImportPage() {
           .filter((item) => item.length > 0),
       });
       setSummary(result);
-      showToast("Import islemi tamamlandi", "success");
+      showToast("Iceri aktarim islemi tamamlandi", "success");
     } catch (error) {
       if (error instanceof Error) {
-        setErrorMessage(error.message || "Import commit failed.");
+        setErrorMessage(error.message || "Iceri aktarim basarisiz.");
       }
     } finally {
       setLoadingCommit(false);
@@ -94,12 +93,12 @@ export function ImportPage() {
 
   return (
     <section className="page-panel">
-      <h2>TXT Import Wizard</h2>
+      <h2>TXT Iceri Aktarim Sihirbazi</h2>
       <ol>
-        <li>Upload or paste TXT content.</li>
-        <li>Preview parsed project headings and KEY=value lines.</li>
-        <li>Map to project/environment and conflict strategy.</li>
-        <li>Commit import and review summary.</li>
+        <li>TXT icerigini yukleyin veya yapistirin.</li>
+        <li>Ayristirilan proje basliklari ve KEY=value satirlarini onizleyin.</li>
+        <li>Proje/ortam ve catisma stratejisini secin.</li>
+        <li>Iceri aktarimi onayla ve ozeti inceleyin.</li>
       </ol>
 
       <div className="filter-row filter-row-wrap">
@@ -131,23 +130,23 @@ export function ImportPage() {
           value={conflictStrategy}
           onChange={(event) => setConflictStrategy(event.target.value as "skip" | "overwrite" | "new_version")}
         >
-          <option value="skip">Conflict: Skip</option>
-          <option value="overwrite">Conflict: Overwrite</option>
-          <option value="new_version">Conflict: New Version</option>
+          <option value="skip">Catisma: Atla</option>
+          <option value="overwrite">Catisma: Uzerine Yaz</option>
+          <option value="new_version">Catisma: Yeni Surum</option>
         </select>
 
-        <input value={provider} onChange={(event) => setProvider(event.target.value)} placeholder="Provider" />
-        <input value={tags} onChange={(event) => setTags(event.target.value)} placeholder="tag1, tag2" />
+        <input value={provider} onChange={(event) => setProvider(event.target.value)} placeholder="Saglayici" />
+        <input value={tags} onChange={(event) => setTags(event.target.value)} placeholder="etiket1, etiket2" />
       </div>
 
       <textarea className="import-textarea" value={content} onChange={(event) => setContent(event.target.value)} rows={10} />
 
       <div className="action-row">
         <button type="button" onClick={() => void loadPreview()} disabled={loadingPreview}>
-          {loadingPreview ? "Loading..." : "Preview Import"}
+          {loadingPreview ? "Yukleniyor..." : "Onizleme"}
         </button>
         <button type="button" onClick={() => void runCommit()} disabled={loadingCommit || !preview}>
-          {loadingCommit ? "Committing..." : "Commit Import"}
+          {loadingCommit ? "Aktariliyor..." : "Iceri Aktar"}
         </button>
       </div>
 
@@ -157,13 +156,13 @@ export function ImportPage() {
         <div className="import-dropzone">
           <div>
             <p>
-              Heading: <strong>{preview.heading ?? "N/A"}</strong>
+              Baslik: <strong>{preview.heading ?? "Yok"}</strong>
             </p>
             <p>
-              Total pairs: <strong>{preview.totalPairs}</strong>
+              Toplam cift: <strong>{preview.totalPairs}</strong>
             </p>
             <p>
-              Skipped lines: <strong>{preview.skipped}</strong>
+              Atlanan satirlar: <strong>{preview.skipped}</strong>
             </p>
             <ul>
               {preview.preview.map((item) => (
@@ -182,16 +181,16 @@ export function ImportPage() {
         <div className="import-dropzone">
           <div>
             <p>
-              Inserted: <strong>{summary.inserted}</strong>
+              Eklenen: <strong>{summary.inserted}</strong>
             </p>
             <p>
-              Updated: <strong>{summary.updated}</strong>
+              Guncellenen: <strong>{summary.updated}</strong>
             </p>
             <p>
-              Skipped: <strong>{summary.skipped}</strong>
+              Atlanan: <strong>{summary.skipped}</strong>
             </p>
             <p>
-              Total processed: <strong>{summary.total}</strong>
+              Toplam islenen: <strong>{summary.total}</strong>
             </p>
           </div>
         </div>

@@ -39,11 +39,22 @@ class Settings(BaseSettings):
             return [normalize(item) for item in value.split(",") if normalize(item)]
         return value
 
-    @field_validator("DATABASE_URL", "JWT_SECRET_KEY")
+    @field_validator("DATABASE_URL")
     @classmethod
     def required_values(cls, value: str) -> str:
         if not value or not value.strip():
             raise ValueError("Required configuration is missing")
+        return value
+
+    @field_validator("JWT_SECRET_KEY")
+    @classmethod
+    def validate_jwt_secret(cls, value: str) -> str:
+        if not value or not value.strip():
+            raise ValueError("JWT_SECRET_KEY is required")
+        if len(value.strip()) < 32:
+            raise ValueError(
+                "JWT_SECRET_KEY must be at least 32 characters for security"
+            )
         return value
 
 

@@ -1,5 +1,4 @@
 import base64
-from hashlib import sha256
 from os import urandom
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -9,16 +8,20 @@ from app.core.config import get_settings
 
 def _get_key() -> bytes:
     settings = get_settings()
-    if settings.SECRET_ENCRYPTION_KEY:
-        try:
-            key = base64.urlsafe_b64decode(
-                settings.SECRET_ENCRYPTION_KEY.encode("utf-8")
-            )
-            if len(key) == 32:
-                return key
-        except Exception:  # noqa: BLE001
-            pass
-    return sha256((settings.JWT_SECRET_KEY + "::secret").encode("utf-8")).digest()
+    if not settings.SECRET_ENCRYPTION_KEY:
+        raise ValueError(
+            "SECRET_ENCRYPTION_KEY is required. "
+            'Generate one with: python -c "import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"'
+        )
+    try:
+        key = base64.urlsafe_b64decode(settings.SECRET_ENCRYPTION_KEY.encode("utf-8"))
+    except Exception as exc:
+        raise ValueError("SECRET_ENCRYPTION_KEY is not valid base64") from exc
+    if len(key) != 32:
+        raise ValueError(
+            "SECRET_ENCRYPTION_KEY must decode to exactly 32 bytes (AES-256)"
+        )
+    return key
 
 
 def encrypt_secret_value(value: str) -> bytes:

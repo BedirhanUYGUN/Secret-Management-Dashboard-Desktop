@@ -1,47 +1,66 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { fetchMe, loginByRole, logoutSession } from "../api/client";
-import type { Role, User } from "../types";
+import { clearTokens, fetchMe, loginWithCredentials, logoutSession } from "../api/client";
+import type { User } from "../types";
 
 type AuthContextValue = {
   isAuthenticated: boolean;
   user: User | null;
   loading: boolean;
-  loginAsRole: (role: Role) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const ACCESS_TOKEN_KEY = "api-key-organizer-access-token";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(true);
+
+  // Sayfa yenilendiginde mevcut token ile oturum kontrolu
+  useEffect(() => {
+    const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+    if (!token) {
+      setInitializing(false);
+      return;
+    }
+
+    fetchMe()
+      .then(setUser)
+      .catch(() => {
+        clearTokens();
+      })
+      .finally(() => setInitializing(false));
+  }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       isAuthenticated: user !== null,
       user,
-      loading,
-      loginAsRole: async (role: Role) => {
+      loading: loading || initializing,
+      login: async (email: string, password: string) => {
         setLoading(true);
         try {
-          await loginByRole(role);
-          const profile = await fetchMe(role);
+          await loginWithCredentials(email, password);
+          const profile = await fetchMe();
           setUser(profile);
         } finally {
           setLoading(false);
         }
       },
       logout: () => {
-        const role = user?.role;
-        if (role) {
-          void logoutSession(role);
-        }
+        void logoutSession();
         setUser(null);
       },
     }),
-    [loading, user],
+    [loading, initializing, user],
   );
+
+  if (initializing) {
+    return null;
+  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

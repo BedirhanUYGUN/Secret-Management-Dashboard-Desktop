@@ -8,7 +8,6 @@ const ACCESS_TOKEN_KEY = "api-key-organizer-access-token";
 const REFRESH_TOKEN_KEY = "api-key-organizer-refresh-token";
 
 type RequestOptions = {
-  role: Role;
   method?: "GET" | "POST" | "PATCH" | "DELETE";
   query?: Record<string, string | undefined>;
   body?: unknown;
@@ -59,12 +58,6 @@ type AuthTokensResponse = {
   expiresAt: string;
 };
 
-const roleCredentials: Record<Role, { email: string; password: string }> = {
-  admin: { email: "admin@company.local", password: "admin123" },
-  member: { email: "member@company.local", password: "member123" },
-  viewer: { email: "viewer@company.local", password: "viewer123" },
-};
-
 function getAccessToken() {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
 }
@@ -96,14 +89,14 @@ function buildUrl(path: string, query?: Record<string, string | undefined>) {
   return url.toString();
 }
 
-async function request<T>(path: string, options: RequestOptions): Promise<T> {
+async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const accessToken = getAccessToken();
 
   const response = await fetch(buildUrl(path, options.query), {
     method: options.method ?? "GET",
     headers: {
       "Content-Type": "application/json",
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : { "x-user-role": options.role }),
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
@@ -124,34 +117,30 @@ async function request<T>(path: string, options: RequestOptions): Promise<T> {
   return (await response.json()) as T;
 }
 
-export async function loginByRole(role: Role) {
-  const credentials = roleCredentials[role];
+export async function loginWithCredentials(email: string, password: string) {
   const response = await request<AuthTokensResponse>("/auth/login", {
-    role,
     method: "POST",
-    body: credentials,
+    body: { email, password },
   });
   setTokens(response);
 }
 
-export async function refreshSession(role: Role) {
+export async function refreshSession() {
   const refreshToken = getRefreshToken();
   if (!refreshToken) {
     throw new Error("No refresh token");
   }
   const response = await request<AuthTokensResponse>("/auth/refresh", {
-    role,
     method: "POST",
     body: { refreshToken },
   });
   setTokens(response);
 }
 
-export async function logoutSession(role: Role) {
+export async function logoutSession() {
   const refreshToken = getRefreshToken();
   if (refreshToken) {
     await request<{ message: string }>("/auth/logout", {
-      role,
       method: "POST",
       body: { refreshToken },
     });
@@ -159,8 +148,8 @@ export async function logoutSession(role: Role) {
   clearTokens();
 }
 
-export async function fetchMe(role: Role): Promise<User> {
-  const response = await request<MeResponse>("/me", { role });
+export async function fetchMe(): Promise<User> {
+  const response = await request<MeResponse>("/me");
   return {
     id: response.id,
     name: response.name,
@@ -169,12 +158,11 @@ export async function fetchMe(role: Role): Promise<User> {
   };
 }
 
-export function fetchProjects(role: Role) {
-  return request<ProjectSummary[]>("/projects", { role });
+export function fetchProjects() {
+  return request<ProjectSummary[]>("/projects");
 }
 
 export function fetchProjectSecrets(params: {
-  role: Role;
   projectId: string;
   env?: Environment;
   provider?: string;
@@ -182,7 +170,6 @@ export function fetchProjectSecrets(params: {
   type?: SecretType;
 }) {
   return request<Secret[]>(`/projects/${params.projectId}/secrets`, {
-    role: params.role,
     query: {
       env: params.env,
       provider: params.provider,
@@ -192,41 +179,34 @@ export function fetchProjectSecrets(params: {
   });
 }
 
-export function createProjectSecret(params: { role: Role; projectId: string; payload: SecretMutationPayload }) {
+export function createProjectSecret(params: { projectId: string; payload: SecretMutationPayload }) {
   return request<Secret>(`/projects/${params.projectId}/secrets`, {
-    role: params.role,
     method: "POST",
     body: params.payload,
   });
 }
 
 export function updateProjectSecret(params: {
-  role: Role;
   secretId: string;
   payload: Partial<Omit<SecretMutationPayload, "environment">>;
 }) {
   return request<Secret>(`/secrets/${params.secretId}`, {
-    role: params.role,
     method: "PATCH",
     body: params.payload,
   });
 }
 
-export function deleteProjectSecret(params: { role: Role; secretId: string }) {
+export function deleteProjectSecret(params: { secretId: string }) {
   return request<void>(`/secrets/${params.secretId}`, {
-    role: params.role,
     method: "DELETE",
   });
 }
 
-export function revealSecretValue(params: { role: Role; secretId: string }) {
-  return request<{ secretId: string; keyName: string; value: string }>(`/secrets/${params.secretId}/reveal`, {
-    role: params.role,
-  });
+export function revealSecretValue(params: { secretId: string }) {
+  return request<{ secretId: string; keyName: string; value: string }>(`/secrets/${params.secretId}/reveal`);
 }
 
 export function searchSecrets(params: {
-  role: Role;
   query: string;
   provider?: string;
   tag?: string;
@@ -234,7 +214,6 @@ export function searchSecrets(params: {
   type?: SecretType;
 }) {
   return request<Secret[]>("/search", {
-    role: params.role,
     query: {
       q: params.query,
       provider: params.provider,
@@ -245,9 +224,8 @@ export function searchSecrets(params: {
   });
 }
 
-export function trackCopyEvent(params: { role: Role; projectId: string; secretId: string }) {
+export function trackCopyEvent(params: { projectId: string; secretId: string }) {
   return request<{ ok: boolean }>("/audit/copy", {
-    role: params.role,
     method: "POST",
     body: {
       projectId: params.projectId,
@@ -257,7 +235,6 @@ export function trackCopyEvent(params: { role: Role; projectId: string; secretId
 }
 
 export function fetchAudit(params: {
-  role: Role;
   action?: string;
   projectId?: string;
   userEmail?: string;
@@ -265,7 +242,6 @@ export function fetchAudit(params: {
   to?: string;
 }) {
   return request<AuditEvent[]>("/audit", {
-    role: params.role,
     query: {
       action: params.action,
       projectId: params.projectId,
@@ -276,16 +252,14 @@ export function fetchAudit(params: {
   });
 }
 
-export function previewImport(role: Role, content: string) {
+export function previewImport(content: string) {
   return request<ImportPreviewResponse>("/imports/preview", {
-    role,
     method: "POST",
     body: { content },
   });
 }
 
 export function commitImport(params: {
-  role: Role;
   projectId: string;
   environment: Environment;
   content: string;
@@ -295,7 +269,6 @@ export function commitImport(params: {
   tags: string[];
 }) {
   return request<ImportCommitResponse>("/imports/commit", {
-    role: params.role,
     method: "POST",
     body: {
       projectId: params.projectId,
@@ -309,9 +282,8 @@ export function commitImport(params: {
   });
 }
 
-export function exportProject(params: { role: Role; projectId: string; env: Environment; format: "env" | "json" }) {
+export function exportProject(params: { projectId: string; env: Environment; format: "env" | "json" }) {
   return request<string>(`/exports/${params.projectId}`, {
-    role: params.role,
     responseType: "text",
     query: {
       env: params.env,

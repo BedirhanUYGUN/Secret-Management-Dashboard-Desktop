@@ -5,10 +5,10 @@ export function SettingsPage() {
 
   return (
     <section className="page-panel">
-      <h2>Security Preferences</h2>
+      <h2>Guvenlik Tercihleri</h2>
       <div className="settings-grid">
         <label>
-          Clipboard clear timer (seconds)
+          Pano temizleme suresi (saniye)
           <input
             type="number"
             value={clipboardSeconds}
@@ -18,10 +18,10 @@ export function SettingsPage() {
           />
         </label>
         <label>
-          Mask values by default
+          Degerleri varsayilan olarak maskele
           <select defaultValue="yes">
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
+            <option value="yes">Evet</option>
+            <option value="no">Hayir</option>
           </select>
         </label>
       </div>
@@ -32,7 +32,7 @@ export function SettingsPage() {
             showToast("Ayarlar kaydedildi", "success");
           }}
         >
-          Save Preferences
+          Tercihleri Kaydet
         </button>
       </div>
     </section>

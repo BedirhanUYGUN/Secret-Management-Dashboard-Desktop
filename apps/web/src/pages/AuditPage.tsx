@@ -5,6 +5,14 @@ import type { AuditEvent } from "../types";
 
 const actionOptions = ["all", "secret_created", "secret_updated", "secret_copied", "secret_exported"] as const;
 
+const actionLabels: Record<string, string> = {
+  all: "Tum islemler",
+  secret_created: "Olusturma",
+  secret_updated: "Guncelleme",
+  secret_copied: "Kopyalama",
+  secret_exported: "Disari Aktarim",
+};
+
 export function AuditPage() {
   const { user } = useAuth();
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
@@ -25,20 +33,19 @@ export function AuditPage() {
     try {
       const [events, projectRows] = await Promise.all([
         fetchAudit({
-          role: user.role,
           action: actionFilter === "all" ? undefined : actionFilter,
           projectId: projectFilter === "all" ? undefined : projectFilter,
           userEmail: userEmailFilter || undefined,
           from: fromDate || undefined,
           to: toDate || undefined,
         }),
-        fetchProjects(user.role),
+        fetchProjects(),
       ]);
       setAuditEvents(events);
       setProjects(projectRows);
     } catch (error) {
       if (error instanceof Error) {
-        setErrorMessage(error.message || "Audit data could not be loaded.");
+        setErrorMessage(error.message || "Denetim verileri yuklenemedi.");
       }
     }
   };
@@ -53,18 +60,18 @@ export function AuditPage() {
 
   return (
     <section className="page-panel">
-      <h2>Audit Log</h2>
+      <h2>Denetim Kaydi</h2>
       <div className="filter-row filter-row-wrap">
         <select value={actionFilter} onChange={(event) => setActionFilter(event.target.value as (typeof actionOptions)[number])}>
           {actionOptions.map((action) => (
             <option key={action} value={action}>
-              {action === "all" ? "All actions" : action}
+              {actionLabels[action] ?? action}
             </option>
           ))}
         </select>
 
         <select value={projectFilter} onChange={(event) => setProjectFilter(event.target.value)}>
-          <option value="all">All projects</option>
+          <option value="all">Tum projeler</option>
           {projects.map((project) => (
             <option key={project.id} value={project.id}>
               {project.name}
@@ -73,7 +80,7 @@ export function AuditPage() {
         </select>
 
         <input
-          placeholder="User email"
+          placeholder="Kullanici e-postasi"
           value={userEmailFilter}
           onChange={(event) => setUserEmailFilter(event.target.value)}
         />
@@ -86,7 +93,7 @@ export function AuditPage() {
       <div className="audit-list">
         {auditEvents.map((event) => (
           <div key={event.id} className="audit-item">
-            <strong>{event.action}</strong>
+            <strong>{actionLabels[event.action] ?? event.action}</strong>
             <span>{event.actor}</span>
             <span>{projects.find((project) => project.id === event.projectId)?.name ?? event.projectId}</span>
             <span>{event.secretName}</span>

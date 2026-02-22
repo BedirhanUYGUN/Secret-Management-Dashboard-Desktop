@@ -22,7 +22,7 @@ export function SearchPage() {
     if (!user) {
       return;
     }
-    void fetchProjects(user.role)
+    void fetchProjects()
       .then(setProjects)
       .catch((error: Error) => setErrorMessage(error.message));
   }, [user]);
@@ -34,7 +34,6 @@ export function SearchPage() {
     setErrorMessage("");
 
     void searchSecrets({
-      role: user.role,
       query,
       provider: providerFilter === "all" ? undefined : providerFilter,
       tag: tagFilter === "all" ? undefined : tagFilter,
@@ -44,7 +43,7 @@ export function SearchPage() {
       .then(setResults)
       .catch((error: Error) => {
         setResults([]);
-        setErrorMessage(error.message || "Search failed.");
+        setErrorMessage(error.message || "Arama basarisiz.");
       });
   }, [environmentFilter, providerFilter, query, tagFilter, typeFilter, user]);
 
@@ -57,11 +56,11 @@ export function SearchPage() {
 
   return (
     <section className="page-panel">
-      <h2>Global Search</h2>
+      <h2>Genel Arama</h2>
       <div className="search-controls search-controls-wide">
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by name, provider, key" />
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ad, saglayici veya anahtar ile ara..." />
         <select value={providerFilter} onChange={(event) => setProviderFilter(event.target.value)}>
-          <option value="all">All providers</option>
+          <option value="all">Tum saglayicilar</option>
           {providers.map((provider) => (
             <option key={provider} value={provider}>
               {provider}
@@ -69,7 +68,7 @@ export function SearchPage() {
           ))}
         </select>
         <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}>
-          <option value="all">All tags</option>
+          <option value="all">Tum etiketler</option>
           {tags.map((tag) => (
             <option key={tag} value={tag}>
               {tag}
@@ -79,14 +78,14 @@ export function SearchPage() {
         <select value={environmentFilter} onChange={(event) => setEnvironmentFilter(event.target.value as Environment | "all")}>
           {environments.map((env) => (
             <option key={env} value={env}>
-              {env === "all" ? "All environments" : env.toUpperCase()}
+              {env === "all" ? "Tum ortamlar" : env.toUpperCase()}
             </option>
           ))}
         </select>
         <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as SecretType | "all")}>
           {secretTypes.map((type) => (
             <option key={type} value={type}>
-              {type === "all" ? "All types" : type.toUpperCase()}
+              {type === "all" ? "Tum tipler" : type.toUpperCase()}
             </option>
           ))}
         </select>
@@ -104,7 +103,7 @@ export function SearchPage() {
             <code>{item.valueMasked}</code>
           </Link>
         ))}
-        {results.length === 0 && <p>No matches for current filters.</p>}
+        {results.length === 0 && <p>Mevcut filtrelerle eslesme bulunamadi.</p>}
       </div>
     </section>
   );
