@@ -8,11 +8,11 @@ import {
   removeProjectMember,
   updateEnvironmentAccess,
   updateProject,
-} from "../api/client";
-import { useAuth } from "../auth/AuthContext";
-import type { Environment, ManagedUser, ProjectDetail, Role } from "../types";
-import { useAppUi } from "../ui/AppUiContext";
-import { Spinner } from "../ui/Spinner";
+} from "@core/api/client";
+import { useAuth } from "@core/auth/AuthContext";
+import type { Environment, ManagedUser, ProjectDetail, Role } from "@core/types";
+import { useAppUi } from "@core/ui/AppUiContext";
+import { Spinner } from "@core/ui/Spinner";
 
 const roleOptions: Role[] = ["admin", "member", "viewer"];
 const roleLabels: Record<Role, string> = { admin: "Yonetici", member: "Uye", viewer: "Izleyici" };

@@ -2,13 +2,13 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
-import { LoginPage } from "../pages/LoginPage";
+import { LoginPage } from "@features/auth/LoginPage";
 
 // --- Mock'lar ---
 const mockLogin = vi.fn();
 const mockNavigate = vi.fn();
 
-vi.mock("../auth/AuthContext", () => ({
+vi.mock("@core/auth/AuthContext", () => ({
   useAuth: () => ({ login: mockLogin, loading: false }),
 }));
 

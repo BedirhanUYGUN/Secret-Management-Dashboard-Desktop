@@ -1,18 +1,18 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { AuthProvider } from "./auth/AuthContext";
-import { RequireAuth, RequireRole } from "./auth/RouteGuards";
-import { MainLayout } from "./layout/MainLayout";
-import { AuditPage } from "./pages/AuditPage";
-import { ImportPage } from "./pages/ImportPage";
-import { LoginPage } from "./pages/LoginPage";
-import { NotFoundPage } from "./pages/NotFoundPage";
-import { ProjectManagePage } from "./pages/ProjectManagePage";
-import { ProjectsPage } from "./pages/ProjectsPage";
-import { SearchPage } from "./pages/SearchPage";
-import { SettingsPage } from "./pages/SettingsPage";
-import { UsersPage } from "./pages/UsersPage";
-import { AppUiProvider } from "./ui/AppUiContext";
-import { ToastViewport } from "./ui/ToastViewport";
+import { AuthProvider } from "@core/auth/AuthContext";
+import { RequireAuth, RequireRole } from "@core/auth/RouteGuards";
+import { MainLayout } from "@core/layout/MainLayout";
+import { AppUiProvider } from "@core/ui/AppUiContext";
+import { ToastViewport } from "@core/ui/ToastViewport";
+import { LoginPage } from "@features/auth/LoginPage";
+import { AuditPage } from "@features/audit/AuditPage";
+import { ImportPage } from "@features/import/ImportPage";
+import { NotFoundPage } from "@features/not-found/NotFoundPage";
+import { ProjectManagePage } from "@features/project-manage/ProjectManagePage";
+import { ProjectsPage } from "@features/projects/ProjectsPage";
+import { SearchPage } from "@features/search/SearchPage";
+import { SettingsPage } from "@features/settings/SettingsPage";
+import { UsersPage } from "@features/users/UsersPage";
 
 function App() {
   return (

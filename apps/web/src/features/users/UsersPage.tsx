@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { createUser, fetchUsers, updateUser } from "../api/client";
-import { useAuth } from "../auth/AuthContext";
-import type { ManagedUser, Role } from "../types";
-import { useAppUi } from "../ui/AppUiContext";
-import { Spinner } from "../ui/Spinner";
+import { createUser, fetchUsers, updateUser } from "@core/api/client";
+import { useAuth } from "@core/auth/AuthContext";
+import type { ManagedUser, Role } from "@core/types";
+import { useAppUi } from "@core/ui/AppUiContext";
+import { Spinner } from "@core/ui/Spinner";
 
 const roleOptions: Role[] = ["admin", "member", "viewer"];
 

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { commitImport, fetchProjects, previewImport, type ImportCommitResponse, type ImportPreviewResponse, type ProjectSummary } from "../api/client";
-import { useAuth } from "../auth/AuthContext";
-import type { Environment, SecretType } from "../types";
-import { useAppUi } from "../ui/AppUiContext";
-import { Spinner } from "../ui/Spinner";
+import { commitImport, fetchProjects, previewImport, type ImportCommitResponse, type ImportPreviewResponse, type ProjectSummary } from "@core/api/client";
+import { useAuth } from "@core/auth/AuthContext";
+import type { Environment, SecretType } from "@core/types";
+import { useAppUi } from "@core/ui/AppUiContext";
+import { Spinner } from "@core/ui/Spinner";
 
 const environmentOptions: Environment[] = ["local", "dev", "prod"];
 const typeOptions: SecretType[] = ["key", "token", "endpoint"];

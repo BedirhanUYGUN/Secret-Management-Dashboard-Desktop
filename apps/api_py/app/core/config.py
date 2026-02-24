@@ -7,7 +7,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        enable_decoding=False,
     )
 
     APP_ENV: str = "development"
@@ -23,6 +26,12 @@ class Settings(BaseSettings):
 
     SECRET_ENCRYPTION_KEY: str = ""
     CORS_ORIGINS: List[str] = ["http://localhost:5173"]
+
+    SUPABASE_AUTH_ENABLED: bool = False
+    SUPABASE_URL: str = ""
+    SUPABASE_ANON_KEY: str = ""
+    SUPABASE_AUTO_PROVISION_USERS: bool = False
+    SUPABASE_DEFAULT_ROLE: str = "viewer"
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
@@ -56,6 +65,14 @@ class Settings(BaseSettings):
                 "JWT_SECRET_KEY must be at least 32 characters for security"
             )
         return value
+
+    @field_validator("SUPABASE_DEFAULT_ROLE")
+    @classmethod
+    def validate_supabase_default_role(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in {"admin", "member", "viewer"}:
+            raise ValueError("SUPABASE_DEFAULT_ROLE must be admin, member or viewer")
+        return normalized
 
 
 @lru_cache()

@@ -2,9 +2,9 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { ProjectsPage } from "../pages/ProjectsPage";
-import type { Secret } from "../types";
-import type { ProjectSummary } from "../api/client";
+import { ProjectsPage } from "@features/projects/ProjectsPage";
+import type { Secret } from "@core/types";
+import type { ProjectSummary } from "@core/api/client";
 
 // --- Mock data ---
 const mockProjectList: ProjectSummary[] = [
@@ -55,7 +55,7 @@ const mockTrackCopyEvent = vi.fn();
 const mockShowToast = vi.fn();
 const mockCopyWithTimer = vi.fn();
 
-vi.mock("../api/client", () => ({
+vi.mock("@core/api/client", () => ({
   fetchProjects: (...args: unknown[]) => mockFetchProjects(...args),
   fetchProjectSecrets: (...args: unknown[]) => mockFetchProjectSecrets(...args),
   createProjectSecret: (...args: unknown[]) => mockCreateProjectSecret(...args),
@@ -65,21 +65,21 @@ vi.mock("../api/client", () => ({
   trackCopyEvent: (...args: unknown[]) => mockTrackCopyEvent(...args),
 }));
 
-vi.mock("../auth/AuthContext", () => ({
+vi.mock("@core/auth/AuthContext", () => ({
   useAuth: () => ({
     user: { id: "u1", name: "Admin", role: "admin", assignments: [], preferences: {} },
     loading: false,
   }),
 }));
 
-vi.mock("../ui/AppUiContext", () => ({
+vi.mock("@core/ui/AppUiContext", () => ({
   useAppUi: () => ({
     showToast: mockShowToast,
     copyWithTimer: mockCopyWithTimer,
   }),
 }));
 
-vi.mock("../ui/ExportModal", () => ({
+vi.mock("@core/ui/ExportModal", () => ({
   ExportModal: () => null,
 }));
 

@@ -9,12 +9,12 @@ import {
   trackCopyEvent,
   type ProjectSummary,
   updateProjectSecret,
-} from "../api/client";
-import { useAuth } from "../auth/AuthContext";
-import type { Environment, Secret, SecretType } from "../types";
-import { useAppUi } from "../ui/AppUiContext";
-import { ExportModal } from "../ui/ExportModal";
-import { Spinner } from "../ui/Spinner";
+} from "@core/api/client";
+import { useAuth } from "@core/auth/AuthContext";
+import type { Environment, Secret, SecretType } from "@core/types";
+import { useAppUi } from "@core/ui/AppUiContext";
+import { ExportModal } from "@core/ui/ExportModal";
+import { Spinner } from "@core/ui/Spinner";
 
 const envTabs: Environment[] = ["local", "dev", "prod"];
 const typeOptions: SecretType[] = ["key", "token", "endpoint"];

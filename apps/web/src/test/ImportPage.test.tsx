@@ -1,26 +1,26 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ImportPage } from "../pages/ImportPage";
+import { ImportPage } from "@features/import/ImportPage";
 
 const mockFetchProjects = vi.fn();
 const mockPreviewImport = vi.fn();
 const mockCommitImport = vi.fn();
 const mockShowToast = vi.fn();
 
-vi.mock("../api/client", () => ({
+vi.mock("@core/api/client", () => ({
   fetchProjects: (...args: unknown[]) => mockFetchProjects(...args),
   previewImport: (...args: unknown[]) => mockPreviewImport(...args),
   commitImport: (...args: unknown[]) => mockCommitImport(...args),
 }));
 
-vi.mock("../auth/AuthContext", () => ({
+vi.mock("@core/auth/AuthContext", () => ({
   useAuth: () => ({
     user: { id: "u1", name: "Admin", role: "admin", assignments: [], preferences: {} },
   }),
 }));
 
-vi.mock("../ui/AppUiContext", () => ({
+vi.mock("@core/ui/AppUiContext", () => ({
   useAppUi: () => ({ showToast: (...args: unknown[]) => mockShowToast(...args) }),
 }));
 

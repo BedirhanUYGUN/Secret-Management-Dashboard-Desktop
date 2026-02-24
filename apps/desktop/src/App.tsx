@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import WebApp from "../../web/src/App";
+import WebApp from "../../web/src/app/App";
 import "./desktop.css";
 
 function DesktopApp() {

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { fetchAudit, fetchProjects, type ProjectSummary } from "../api/client";
-import { useAuth } from "../auth/AuthContext";
-import type { AuditEvent } from "../types";
-import { Spinner } from "../ui/Spinner";
+import { fetchAudit, fetchProjects, type ProjectSummary } from "@core/api/client";
+import { useAuth } from "@core/auth/AuthContext";
+import type { AuditEvent } from "@core/types";
+import { Spinner } from "@core/ui/Spinner";
 
 const actionOptions = ["all", "secret_created", "secret_updated", "secret_deleted", "secret_copied", "secret_exported"] as const;
 

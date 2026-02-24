@@ -1,6 +1,6 @@
 import { render, screen, waitFor, act } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { AuthProvider, useAuth } from "../auth/AuthContext";
+import { AuthProvider, useAuth } from "@core/auth/AuthContext";
 
 // --- Mock'lar ---
 const mockFetchMe = vi.fn();
@@ -8,7 +8,7 @@ const mockLoginWithCredentials = vi.fn();
 const mockLogoutSession = vi.fn();
 const mockClearTokens = vi.fn();
 
-vi.mock("../api/client", () => ({
+vi.mock("@core/api/client", () => ({
   fetchMe: (...args: unknown[]) => mockFetchMe(...args),
   loginWithCredentials: (...args: unknown[]) => mockLoginWithCredentials(...args),
   logoutSession: (...args: unknown[]) => mockLogoutSession(...args),

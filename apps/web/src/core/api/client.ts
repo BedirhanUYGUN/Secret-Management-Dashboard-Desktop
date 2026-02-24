@@ -12,6 +12,10 @@ const API_BASE_URL = RAW_API_BASE_URL.startsWith("http://") || RAW_API_BASE_URL.
   ? RAW_API_BASE_URL
   : `https://${RAW_API_BASE_URL}`;
 
+const SUPABASE_AUTH_ENABLED = String(import.meta.env.VITE_SUPABASE_AUTH_ENABLED ?? "false").toLowerCase() === "true";
+const SUPABASE_URL = String(import.meta.env.VITE_SUPABASE_URL ?? "").trim();
+const SUPABASE_ANON_KEY = String(import.meta.env.VITE_SUPABASE_ANON_KEY ?? "").trim();
+
 const DESKTOP_ALLOWED_API_ORIGINS = new Set(
   String(import.meta.env.VITE_ALLOWED_API_ORIGINS ?? "http://localhost:4000,https://localhost:4000")
     .split(",")
@@ -71,6 +75,13 @@ type AuthTokensResponse = {
   expiresAt: string;
 };
 
+type SupabaseTokenResponse = {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_at?: number;
+};
+
 function assertDesktopApiUrlAllowed() {
   if (!isTauriRuntime()) {
     return;
@@ -86,6 +97,51 @@ assertDesktopApiUrlAllowed();
 
 function setTokens(payload: AuthTokensResponse) {
   return setStoredTokens({ accessToken: payload.accessToken, refreshToken: payload.refreshToken });
+}
+
+function ensureSupabaseConfig() {
+  if (!SUPABASE_AUTH_ENABLED) {
+    return;
+  }
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error("Supabase auth aktif ama VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY eksik");
+  }
+}
+
+async function supabaseAuthRequest<T>(
+  path: string,
+  options: { method: "GET" | "POST"; body?: unknown; accessToken?: string },
+) {
+  ensureSupabaseConfig();
+  const response = await fetch(`${SUPABASE_URL.replace(/\/$/, "")}/auth/v1${path}`, {
+    method: options.method,
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      "Content-Type": "application/json",
+      ...(options.accessToken ? { Authorization: `Bearer ${options.accessToken}` } : {}),
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || `Supabase auth request failed with status ${response.status}`);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return (await response.json()) as T;
+}
+
+function mapSupabaseTokens(payload: SupabaseTokenResponse): AuthTokensResponse {
+  return {
+    accessToken: payload.access_token,
+    refreshToken: payload.refresh_token,
+    tokenType: payload.token_type,
+    expiresAt: payload.expires_at ? new Date(payload.expires_at * 1000).toISOString() : new Date().toISOString(),
+  };
 }
 
 export function clearTokens() {
@@ -134,6 +190,15 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 }
 
 export async function loginWithCredentials(email: string, password: string) {
+  if (SUPABASE_AUTH_ENABLED) {
+    const response = await supabaseAuthRequest<SupabaseTokenResponse>("/token?grant_type=password", {
+      method: "POST",
+      body: { email, password },
+    });
+    await setTokens(mapSupabaseTokens(response));
+    return;
+  }
+
   const response = await request<AuthTokensResponse>("/auth/login", {
     method: "POST",
     body: { email, password },
@@ -146,6 +211,16 @@ export async function refreshSession() {
   if (!refreshToken) {
     throw new Error("No refresh token");
   }
+
+  if (SUPABASE_AUTH_ENABLED) {
+    const response = await supabaseAuthRequest<SupabaseTokenResponse>("/token?grant_type=refresh_token", {
+      method: "POST",
+      body: { refresh_token: refreshToken },
+    });
+    await setTokens(mapSupabaseTokens(response));
+    return;
+  }
+
   const response = await request<AuthTokensResponse>("/auth/refresh", {
     method: "POST",
     body: { refreshToken },
@@ -155,6 +230,19 @@ export async function refreshSession() {
 
 export async function logoutSession() {
   const refreshToken = await getStoredRefreshToken();
+  const accessToken = await getStoredAccessToken();
+
+  if (SUPABASE_AUTH_ENABLED) {
+    if (accessToken) {
+      await supabaseAuthRequest<void>("/logout", {
+        method: "POST",
+        accessToken,
+      });
+    }
+    await clearTokens();
+    return;
+  }
+
   if (refreshToken) {
     await request<{ message: string }>("/auth/logout", {
       method: "POST",

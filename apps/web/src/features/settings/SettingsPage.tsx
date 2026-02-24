@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { updatePreferences } from "../api/client";
-import { useAuth } from "../auth/AuthContext";
-import { useAppUi } from "../ui/AppUiContext";
+import { updatePreferences } from "@core/api/client";
+import { useAuth } from "@core/auth/AuthContext";
+import { useAppUi } from "@core/ui/AppUiContext";
 
 export function SettingsPage() {
   const { user, refreshUser } = useAuth();

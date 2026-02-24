@@ -2,17 +2,17 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { SearchPage } from "../pages/SearchPage";
+import { SearchPage } from "@features/search/SearchPage";
 
 const mockFetchProjects = vi.fn();
 const mockSearchSecrets = vi.fn();
 
-vi.mock("../api/client", () => ({
+vi.mock("@core/api/client", () => ({
   fetchProjects: (...args: unknown[]) => mockFetchProjects(...args),
   searchSecrets: (...args: unknown[]) => mockSearchSecrets(...args),
 }));
 
-vi.mock("../auth/AuthContext", () => ({
+vi.mock("@core/auth/AuthContext", () => ({
   useAuth: () => ({
     user: { id: "u1", name: "Admin", role: "admin", assignments: [], preferences: {} },
   }),

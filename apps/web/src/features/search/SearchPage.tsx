@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { fetchProjects, searchSecrets, type ProjectSummary } from "../api/client";
-import { useAuth } from "../auth/AuthContext";
-import type { Environment, Secret, SecretType } from "../types";
-import { Spinner } from "../ui/Spinner";
+import { fetchProjects, searchSecrets, type ProjectSummary } from "@core/api/client";
+import { useAuth } from "@core/auth/AuthContext";
+import type { Environment, Secret, SecretType } from "@core/types";
+import { Spinner } from "@core/ui/Spinner";
 
 const environments: Array<Environment | "all"> = ["all", "local", "dev", "prod"];
 const secretTypes: Array<SecretType | "all"> = ["all", "key", "token", "endpoint"];

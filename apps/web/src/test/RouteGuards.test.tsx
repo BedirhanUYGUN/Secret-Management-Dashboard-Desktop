@@ -1,15 +1,15 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
-import { RequireAuth, RequireRole } from "../auth/RouteGuards";
-import type { Role } from "../types";
+import { RequireAuth, RequireRole } from "@core/auth/RouteGuards";
+import type { Role } from "@core/types";
 
 const authState: { isAuthenticated: boolean; role: Role | null } = {
   isAuthenticated: false,
   role: null,
 };
 
-vi.mock("../auth/AuthContext", () => ({
+vi.mock("@core/auth/AuthContext", () => ({
   useAuth: () => ({
     isAuthenticated: authState.isAuthenticated,
     user: authState.role

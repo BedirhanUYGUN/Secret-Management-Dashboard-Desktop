@@ -1,8 +1,8 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { ProjectManagePage } from "../pages/ProjectManagePage";
-import type { ManagedUser, ProjectDetail } from "../types";
+import { ProjectManagePage } from "@features/project-manage/ProjectManagePage";
+import type { ManagedUser, ProjectDetail } from "@core/types";
 
 // --- Mock data ---
 const mockProjects: ProjectDetail[] = [
@@ -32,7 +32,7 @@ const mockRemoveProjectMember = vi.fn();
 const mockUpdateEnvironmentAccess = vi.fn();
 const mockShowToast = vi.fn();
 
-vi.mock("../api/client", () => ({
+vi.mock("@core/api/client", () => ({
   fetchProjectDetails: (...args: unknown[]) => mockFetchProjectDetails(...args),
   fetchUsers: (...args: unknown[]) => mockFetchUsers(...args),
   createProject: (...args: unknown[]) => mockCreateProject(...args),
@@ -43,14 +43,14 @@ vi.mock("../api/client", () => ({
   updateEnvironmentAccess: (...args: unknown[]) => mockUpdateEnvironmentAccess(...args),
 }));
 
-vi.mock("../auth/AuthContext", () => ({
+vi.mock("@core/auth/AuthContext", () => ({
   useAuth: () => ({
     user: { id: "u1", name: "Admin", role: "admin", assignments: [], preferences: {} },
     loading: false,
   }),
 }));
 
-vi.mock("../ui/AppUiContext", () => ({
+vi.mock("@core/ui/AppUiContext", () => ({
   useAppUi: () => ({ showToast: mockShowToast }),
 }));
 

@@ -1,18 +1,18 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { SettingsPage } from "../pages/SettingsPage";
+import { SettingsPage } from "@features/settings/SettingsPage";
 
 const mockUpdatePreferences = vi.fn();
 const mockRefreshUser = vi.fn();
 const mockSetClipboardSeconds = vi.fn();
 const mockShowToast = vi.fn();
 
-vi.mock("../api/client", () => ({
+vi.mock("@core/api/client", () => ({
   updatePreferences: (...args: unknown[]) => mockUpdatePreferences(...args),
 }));
 
-vi.mock("../auth/AuthContext", () => ({
+vi.mock("@core/auth/AuthContext", () => ({
   useAuth: () => ({
     user: {
       id: "u1",
@@ -25,7 +25,7 @@ vi.mock("../auth/AuthContext", () => ({
   }),
 }));
 
-vi.mock("../ui/AppUiContext", () => ({
+vi.mock("@core/ui/AppUiContext", () => ({
   useAppUi: () => ({
     clipboardSeconds: 30,
     setClipboardSeconds: (...args: unknown[]) => mockSetClipboardSeconds(...args),

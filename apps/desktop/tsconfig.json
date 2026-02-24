@@ -13,6 +13,12 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@app/*": ["../web/src/app/*"],
+      "@core/*": ["../web/src/core/*"],
+      "@features/*": ["../web/src/features/*"]
+    },
 
     /* Linting */
     "strict": true,
@@ -20,6 +26,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
+  "include": ["src", "../web/src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

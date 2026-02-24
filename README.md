@@ -41,13 +41,13 @@ Secret-Management-Dashboard-Desktop/
 │   │   └── src-tauri/   # Rust backend (keyring token yonetimi)
 │   └── web/             # React web uygulamasi
 │       └── src/
-│           ├── api/         # API istemcisi (fetch wrapper)
-│           ├── auth/        # Kimlik dogrulama context & route guard
-│           ├── layout/      # Ana layout (sidebar + icerik)
-│           ├── pages/       # Sayfa bileenleri
-│           ├── platform/    # Tauri/Browser ortam soyutlamasi
-│           ├── ui/          # Paylailan UI bilesenleri
+│           ├── app/         # Router/composition giris noktasi
+│           ├── core/        # Ortak katmanlar (api/auth/layout/platform/ui/types)
+│           ├── features/    # Ozellik bazli moduller (projects, users, import, audit...)
 │           └── test/        # Frontend testleri
+├── docs/
+│   ├── planning/        # Plan ve roadmap belgeleri
+│   └── design/          # Tasarim/stitch referanslari
 ├── Dockerfile               # Python API Docker imaji
 └── render.yaml              # Render.com deployment tanimi
 ```
@@ -96,6 +96,13 @@ DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/api_key_organ
 JWT_SECRET_KEY=en-az-32-karakter-uretim-icin-degistir
 SECRET_ENCRYPTION_KEY=   # Asagidaki komutla uret
 CORS_ORIGINS=http://localhost:5173,http://localhost:1420
+
+# Supabase auth (opsiyonel)
+SUPABASE_AUTH_ENABLED=false
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+SUPABASE_AUTO_PROVISION_USERS=false
+SUPABASE_DEFAULT_ROLE=viewer
 ```
 
 Sifreleme anahtari uretmek icin:
@@ -123,6 +130,15 @@ Proje kokunde:
 
 ```bash
 npm run dev:web               # http://localhost:5173
+```
+
+Web `.env` (opsiyonel Supabase auth):
+
+```env
+VITE_API_BASE_URL=http://localhost:4000
+VITE_SUPABASE_AUTH_ENABLED=false
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
 ```
 
 ### 3b. Masaustu Uygulamasini Calistirma (Tauri)

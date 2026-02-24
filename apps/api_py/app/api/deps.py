@@ -9,6 +9,8 @@ from app.core.security import decode_token
 from app.db.repositories.domain_repo import get_assignments
 from app.db.repositories.users_repo import get_user_by_id
 from app.db.session import get_db
+from app.services.supabase_auth import resolve_user_from_supabase_token
+from app.core.config import get_settings
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -21,6 +23,10 @@ def get_db_session() -> Generator[Session, None, None]:
 def get_current_user(
     token: str = Depends(oauth2_scheme), db: Session = Depends(get_db_session)
 ):
+    settings = get_settings()
+    if settings.SUPABASE_AUTH_ENABLED:
+        return resolve_user_from_supabase_token(db, token)
+
     payload = decode_token(token)
     if not payload or payload.get("type") != "access":
         raise HTTPException(

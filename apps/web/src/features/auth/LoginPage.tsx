@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../auth/AuthContext";
+import { useAuth } from "@core/auth/AuthContext";
 import { useState } from "react";
 
 export function LoginPage() {

@@ -1,17 +1,17 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { AuditPage } from "../pages/AuditPage";
+import { AuditPage } from "@features/audit/AuditPage";
 
 const mockFetchAudit = vi.fn();
 const mockFetchProjects = vi.fn();
 
-vi.mock("../api/client", () => ({
+vi.mock("@core/api/client", () => ({
   fetchAudit: (...args: unknown[]) => mockFetchAudit(...args),
   fetchProjects: (...args: unknown[]) => mockFetchProjects(...args),
 }));
 
-vi.mock("../auth/AuthContext", () => ({
+vi.mock("@core/auth/AuthContext", () => ({
   useAuth: () => ({
     user: { id: "u1", name: "Admin", role: "admin", assignments: [], preferences: {} },
   }),

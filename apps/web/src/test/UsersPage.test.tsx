@@ -1,8 +1,8 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { UsersPage } from "../pages/UsersPage";
-import type { ManagedUser } from "../types";
+import { UsersPage } from "@features/users/UsersPage";
+import type { ManagedUser } from "@core/types";
 
 // --- Mock data ---
 const mockUsers: ManagedUser[] = [
@@ -16,20 +16,20 @@ const mockCreateUser = vi.fn();
 const mockUpdateUser = vi.fn();
 const mockShowToast = vi.fn();
 
-vi.mock("../api/client", () => ({
+vi.mock("@core/api/client", () => ({
   fetchUsers: (...args: unknown[]) => mockFetchUsers(...args),
   createUser: (...args: unknown[]) => mockCreateUser(...args),
   updateUser: (...args: unknown[]) => mockUpdateUser(...args),
 }));
 
-vi.mock("../auth/AuthContext", () => ({
+vi.mock("@core/auth/AuthContext", () => ({
   useAuth: () => ({
     user: { id: "u1", name: "Admin", role: "admin", assignments: [], preferences: {} },
     loading: false,
   }),
 }));
 
-vi.mock("../ui/AppUiContext", () => ({
+vi.mock("@core/ui/AppUiContext", () => ({
   useAppUi: () => ({ showToast: mockShowToast }),
 }));
 

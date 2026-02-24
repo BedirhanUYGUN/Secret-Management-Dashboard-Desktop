@@ -5,9 +5,9 @@ import {
   getStoredRefreshToken,
   hasStoredAccessToken,
   setStoredTokens,
-} from "../platform/tokenStorage";
+} from "@core/platform/tokenStorage";
 
-vi.mock("../platform/runtime", () => ({
+vi.mock("@core/platform/runtime", () => ({
   isTauriRuntime: () => false,
 }));
 
