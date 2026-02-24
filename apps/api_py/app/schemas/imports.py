@@ -27,7 +27,7 @@ class ImportCommitRequest(BaseModel):
     content: str
     provider: str = "Imported"
     type: SecretTypeEnum = SecretTypeEnum.key
-    conflictStrategy: Literal["skip", "overwrite", "new_version"] = "skip"
+    conflictStrategy: Literal["skip", "overwrite"] = "skip"
     tags: List[str] = Field(default_factory=list)
 
 

@@ -157,6 +157,27 @@ class TestImportCommit:
         assert resp.status_code == 200
         assert resp.json()["updated"] == 1
 
+    def test_commit_new_version_stratejisi_gecersiz(self, client, db):
+        admin = _make_user(db, email="admin@test.com", role=RoleEnum.admin)
+        project = _make_project(db, slug="proj", name="Proje", created_by=str(admin.id))
+        _assign_member(db, project_id=project.id, user_id=admin.id)
+        token = _login(client, "admin@test.com")
+
+        resp = client.post(
+            "/imports/commit",
+            json={
+                "projectId": "proj",
+                "environment": "dev",
+                "content": "KEY=value",
+                "provider": "Imported",
+                "type": "key",
+                "conflictStrategy": "new_version",
+                "tags": [],
+            },
+            headers=_auth_header(token),
+        )
+        assert resp.status_code == 422
+
 
 class TestExport:
     def _seed_secrets(self, client, db):

@@ -207,6 +207,28 @@ class TestMemberKisitlamalari:
         )
         assert resp.status_code == 403
 
+    def test_uye_olmadigi_projeye_secret_olusturamaz(self, client, db):
+        owner = _make_user(db, email="owner@test.com", role=RoleEnum.admin)
+        stranger = _make_user(db, email="stranger@test.com", role=RoleEnum.member)
+        _make_project(db, slug="gizli", name="Gizli", created_by=str(owner.id))
+        token = _login(client, "stranger@test.com")
+
+        resp = client.post(
+            "/projects/gizli/secrets",
+            json={
+                "name": "Key",
+                "provider": "AWS",
+                "type": "key",
+                "environment": "dev",
+                "keyName": "HIDDEN_KEY",
+                "value": "v",
+                "tags": [],
+                "notes": "",
+            },
+            headers=_auth_header(token),
+        )
+        assert resp.status_code == 403
+
 
 class TestTokensuzErisim:
     def test_tokensuz_projects(self, client):

@@ -69,7 +69,7 @@ export type ProjectMemberOut = {
   role: Role;
 };
 
-export type AuditAction = "secret_created" | "secret_updated" | "secret_copied" | "secret_exported";
+export type AuditAction = "secret_created" | "secret_updated" | "secret_deleted" | "secret_copied" | "secret_exported";
 
 export type AuditEvent = {
   id: string;

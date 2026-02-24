@@ -20,7 +20,7 @@ from app.db.repositories.users_repo import (
 
 def login_with_password(db: Session, *, email: str, password: str):
     user = get_user_by_email(db, email)
-    if not user or not verify_password(password, user.password_hash):
+    if not user or not user.is_active or not verify_password(password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
         )

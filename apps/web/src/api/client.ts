@@ -296,7 +296,7 @@ export function commitImport(params: {
   content: string;
   provider: string;
   type: SecretType;
-  conflictStrategy: "skip" | "overwrite" | "new_version";
+  conflictStrategy: "skip" | "overwrite";
   tags: string[];
 }) {
   return request<ImportCommitResponse>("/imports/commit", {

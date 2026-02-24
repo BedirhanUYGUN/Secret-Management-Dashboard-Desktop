@@ -26,7 +26,7 @@ export function ImportPage() {
   const [provider, setProvider] = useState("Imported");
   const [type, setType] = useState<SecretType>("key");
   const [tags, setTags] = useState("imported");
-  const [conflictStrategy, setConflictStrategy] = useState<"skip" | "overwrite" | "new_version">("skip");
+  const [conflictStrategy, setConflictStrategy] = useState<"skip" | "overwrite">("skip");
 
   const [content, setContent] = useState("[Apollo API]\nSTRIPE_API_KEY=sk_live_xxx\nVERCEL_DEPLOY_HOOK=https://...");
   const [preview, setPreview] = useState<ImportPreviewResponse | null>(null);
@@ -229,11 +229,10 @@ export function ImportPage() {
 
         <select
           value={conflictStrategy}
-          onChange={(event) => setConflictStrategy(event.target.value as "skip" | "overwrite" | "new_version")}
+          onChange={(event) => setConflictStrategy(event.target.value as "skip" | "overwrite")}
         >
           <option value="skip">Catisma: Atla</option>
           <option value="overwrite">Catisma: Uzerine Yaz</option>
-          <option value="new_version">Catisma: Yeni Surum</option>
         </select>
 
         <input value={provider} onChange={(event) => setProvider(event.target.value)} placeholder="Saglayici" />

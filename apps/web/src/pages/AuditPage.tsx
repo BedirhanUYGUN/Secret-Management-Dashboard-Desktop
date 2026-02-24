@@ -4,12 +4,13 @@ import { useAuth } from "../auth/AuthContext";
 import type { AuditEvent } from "../types";
 import { Spinner } from "../ui/Spinner";
 
-const actionOptions = ["all", "secret_created", "secret_updated", "secret_copied", "secret_exported"] as const;
+const actionOptions = ["all", "secret_created", "secret_updated", "secret_deleted", "secret_copied", "secret_exported"] as const;
 
 const actionLabels: Record<string, string> = {
   all: "Tum islemler",
   secret_created: "Olusturma",
   secret_updated: "Guncelleme",
+  secret_deleted: "Silme",
   secret_copied: "Kopyalama",
   secret_exported: "Disari Aktarim",
 };

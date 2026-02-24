@@ -86,14 +86,6 @@ export function MainLayout() {
     };
   }, [navigate, logout, user?.role]);
 
-  if (!user) {
-    return null;
-  }
-
-  const filteredProjects = assignedProjects.filter((project) =>
-    project.name.toLowerCase().includes(projectQuery.trim().toLowerCase()),
-  );
-
   const breadcrumb = useMemo(() => {
     const pageTitle = pageTitles[pathname] ?? pathname;
     const parts: string[] = [pageTitle];
@@ -114,6 +106,14 @@ export function MainLayout() {
 
     return parts;
   }, [pathname, searchParams, assignedProjects]);
+
+  if (!user) {
+    return null;
+  }
+
+  const filteredProjects = assignedProjects.filter((project) =>
+    project.name.toLowerCase().includes(projectQuery.trim().toLowerCase()),
+  );
 
   return (
     <div className="app-frame">

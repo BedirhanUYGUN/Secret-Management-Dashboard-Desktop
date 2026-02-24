@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 from uuid import UUID
 
 from sqlalchemy import and_, func, or_, select
@@ -27,6 +27,12 @@ def _to_uuid(value: str) -> UUID:
     return UUID(value)
 
 
+def _normalize_env(env: Union[EnvironmentEnum, str]) -> EnvironmentEnum:
+    if isinstance(env, EnvironmentEnum):
+        return env
+    return EnvironmentEnum(env)
+
+
 def mask_value(value: str) -> str:
     if len(value) <= 6:
         return "*" * max(len(value), 3)
@@ -44,11 +50,16 @@ def resolve_project_slug(db: Session, project_id: UUID) -> str:
 
 
 def resolve_environment_id(
-    db: Session, project_id: UUID, env: EnvironmentEnum
+    db: Session, project_id: UUID, env: Union[EnvironmentEnum, str]
 ) -> Optional[UUID]:
+    try:
+        env_enum = _normalize_env(env)
+    except ValueError:
+        return None
+
     return db.scalar(
         select(Environment.id).where(
-            Environment.project_id == project_id, Environment.name == env
+            Environment.project_id == project_id, Environment.name == env_enum
         )
     )
 
@@ -63,17 +74,25 @@ def has_project_access(db: Session, user_id: str, project_slug: str) -> bool:
 
 
 def has_environment_read_access(
-    db: Session, user_id: str, project_slug: str, env: EnvironmentEnum
+    db: Session,
+    user_id: str,
+    project_slug: str,
+    env: Union[EnvironmentEnum, str],
 ) -> bool:
+    try:
+        env_enum = _normalize_env(env)
+    except ValueError:
+        return False
+
     project_id = resolve_project_id(db, project_slug)
     if not project_id:
         return False
 
-    env_id = resolve_environment_id(db, project_id, env)
+    env_id = resolve_environment_id(db, project_id, env_enum)
     if not env_id:
         return False
 
-    if env != EnvironmentEnum.prod:
+    if env_enum != EnvironmentEnum.prod:
         return has_project_access(db, user_id, project_slug)
 
     can_read = db.scalar(
@@ -86,13 +105,21 @@ def has_environment_read_access(
 
 
 def has_environment_export_access(
-    db: Session, user_id: str, project_slug: str, env: EnvironmentEnum
+    db: Session,
+    user_id: str,
+    project_slug: str,
+    env: Union[EnvironmentEnum, str],
 ) -> bool:
+    try:
+        env_enum = _normalize_env(env)
+    except ValueError:
+        return False
+
     project_id = resolve_project_id(db, project_slug)
     if not project_id:
         return False
 
-    env_id = resolve_environment_id(db, project_id, env)
+    env_id = resolve_environment_id(db, project_id, env_enum)
     if not env_id:
         return False
 
@@ -335,6 +362,9 @@ def create_secret(db: Session, user_id: str, project_slug: str, payload: Dict) -
     if not env_id:
         raise ValueError("Environment not found")
 
+    if not has_environment_read_access(db, user_id, project_slug, payload["environment"]):
+        raise PermissionError("Forbidden")
+
     secret = Secret(
         project_id=project_id,
         environment_id=env_id,
@@ -432,9 +462,10 @@ def delete_secret(db: Session, user_id: str, secret_id: str) -> Optional[Dict]:
         return None
     project_slug = resolve_project_slug(db, secret.project_id)
     secret_name = secret.name
+    secret_identifier = str(secret.id)
     db.delete(secret)
     db.commit()
-    return {"projectId": project_slug, "name": secret_name}
+    return {"projectId": project_slug, "name": secret_name, "id": secret_identifier}
 
 
 def find_secret_by_key(

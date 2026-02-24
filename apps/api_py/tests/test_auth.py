@@ -30,6 +30,18 @@ class TestLogin:
         )
         assert resp.status_code == 401
 
+    def test_login_deaktif_kullanici(self, client, db):
+        _make_user(
+            db,
+            email="inactive@test.com",
+            password="pass123",
+            is_active=False,
+        )
+        resp = client.post(
+            "/auth/login", json={"email": "inactive@test.com", "password": "pass123"}
+        )
+        assert resp.status_code == 401
+
 
 class TestRefresh:
     def test_refresh_basarili(self, client, db):

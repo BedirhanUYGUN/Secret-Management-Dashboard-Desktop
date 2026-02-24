@@ -55,7 +55,13 @@ def create_project_secret(
     user=Depends(require_roles(["admin", "member"])),
     db: Session = Depends(get_db_session),
 ):
-    created = create_secret(db, str(user.id), project_id, payload.model_dump())
+    try:
+        created = create_secret(db, str(user.id), project_id, payload.model_dump())
+    except PermissionError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
     add_audit_event(
         db,
         actor_user_id=str(user.id),
@@ -109,8 +115,9 @@ def remove_secret(
         db,
         actor_user_id=str(user.id),
         project_slug=deleted["projectId"],
-        action="secret_updated",
+        action="secret_deleted",
         target_type="secret",
+        target_id=deleted["id"],
         metadata={"secretName": deleted["name"], "event": "deleted"},
     )
 

@@ -128,3 +128,34 @@ class TestAuditList:
         resp2 = client.get("/audit?action=nonexistent", headers=_auth_header(token))
         assert resp2.status_code == 200
         assert len(resp2.json()) == 0
+
+    def test_secret_silme_eventi_secret_deleted_olarak_kaydedilir(self, client, db):
+        admin = _make_user(db, email="admin@test.com", role=RoleEnum.admin)
+        project = _make_project(db, slug="proj", name="Proje", created_by=str(admin.id))
+        _assign_member(db, project_id=project.id, user_id=admin.id)
+        token = _login(client, "admin@test.com")
+
+        create_resp = client.post(
+            "/projects/proj/secrets",
+            json={
+                "name": "Silinecek",
+                "provider": "AWS",
+                "type": "key",
+                "environment": "dev",
+                "keyName": "DELETE_ME",
+                "value": "val",
+                "tags": [],
+                "notes": "",
+            },
+            headers=_auth_header(token),
+        )
+        secret_id = create_resp.json()["id"]
+
+        delete_resp = client.delete(f"/secrets/{secret_id}", headers=_auth_header(token))
+        assert delete_resp.status_code == 204
+
+        audit_resp = client.get("/audit?action=secret_deleted", headers=_auth_header(token))
+        assert audit_resp.status_code == 200
+        events = audit_resp.json()
+        assert len(events) >= 1
+        assert events[0]["action"] == "secret_deleted"
