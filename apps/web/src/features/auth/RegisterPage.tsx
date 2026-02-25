@@ -13,6 +13,51 @@ const organizationModeOptions: Array<{ label: string; value: RegisterOrganizatio
   { label: "Key ile organizasyona katıl", value: "join" },
 ];
 
+function mapRegisterErrorMessage(rawMessage: string): string {
+  const message = rawMessage.trim();
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes("already") || normalized.includes("email already registered") || normalized.includes("409")) {
+    return "Bu e-posta ile kayıt zaten mevcut.";
+  }
+  if (normalized.includes("invite") || normalized.includes("davet") || normalized.includes("400")) {
+    return "Kayıt bilgileri geçersiz veya davet key hatalı.";
+  }
+  if (normalized.includes("fetch") || normalized.includes("network") || normalized.includes("failed")) {
+    return "Sunucuya bağlanılamıyor. Lütfen tekrar deneyin.";
+  }
+  if (normalized.includes("password must include at least one special character")) {
+    return "Şifre en az bir özel karakter içermelidir.";
+  }
+
+  try {
+    const parsed = JSON.parse(message) as {
+      detail?: string | Array<{ msg?: string }>;
+      message?: string;
+    };
+
+    const detail = parsed.detail;
+    if (typeof detail === "string" && detail.trim()) {
+      return mapRegisterErrorMessage(detail);
+    }
+
+    if (Array.isArray(detail)) {
+      const msg = detail.find((item) => typeof item?.msg === "string" && item.msg.trim())?.msg?.trim();
+      if (msg) {
+        return mapRegisterErrorMessage(msg);
+      }
+    }
+
+    if (typeof parsed.message === "string" && parsed.message.trim()) {
+      return mapRegisterErrorMessage(parsed.message);
+    }
+  } catch {
+    // no-op: raw message JSON formatinda degilse dogrudan fallback'e iner
+  }
+
+  return "Kayıt işlemi başarısız.";
+}
+
 export function RegisterPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -77,16 +122,9 @@ export function RegisterPage() {
       navigate("/projects", { replace: true });
     } catch (error) {
       if (error instanceof Error) {
-        const msg = error.message;
-        if (msg.includes("409") || msg.toLowerCase().includes("already")) {
-          setErrorMessage("Bu e-posta ile kayıt zaten mevcut.");
-        } else if (msg.includes("400") || msg.toLowerCase().includes("invite")) {
-          setErrorMessage("Kayıt bilgileri geçersiz veya davet key hatalı.");
-        } else if (msg.includes("fetch") || msg.includes("network") || msg.includes("Failed")) {
-          setErrorMessage("Sunucuya bağlanılamıyor. Lütfen tekrar deneyin.");
-        } else {
-          setErrorMessage(msg || "Kayıt işlemi başarısız.");
-        }
+        setErrorMessage(mapRegisterErrorMessage(error.message));
+      } else {
+        setErrorMessage("Kayıt işlemi başarısız.");
       }
     } finally {
       setLoading(false);
