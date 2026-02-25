@@ -8,7 +8,7 @@ import { Spinner } from "@core/ui/Spinner";
 const roleOptions: Role[] = ["admin", "member", "viewer"];
 
 const roleLabels: Record<Role, string> = {
-  admin: "Yonetici",
+  admin: "Yönetici",
   member: "Uye",
   viewer: "Izleyici",
 };
@@ -44,7 +44,7 @@ export function UsersPage() {
       setUsers(rows);
     } catch (error) {
       if (error instanceof Error) {
-        setErrorMessage(error.message || "Kullanicilar yuklenemedi.");
+        setErrorMessage(error.message || "Kullanıcılar yüklenemedi.");
       }
     } finally {
       setLoading(false);
@@ -58,7 +58,7 @@ export function UsersPage() {
 
   const handleCreate = async () => {
     if (!createForm.email.trim() || !createForm.displayName.trim() || !createForm.password.trim()) {
-      setErrorMessage("Tum alanlar zorunludur.");
+      setErrorMessage("Tüm alanlar zorunludur.");
       return;
     }
 
@@ -72,7 +72,7 @@ export function UsersPage() {
       });
       setShowCreateForm(false);
       setCreateForm({ email: "", displayName: "", role: "member", password: "" });
-      showToast("Kullanici olusturuldu", "success");
+      showToast("Kullanıcı oluşturuldu", "success");
       await loadUsers();
     } catch (error) {
       if (error instanceof Error) {
@@ -102,7 +102,7 @@ export function UsersPage() {
         password: editForm.password.trim() || undefined,
       });
       setEditingId(null);
-      showToast("Kullanici guncellendi", "success");
+      showToast("Kullanıcı güncellendi", "success");
       await loadUsers();
     } catch (error) {
       if (error instanceof Error) {
@@ -122,7 +122,7 @@ export function UsersPage() {
     try {
       setErrorMessage("");
       await updateUser({ userId: u.id, isActive: !u.isActive });
-      showToast(u.isActive ? "Kullanici deaktif edildi" : "Kullanici aktif edildi", "success");
+      showToast(u.isActive ? "Kullanıcı deaktif edildi" : "Kullanıcı aktif edildi", "success");
       await loadUsers();
     } catch (error) {
       if (error instanceof Error) {
@@ -136,15 +136,15 @@ export function UsersPage() {
   return (
     <section className="page-panel">
       <div className="detail-inline-head">
-        <h2>Kullanici Yonetimi</h2>
+        <h2>Kullanıcı Yönetimi</h2>
         <button type="button" onClick={() => setShowCreateForm((prev) => !prev)}>
-          {showCreateForm ? "Iptal" : "Yeni Kullanici"}
+          {showCreateForm ? "İptal" : "Yeni Kullanıcı"}
         </button>
       </div>
 
       {showCreateForm && (
         <div className="detail-box form-box">
-          <strong>Yeni Kullanici Olustur</strong>
+          <strong>Yeni Kullanıcı Oluştur</strong>
           <div className="form-grid">
             <input
               placeholder="E-posta"
@@ -168,21 +168,21 @@ export function UsersPage() {
             </select>
             <input
               type="password"
-              placeholder="Sifre"
+              placeholder="Şifre"
               value={createForm.password}
               onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))}
             />
           </div>
           <div className="action-row">
             <button type="button" onClick={() => void handleCreate()}>
-              Olustur
+              Oluştur
             </button>
           </div>
         </div>
       )}
 
       {errorMessage && <p className="inline-error">{errorMessage}</p>}
-      {loading && <Spinner text="Kullanicilar yukleniyor..." />}
+      {loading && <Spinner text="Kullanıcılar yükleniyor..." />}
 
       <div className="table-head user-table-head">
         <span>Ad Soyad</span>
@@ -216,14 +216,14 @@ export function UsersPage() {
                 type="password"
                 value={editForm.password}
                 onChange={(e) => setEditForm((p) => ({ ...p, password: e.target.value }))}
-                placeholder="Yeni sifre (bos birak = degismesin)"
+                placeholder="Yeni şifre (boş bırak = değişmesin)"
               />
               <div className="action-row">
                 <button type="button" onClick={() => void handleUpdate()}>
                   Kaydet
                 </button>
                 <button type="button" onClick={() => setEditingId(null)}>
-                  Iptal
+                  İptal
                 </button>
               </div>
             </>
@@ -237,7 +237,7 @@ export function UsersPage() {
               </span>
               <div className="action-row">
                 <button type="button" onClick={() => startEdit(u)}>
-                  Duzenle
+                  Düzenle
                 </button>
                 <button type="button" onClick={() => void toggleActive(u)}>
                   {u.isActive ? "Deaktif Et" : "Aktif Et"}

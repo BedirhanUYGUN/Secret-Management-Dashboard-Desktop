@@ -53,12 +53,12 @@ export function ImportPage() {
       .catch((error: Error) => setErrorMessage(error.message));
   }, [user]);
 
-  /** Dosya icerigini okuyup state'e yazar */
+  /** Dosya içerigini okuyup state'e yazar */
   const handleFileContent = useCallback(
     (file: File) => {
       const format = detectFileFormat(file.name);
       if (format === "unknown") {
-        showToast("Desteklenmeyen dosya formati. .env veya .txt dosyasi secin.", "error");
+        showToast("Desteklenmeyen dosya formati. .env veya .txt dosyası seçin.", "error");
         return;
       }
 
@@ -71,30 +71,30 @@ export function ImportPage() {
           setPreview(null);
           setSummary(null);
           setErrorMessage("");
-          showToast(`${file.name} dosyasi yuklendi (${format.toUpperCase()})`, "success");
+          showToast(`${file.name} dosyası yüklendi (${format.toUpperCase()})`, "success");
         }
       };
       reader.onerror = () => {
-        setErrorMessage("Dosya okunamadi.");
+        setErrorMessage("Dosya okunamadı.");
       };
       reader.readAsText(file);
     },
     [showToast],
   );
 
-  /** Dosya secme input handler */
+  /** Dosya seçme input handler */
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       handleFileContent(file);
     }
-    // Input'u sifirla ki ayni dosya tekrar secilebilsin
+    // Input'u sıfırla ki aynı dosya tekrar seçilebilsin
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
-  /** Drag & drop handler'lari */
+  /** Drag & drop handler'ları */
   const handleDragEnter = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     event.stopPropagation();
@@ -146,7 +146,7 @@ export function ImportPage() {
       setPreview(response);
     } catch (error) {
       if (error instanceof Error) {
-        setErrorMessage(error.message || "Onizleme basarisiz.");
+        setErrorMessage(error.message || "Önizleme başarısız.");
       }
     } finally {
       setLoadingPreview(false);
@@ -155,7 +155,7 @@ export function ImportPage() {
 
   const runCommit = async () => {
     if (!projectId) {
-      setErrorMessage("Proje secimi zorunludur.");
+      setErrorMessage("Proje seçimi zorunludur.");
       return;
     }
 
@@ -175,10 +175,10 @@ export function ImportPage() {
           .filter((item) => item.length > 0),
       });
       setSummary(result);
-      showToast("Iceri aktarim islemi tamamlandi", "success");
+      showToast("İçeri aktarım işlemi tamamlandı", "success");
     } catch (error) {
       if (error instanceof Error) {
-        setErrorMessage(error.message || "Iceri aktarim basarisiz.");
+        setErrorMessage(error.message || "İçeri aktarım başarısız.");
       }
     } finally {
       setLoadingCommit(false);
@@ -194,12 +194,12 @@ export function ImportPage() {
 
   return (
     <section className="page-panel">
-      <h2>Iceri Aktarim Sihirbazi</h2>
+      <h2>İçeri Aktarım Sihirbazı</h2>
       <ol>
-        <li>Dosya yukleyin, surukleyip birakin veya icerik yapistirin.</li>
-        <li>Ayristirilan proje basliklari ve KEY=value satirlarini onizleyin.</li>
-        <li>Proje/ortam ve catisma stratejisini secin.</li>
-        <li>Iceri aktarimi onayla ve ozeti inceleyin.</li>
+        <li>Dosya yükleyin, sürükleyip bırakın veya içerik yapıştırın.</li>
+        <li>Ayrıştırılan proje başlıkları ve KEY=value satırlarını önizleyin.</li>
+        <li>Proje/ortam ve çatışma stratejisini seçin.</li>
+        <li>İçeri aktarımı onaylayın ve özeti inceleyin.</li>
       </ol>
 
       <div className="filter-row filter-row-wrap">
@@ -231,15 +231,15 @@ export function ImportPage() {
           value={conflictStrategy}
           onChange={(event) => setConflictStrategy(event.target.value as "skip" | "overwrite")}
         >
-          <option value="skip">Catisma: Atla</option>
-          <option value="overwrite">Catisma: Uzerine Yaz</option>
+          <option value="skip">Çatışma: Atla</option>
+          <option value="overwrite">Çatışma: Üzerine Yaz</option>
         </select>
 
-        <input value={provider} onChange={(event) => setProvider(event.target.value)} placeholder="Saglayici" />
+        <input value={provider} onChange={(event) => setProvider(event.target.value)} placeholder="Sağlayıcı" />
         <input value={tags} onChange={(event) => setTags(event.target.value)} placeholder="etiket1, etiket2" />
       </div>
 
-      {/* Dosya yukleme & surukle-birak alani */}
+      {/* Dosya yükleme ve sürükle-bırak alanı */}
       <div
         className={`import-dropzone import-upload-zone${isDragging ? " import-drag-active" : ""}`}
         onDragEnter={handleDragEnter}
@@ -249,12 +249,12 @@ export function ImportPage() {
       >
         <div className="import-upload-content">
           <p className="import-upload-title">
-            {isDragging ? "Dosyayi buraya birakin..." : "Dosyayi surukleyip birakin veya secin"}
+            {isDragging ? "Dosyayı buraya bırakın..." : "Dosyayı sürükleyip bırakın veya seçin"}
           </p>
           <p className="import-upload-hint">Desteklenen formatlar: .env, .txt</p>
           <div className="action-row">
             <button type="button" onClick={() => fileInputRef.current?.click()}>
-              Dosya Sec
+              Dosya Seç
             </button>
             {fileName && (
               <button type="button" onClick={clearFile}>
@@ -262,7 +262,7 @@ export function ImportPage() {
               </button>
             )}
           </div>
-          {fileName && <p className="import-file-name">Yuklenen: <strong>{fileName}</strong></p>}
+          {fileName && <p className="import-file-name">Yüklenen: <strong>{fileName}</strong></p>}
         </div>
         <input
           ref={fileInputRef}
@@ -277,27 +277,27 @@ export function ImportPage() {
 
       <div className="action-row">
         <button type="button" onClick={() => void loadPreview()} disabled={loadingPreview}>
-          {loadingPreview ? "Yukleniyor..." : "Onizleme"}
+          {loadingPreview ? "Yükleniyor..." : "Önizleme"}
         </button>
         <button type="button" onClick={() => void runCommit()} disabled={loadingCommit || !preview}>
-          {loadingCommit ? "Aktariliyor..." : "Iceri Aktar"}
+          {loadingCommit ? "Aktarılıyor..." : "İçeri Aktar"}
         </button>
       </div>
 
-      {(loadingPreview || loadingCommit) && <Spinner text={loadingPreview ? "Onizleme hazirlaniyor..." : "Iceri aktarim yapiliyor..."} />}
+      {(loadingPreview || loadingCommit) && <Spinner text={loadingPreview ? "Önizleme hazırlanıyor..." : "İçeri aktarım yapılıyor..."} />}
       {errorMessage && <p className="inline-error">{errorMessage}</p>}
 
       {preview && (
         <div className="import-dropzone">
           <div>
             <p>
-              Baslik: <strong>{preview.heading ?? "Yok"}</strong>
+              Başlık: <strong>{preview.heading ?? "Yok"}</strong>
             </p>
             <p>
-              Toplam cift: <strong>{preview.totalPairs}</strong>
+              Toplam çift: <strong>{preview.totalPairs}</strong>
             </p>
             <p>
-              Atlanan satirlar: <strong>{preview.skipped}</strong>
+              Atlanan satırlar: <strong>{preview.skipped}</strong>
             </p>
             <ul>
               {preview.preview.map((item) => (
@@ -319,13 +319,13 @@ export function ImportPage() {
               Eklenen: <strong>{summary.inserted}</strong>
             </p>
             <p>
-              Guncellenen: <strong>{summary.updated}</strong>
+              Güncellenen: <strong>{summary.updated}</strong>
             </p>
             <p>
               Atlanan: <strong>{summary.skipped}</strong>
             </p>
             <p>
-              Toplam islenen: <strong>{summary.total}</strong>
+              Toplam işlenen: <strong>{summary.total}</strong>
             </p>
           </div>
         </div>

@@ -7,12 +7,12 @@ import { Spinner } from "@core/ui/Spinner";
 const actionOptions = ["all", "secret_created", "secret_updated", "secret_deleted", "secret_copied", "secret_exported"] as const;
 
 const actionLabels: Record<string, string> = {
-  all: "Tum islemler",
-  secret_created: "Olusturma",
-  secret_updated: "Guncelleme",
+  all: "Tüm işlemler",
+  secret_created: "Oluşturma",
+  secret_updated: "Güncelleme",
   secret_deleted: "Silme",
   secret_copied: "Kopyalama",
-  secret_exported: "Disari Aktarim",
+  secret_exported: "Dışarı Aktarım",
 };
 
 export function AuditPage() {
@@ -49,7 +49,7 @@ export function AuditPage() {
       setProjects(projectRows);
     } catch (error) {
       if (error instanceof Error) {
-        setErrorMessage(error.message || "Denetim verileri yuklenemedi.");
+        setErrorMessage(error.message || "Denetim verileri yüklenemedi.");
       }
     } finally {
       setLoading(false);
@@ -66,7 +66,7 @@ export function AuditPage() {
 
   return (
     <section className="page-panel">
-      <h2>Denetim Kaydi</h2>
+      <h2>Denetim Kaydı</h2>
       <div className="filter-row filter-row-wrap">
         <select value={actionFilter} onChange={(event) => setActionFilter(event.target.value as (typeof actionOptions)[number])}>
           {actionOptions.map((action) => (
@@ -77,7 +77,7 @@ export function AuditPage() {
         </select>
 
         <select value={projectFilter} onChange={(event) => setProjectFilter(event.target.value)}>
-          <option value="all">Tum projeler</option>
+          <option value="all">Tüm projeler</option>
           {projects.map((project) => (
             <option key={project.id} value={project.id}>
               {project.name}
@@ -86,7 +86,7 @@ export function AuditPage() {
         </select>
 
         <input
-          placeholder="Kullanici e-postasi"
+          placeholder="Kullanıcı e-postası"
           value={userEmailFilter}
           onChange={(event) => setUserEmailFilter(event.target.value)}
         />
@@ -96,7 +96,7 @@ export function AuditPage() {
       </div>
 
       {errorMessage && <p className="inline-error">{errorMessage}</p>}
-      {loading && <Spinner text="Denetim kayitlari yukleniyor..." />}
+      {loading && <Spinner text="Denetim kayıtlari yükleniyor..." />}
       <div className="audit-list">
         {auditEvents.map((event) => (
           <div key={event.id} className="audit-item">

@@ -9,8 +9,8 @@ const purposeOptions: Array<{ label: string; value: RegisterPurpose }> = [
 ];
 
 const organizationModeOptions: Array<{ label: string; value: RegisterOrganizationMode }> = [
-  { label: "Organizasyon olustur", value: "create" },
-  { label: "Key ile organizasyona katil", value: "join" },
+  { label: "Organizasyon oluştur", value: "create" },
+  { label: "Key ile organizasyona katıl", value: "join" },
 ];
 
 export function RegisterPage() {
@@ -33,19 +33,19 @@ export function RegisterPage() {
     setErrorMessage("");
 
     if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()) {
-      setErrorMessage("Tum alanlar zorunludur.");
+      setErrorMessage("Tüm alanlar zorunludur.");
       return;
     }
     if (password.trim().length < 8) {
-      setErrorMessage("Sifre en az 8 karakter olmalidir.");
+      setErrorMessage("Şifre en az 8 karakter olmalıdır.");
       return;
     }
     if (purpose === "organization" && organizationMode === "create" && !organizationName.trim()) {
-      setErrorMessage("Organizasyon adi zorunludur.");
+      setErrorMessage("Organizasyon adı zorunludur.");
       return;
     }
     if (purpose === "organization" && organizationMode === "join" && !inviteCode.trim()) {
-      setErrorMessage("Davet key alani zorunludur.");
+      setErrorMessage("Davet key alanı zorunludur.");
       return;
     }
 
@@ -79,13 +79,13 @@ export function RegisterPage() {
       if (error instanceof Error) {
         const msg = error.message;
         if (msg.includes("409") || msg.toLowerCase().includes("already")) {
-          setErrorMessage("Bu e-posta ile kayit zaten mevcut.");
+          setErrorMessage("Bu e-posta ile kayıt zaten mevcut.");
         } else if (msg.includes("400") || msg.toLowerCase().includes("invite")) {
-          setErrorMessage("Kayit bilgileri gecersiz veya davet key hatali.");
+          setErrorMessage("Kayıt bilgileri geçersiz veya davet key hatalı.");
         } else if (msg.includes("fetch") || msg.includes("network") || msg.includes("Failed")) {
-          setErrorMessage("Sunucuya baglanilamiyor. Lutfen tekrar deneyin.");
+          setErrorMessage("Sunucuya bağlanılamıyor. Lütfen tekrar deneyin.");
         } else {
-          setErrorMessage(msg || "Kayit islemi basarisiz.");
+          setErrorMessage(msg || "Kayıt işlemi başarısız.");
         }
       }
     } finally {
@@ -96,20 +96,20 @@ export function RegisterPage() {
   return (
     <div className="login-shell">
       <section className="login-card">
-        <h1>Kayit Ol</h1>
-        <p>Hesap olusturun ve calisma alanina erisin.</p>
+        <h1>Kayıt Ol</h1>
+        <p>Hesap oluşturun ve çalışma alanına erişin.</p>
 
         {issuedInviteCode && (
           <div className="auth-info-box">
-            <strong>Organizasyon davet key olusturuldu:</strong>
+            <strong>Organizasyon davet key oluşturuldu:</strong>
             <code>{issuedInviteCode}</code>
-            <p>Bu key'i ekibinizle paylasabilirsiniz. Kaydetmeden sayfadan ayrilmayin.</p>
+            <p>Bu key'i ekibinizle paylaşabilirsiniz. Kaydetmeden sayfadan ayrılmayın.</p>
             <button
               type="button"
               className="login-submit"
               onClick={() => navigate("/login", { replace: true })}
             >
-              Giris ekranina don
+              Giriş ekranına dön
             </button>
           </div>
         )}
@@ -119,7 +119,7 @@ export function RegisterPage() {
             {errorMessage && <p className="inline-error">{errorMessage}</p>}
 
             <label className="login-label">
-              Isim
+              İsim
               <input
                 type="text"
                 className="login-input"
@@ -153,7 +153,7 @@ export function RegisterPage() {
             </label>
 
             <label className="login-label">
-              Sifre
+              Şifre
               <input
                 type="password"
                 className="login-input"
@@ -165,7 +165,7 @@ export function RegisterPage() {
             </label>
 
             <label className="login-label">
-              Ne icin kullanacaksiniz?
+              Ne için kullanacaksınız?
               <select
                 className="login-input"
                 value={purpose}
@@ -183,7 +183,7 @@ export function RegisterPage() {
             {purpose === "organization" && (
               <>
                 <label className="login-label">
-                  Organizasyon secimi
+                  Organizasyon seçimi
                   <select
                     className="login-input"
                     value={organizationMode}
@@ -200,7 +200,7 @@ export function RegisterPage() {
 
                 {organizationMode === "create" && (
                   <label className="login-label">
-                    Organizasyon adi
+                    Organizasyon adı
                     <input
                       type="text"
                       className="login-input"
@@ -227,11 +227,11 @@ export function RegisterPage() {
             )}
 
             <button type="submit" className="login-submit" disabled={loading}>
-              {loading ? "Kayit olusturuluyor..." : "Kayit Ol"}
+              {loading ? "Kayıt oluşturuluyor..." : "Kayıt Ol"}
             </button>
 
             <p className="auth-switch-text">
-              Zaten hesabin var mi? <Link to="/login">Giris Yap</Link>
+              Zaten hesabın var mı? <Link to="/login">Giriş Yap</Link>
             </p>
           </form>
         )}

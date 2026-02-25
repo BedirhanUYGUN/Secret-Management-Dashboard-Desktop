@@ -14,7 +14,7 @@ export function LoginPage() {
     setErrorMessage("");
 
     if (!email.trim() || !password.trim()) {
-      setErrorMessage("E-posta ve sifre alanlari zorunludur.");
+      setErrorMessage("E-posta ve şifre alanları zorunludur.");
       return;
     }
 
@@ -25,11 +25,11 @@ export function LoginPage() {
       if (error instanceof Error) {
         const msg = error.message;
         if (msg.includes("401") || msg.toLowerCase().includes("invalid") || msg.toLowerCase().includes("credentials")) {
-          setErrorMessage("E-posta veya sifre hatali.");
+          setErrorMessage("E-posta veya şifre hatalı.");
         } else if (msg.includes("fetch") || msg.includes("network") || msg.includes("Failed")) {
-          setErrorMessage("Sunucuya baglanilamiyor. Lutfen tekrar deneyin.");
+          setErrorMessage("Sunucuya bağlanılamıyor. Lütfen tekrar deneyin.");
         } else {
-          setErrorMessage(msg || "Giris basarisiz.");
+          setErrorMessage(msg || "Giriş başarısız.");
         }
       }
     }
@@ -38,8 +38,8 @@ export function LoginPage() {
   return (
     <div className="login-shell">
       <section className="login-card">
-        <h1>Giris Yap</h1>
-        <p>API anahtarlarinizi yonetmek icin giris yapin.</p>
+        <h1>Giriş Yap</h1>
+        <p>API anahtarlarınızı yönetmek için giriş yapın.</p>
         {errorMessage && <p className="inline-error">{errorMessage}</p>}
         <form className="login-form" onSubmit={(e) => void handleSubmit(e)}>
           <label className="login-label">
@@ -56,11 +56,11 @@ export function LoginPage() {
             />
           </label>
           <label className="login-label">
-            Sifre
+            Şifre
             <input
               type="password"
               className="login-input"
-              placeholder="Sifrenizi girin"
+              placeholder="Şifrenizi girin"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
@@ -68,10 +68,10 @@ export function LoginPage() {
             />
           </label>
           <button type="submit" className="login-submit" disabled={loading}>
-            {loading ? "Giris yapiliyor..." : "Giris Yap"}
+            {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
           </button>
           <p className="auth-switch-text">
-            Hesabin yok mu? <Link to="/register">Kayit Ol</Link>
+            Hesabın yok mu? <Link to="/register">Kayıt Ol</Link>
           </p>
         </form>
       </section>

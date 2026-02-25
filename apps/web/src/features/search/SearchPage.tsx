@@ -46,7 +46,7 @@ export function SearchPage() {
       .then(setResults)
       .catch((error: Error) => {
         setResults([]);
-        setErrorMessage(error.message || "Arama basarisiz.");
+        setErrorMessage(error.message || "Arama başarısız.");
       })
       .finally(() => setLoading(false));
   }, [environmentFilter, providerFilter, query, tagFilter, typeFilter, user]);
@@ -62,9 +62,9 @@ export function SearchPage() {
     <section className="page-panel">
       <h2>Genel Arama</h2>
       <div className="search-controls search-controls-wide">
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ad, saglayici veya anahtar ile ara..." />
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ad, sağlayıcı veya anahtar ile ara..." />
         <select value={providerFilter} onChange={(event) => setProviderFilter(event.target.value)}>
-          <option value="all">Tum saglayicilar</option>
+          <option value="all">Tüm sağlayıcılar</option>
           {providers.map((provider) => (
             <option key={provider} value={provider}>
               {provider}
@@ -72,7 +72,7 @@ export function SearchPage() {
           ))}
         </select>
         <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}>
-          <option value="all">Tum etiketler</option>
+          <option value="all">Tüm etiketler</option>
           {tags.map((tag) => (
             <option key={tag} value={tag}>
               {tag}
@@ -82,21 +82,21 @@ export function SearchPage() {
         <select value={environmentFilter} onChange={(event) => setEnvironmentFilter(event.target.value as Environment | "all")}>
           {environments.map((env) => (
             <option key={env} value={env}>
-              {env === "all" ? "Tum ortamlar" : env.toUpperCase()}
+              {env === "all" ? "Tüm ortamlar" : env.toUpperCase()}
             </option>
           ))}
         </select>
         <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as SecretType | "all")}>
           {secretTypes.map((type) => (
             <option key={type} value={type}>
-              {type === "all" ? "Tum tipler" : type.toUpperCase()}
+              {type === "all" ? "Tüm tipler" : type.toUpperCase()}
             </option>
           ))}
         </select>
       </div>
 
       {errorMessage && <p className="inline-error">{errorMessage}</p>}
-      {loading && <Spinner text="Arama yapiliyor..." />}
+      {loading && <Spinner text="Arama yapılıyor..." />}
 
       <div className="search-results">
         {results.map((item) => (
@@ -108,7 +108,7 @@ export function SearchPage() {
             <code>{item.valueMasked}</code>
           </Link>
         ))}
-        {results.length === 0 && <p>Mevcut filtrelerle eslesme bulunamadi.</p>}
+        {results.length === 0 && <p>Mevcut filtrelerle eşleşme bulunamadı.</p>}
       </div>
     </section>
   );

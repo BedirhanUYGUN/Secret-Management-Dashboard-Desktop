@@ -39,7 +39,7 @@ beforeEach(() => {
 });
 
 describe("UsersPage", () => {
-  it("kullanici listesini gosterir", async () => {
+  it("kullanıcı listesini gosterir", async () => {
     render(<UsersPage />);
 
     await waitFor(() => {
@@ -47,26 +47,26 @@ describe("UsersPage", () => {
       expect(screen.getByText("admin@test.com")).toBeInTheDocument();
       expect(screen.getByText("member@test.com")).toBeInTheDocument();
     });
-    expect(screen.getByText("Yonetici")).toBeInTheDocument();
+    expect(screen.getByText("Yönetici")).toBeInTheDocument();
     expect(screen.getAllByText("Uye").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("yeni kullanici formu acilir ve kapanir", async () => {
+  it("yeni kullanıcı formu acilir ve kapanir", async () => {
     const user = userEvent.setup();
     render(<UsersPage />);
 
     await waitFor(() => expect(screen.getByText("Admin")).toBeInTheDocument());
 
-    const btn = screen.getByText("Yeni Kullanici");
+    const btn = screen.getByText("Yeni Kullanıcı");
     await user.click(btn);
     expect(screen.getByPlaceholderText("E-posta")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Ad Soyad")).toBeInTheDocument();
 
-    await user.click(screen.getByText("Iptal"));
+    await user.click(screen.getByText("İptal"));
     expect(screen.queryByPlaceholderText("E-posta")).not.toBeInTheDocument();
   });
 
-  it("yeni kullanici olusturulur", async () => {
+  it("yeni kullanıcı olusturulur", async () => {
     mockCreateUser.mockResolvedValueOnce({
       id: "u3",
       email: "new@test.com",
@@ -79,12 +79,12 @@ describe("UsersPage", () => {
     render(<UsersPage />);
 
     await waitFor(() => expect(screen.getByText("Admin")).toBeInTheDocument());
-    await user.click(screen.getByText("Yeni Kullanici"));
+    await user.click(screen.getByText("Yeni Kullanıcı"));
 
     await user.type(screen.getByPlaceholderText("E-posta"), "new@test.com");
     await user.type(screen.getByPlaceholderText("Ad Soyad"), "Yeni");
-    await user.type(screen.getByPlaceholderText("Sifre"), "sifre123");
-    await user.click(screen.getByText("Olustur"));
+    await user.type(screen.getByPlaceholderText("Şifre"), "sifre123");
+    await user.click(screen.getByText("Oluştur"));
 
     await waitFor(() => {
       expect(mockCreateUser).toHaveBeenCalledWith({
@@ -93,11 +93,11 @@ describe("UsersPage", () => {
         role: "member",
         password: "sifre123",
       });
-      expect(mockShowToast).toHaveBeenCalledWith("Kullanici olusturuldu", "success");
+      expect(mockShowToast).toHaveBeenCalledWith("Kullanıcı oluşturuldu", "success");
     });
   });
 
-  it("kullanici listeleme hatasi gosterilir", async () => {
+  it("kullanıcı listeleme hatasi gosterilir", async () => {
     mockFetchUsers.mockRejectedValueOnce(new Error("Sunucu hatasi"));
     render(<UsersPage />);
 

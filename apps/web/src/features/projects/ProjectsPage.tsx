@@ -104,7 +104,7 @@ export function ProjectsPage() {
         setProjects(rows);
       })
       .catch((error: Error) => {
-        setErrorMessage(error.message || "Projeler yuklenemedi.");
+        setErrorMessage(error.message || "Projeler yüklenemedi.");
       });
   }, [user]);
 
@@ -142,7 +142,7 @@ export function ProjectsPage() {
       setVisibleSecrets(rows);
     } catch (error) {
       if (error instanceof Error) {
-        setErrorMessage(error.message || "Anahtarlar yuklenemedi.");
+        setErrorMessage(error.message || "Anahtarlar yüklenemedi.");
       }
       setVisibleSecrets([]);
     } finally {
@@ -212,7 +212,7 @@ export function ProjectsPage() {
 
       await copyWithTimer({
         value: payload,
-        successMessage: `${secret.keyName} panoya kopyalandi`,
+        successMessage: `${secret.keyName} panoya kopyalandı`,
         onCopied: async () => {
           await trackCopyEvent({ projectId: secret.projectId, secretId: secret.id });
         },
@@ -267,7 +267,7 @@ export function ProjectsPage() {
       });
       setShowCreateForm(false);
       setCreateForm({ name: "", provider: "", type: "key", keyName: "", value: "", tags: "", notes: "" });
-      showToast("Anahtar olusturuldu", "success");
+      showToast("Anahtar oluşturuldu", "success");
       await reloadSecrets();
     } catch (error) {
       if (error instanceof Error) {
@@ -295,7 +295,7 @@ export function ProjectsPage() {
         },
       });
       setIsEditing(false);
-      showToast("Anahtar guncellendi", "success");
+      showToast("Anahtar güncellendi", "success");
       await reloadSecrets();
     } catch (error) {
       if (error instanceof Error) {
@@ -331,7 +331,7 @@ export function ProjectsPage() {
   }
 
   if (!activeProject) {
-    return <div className="page-panel">Atanmis proje bulunmuyor.</div>;
+    return <div className="page-panel">Atanmış proje bulunmuyor.</div>;
   }
 
   return (
@@ -354,7 +354,7 @@ export function ProjectsPage() {
                   type="button"
                 >
                   {env.toUpperCase()}
-                  {restricted ? " (kisitli)" : ""}
+                  {restricted ? " (kısıtlı)" : ""}
                 </button>
               );
             })}
@@ -364,18 +364,18 @@ export function ProjectsPage() {
               Anahtar Ekle
             </button>
             <button type="button" onClick={() => setShowExportModal(true)} disabled={user.role === "viewer"}>
-              Disari Aktar
+              Dışarı Aktar
             </button>
           </div>
         </div>
 
         {showCreateForm && (
           <div className="detail-box form-box">
-            <strong>Yeni Anahtar Olustur</strong>
+            <strong>Yeni Anahtar Oluştur</strong>
             <div className="form-grid">
               <input placeholder="Ad" value={createForm.name} onChange={(event) => setCreateForm((prev) => ({ ...prev, name: event.target.value }))} />
               <input
-                placeholder="Saglayici"
+                placeholder="Sağlayıcı"
                 value={createForm.provider}
                 onChange={(event) => setCreateForm((prev) => ({ ...prev, provider: event.target.value }))}
               />
@@ -395,7 +395,7 @@ export function ProjectsPage() {
                 onChange={(event) => setCreateForm((prev) => ({ ...prev, keyName: event.target.value }))}
               />
               <input
-                placeholder="Gizli Deger"
+                placeholder="Gizli Değer"
                 value={createForm.value}
                 onChange={(event) => setCreateForm((prev) => ({ ...prev, value: event.target.value }))}
               />
@@ -413,10 +413,10 @@ export function ProjectsPage() {
             </div>
             <div className="action-row">
               <button type="button" onClick={() => void submitCreate()}>
-                Olustur
+                Oluştur
               </button>
               <button type="button" onClick={() => setShowCreateForm(false)}>
-                Iptal
+                İptal
               </button>
             </div>
           </div>
@@ -424,7 +424,7 @@ export function ProjectsPage() {
 
         <div className="filter-row">
           <select value={providerFilter} onChange={(event) => setProviderFilter(event.target.value)}>
-            <option value="all">Tum saglayicilar</option>
+            <option value="all">Tüm sağlayıcılar</option>
             {providers.map((provider) => (
               <option key={provider} value={provider}>
                 {provider}
@@ -432,7 +432,7 @@ export function ProjectsPage() {
             ))}
           </select>
           <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}>
-            <option value="all">Tum etiketler</option>
+            <option value="all">Tüm etiketler</option>
             {tags.map((tag) => (
               <option key={tag} value={tag}>
                 {tag}
@@ -440,7 +440,7 @@ export function ProjectsPage() {
             ))}
           </select>
           <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as SecretType | "all")}>
-            <option value="all">Tum tipler</option>
+            <option value="all">Tüm tipler</option>
             {typeOptions.map((type) => (
               <option key={type} value={type}>
                 {type.toUpperCase()}
@@ -450,15 +450,15 @@ export function ProjectsPage() {
         </div>
 
         {errorMessage && <p className="inline-error">{errorMessage}</p>}
-        {loading && <Spinner text="Anahtarlar yukleniyor..." />}
+        {loading && <Spinner text="Anahtarlar yükleniyor..." />}
 
         <div className="table-head">
           <span>Ad</span>
-          <span>Saglayici</span>
+          <span>Sağlayıcı</span>
           <span>Tip</span>
           <span>Ortam</span>
-          <span>Maskeli Deger</span>
-          <span>Guncelleme</span>
+          <span>Maskeli Değer</span>
+          <span>Güncelleme</span>
           <span>Kopyala</span>
         </div>
 
@@ -506,7 +506,7 @@ export function ProjectsPage() {
             </p>
 
             <div className="detail-box">
-              <strong>Deger</strong>
+              <strong>Değer</strong>
               <div className="reveal-row">
                 <code>{revealedValue ?? "••••••••••••"}</code>
                 <button
@@ -517,16 +517,16 @@ export function ProjectsPage() {
                   onTouchStart={() => void startReveal()}
                   onTouchEnd={stopReveal}
                 >
-                  {isRevealing ? "Yukleniyor..." : "Basili Tut ve Gor"}
+                  {isRevealing ? "Yükleniyor..." : "Basılı Tut ve Gör"}
                 </button>
               </div>
             </div>
 
             <div className="detail-box">
-              <strong>Kopyalama Formati</strong>
+              <strong>Kopyalama Formatı</strong>
               <div className="copy-grid">
                 <button type="button" onClick={() => void copySecret(selectedSecret, "value")}>
-                  Deger
+                  Değer
                 </button>
                 <button type="button" onClick={() => void copySecret(selectedSecret, "env")}>
                   KEY=value
@@ -564,11 +564,11 @@ export function ProjectsPage() {
                 <strong>Detaylar</strong>
                 {user.role !== "viewer" && (
                   <button type="button" onClick={() => setIsEditing((prev) => !prev)}>
-                    {isEditing ? "Duzenlemeyi Kapat" : "Duzenle"}
+                    {isEditing ? "Düzenlemeyi Kapat" : "Düzenle"}
                   </button>
                 )}
               </div>
-              <strong>Son Guncelleyen</strong>
+              <strong>Son Güncelleyen</strong>
               <p>{selectedSecret.updatedByName || "-"}</p>
               <strong>Son Kopyalanma</strong>
               <p>{selectedSecret.lastCopiedAt ? new Date(selectedSecret.lastCopiedAt).toLocaleString() : "-"}</p>
@@ -587,7 +587,7 @@ export function ProjectsPage() {
                   <input
                     value={editForm.provider}
                     onChange={(event) => setEditForm((prev) => ({ ...prev, provider: event.target.value }))}
-                    placeholder="Saglayici"
+                    placeholder="Sağlayıcı"
                   />
                   <select
                     value={editForm.type}
@@ -607,7 +607,7 @@ export function ProjectsPage() {
                   <input
                     value={editForm.value}
                     onChange={(event) => setEditForm((prev) => ({ ...prev, value: event.target.value }))}
-                    placeholder="Yeni deger (istege bagli)"
+                    placeholder="Yeni değer (isteğe bağlı)"
                   />
                   <input
                     value={editForm.tags}

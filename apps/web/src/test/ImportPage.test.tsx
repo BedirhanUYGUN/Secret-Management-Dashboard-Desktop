@@ -44,20 +44,20 @@ describe("ImportPage", () => {
     });
   });
 
-  it("onizleme ve commit akislarini calistirir", async () => {
+  it("önizleme ve commit akislarini calistirir", async () => {
     const user = userEvent.setup();
     render(<ImportPage />);
 
-    expect(screen.queryByText(/catisma: yeni surum/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/çatışma: yeni surum/i)).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Onizleme" }));
+    await user.click(screen.getByRole("button", { name: "Önizleme" }));
 
     await waitFor(() => {
       expect(mockPreviewImport).toHaveBeenCalled();
-      expect(screen.getByText(/toplam cift/i)).toBeInTheDocument();
+      expect(screen.getByText(/toplam çift/i)).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: "Iceri Aktar" }));
+    await user.click(screen.getByRole("button", { name: "İçeri Aktar" }));
 
     await waitFor(() => {
       expect(mockCommitImport).toHaveBeenCalledWith(
@@ -67,7 +67,7 @@ describe("ImportPage", () => {
           conflictStrategy: "skip",
         }),
       );
-      expect(mockShowToast).toHaveBeenCalledWith("Iceri aktarim islemi tamamlandi", "success");
+      expect(mockShowToast).toHaveBeenCalledWith("İçeri aktarım işlemi tamamlandı", "success");
     });
   });
 });

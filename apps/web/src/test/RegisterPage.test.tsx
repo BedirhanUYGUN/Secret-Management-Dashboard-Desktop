@@ -34,18 +34,18 @@ describe("RegisterPage", () => {
     vi.clearAllMocks();
   });
 
-  it("personel kaydinda register ve login akislarini calistirir", async () => {
+  it("personel kaydında register ve login akislarini calistirir", async () => {
     mockRegisterWithProfile.mockResolvedValueOnce({ inviteCode: null });
     mockLogin.mockResolvedValueOnce(undefined);
 
     const user = userEvent.setup();
     renderPage();
 
-    await user.type(screen.getByLabelText(/^isim$/i), "Ali");
+    await user.type(screen.getByLabelText(/^İsim$/i), "Ali");
     await user.type(screen.getByLabelText(/^soyisim$/i), "Yilmaz");
     await user.type(screen.getByLabelText(/e-posta/i), "ali@test.com");
-    await user.type(screen.getByLabelText(/sifre/i), "StrongPass1!");
-    await user.click(screen.getByRole("button", { name: /kayit ol/i }));
+    await user.type(screen.getByLabelText(/şifre/i), "StrongPass1!");
+    await user.click(screen.getByRole("button", { name: /kayıt ol/i }));
 
     await waitFor(() => {
       expect(mockRegisterWithProfile).toHaveBeenCalledWith(
@@ -61,21 +61,21 @@ describe("RegisterPage", () => {
     });
   });
 
-  it("organizasyon olusturma kaydinda invite key gosterir", async () => {
+  it("organizasyon olusturma kaydında invite key gosterir", async () => {
     mockRegisterWithProfile.mockResolvedValueOnce({ inviteCode: "Ab1!Cd2@Ef3#" });
     const user = userEvent.setup();
     renderPage();
 
-    await user.type(screen.getByLabelText(/^isim$/i), "Ayse");
+    await user.type(screen.getByLabelText(/^İsim$/i), "Ayse");
     await user.type(screen.getByLabelText(/^soyisim$/i), "Kaya");
     await user.type(screen.getByLabelText(/e-posta/i), "ayse@test.com");
-    await user.type(screen.getByLabelText(/sifre/i), "StrongPass1!");
-    await user.selectOptions(screen.getByLabelText(/ne icin kullanacaksiniz/i), "organization");
-    await user.type(screen.getByLabelText(/organizasyon adi/i), "Nova Labs");
-    await user.click(screen.getByRole("button", { name: /kayit ol/i }));
+    await user.type(screen.getByLabelText(/şifre/i), "StrongPass1!");
+    await user.selectOptions(screen.getByLabelText(/ne için kullanacaksınız/i), "organization");
+    await user.type(screen.getByLabelText(/organizasyon adı/i), "Nova Labs");
+    await user.click(screen.getByRole("button", { name: /kayıt ol/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/organizasyon davet key olusturuldu/i)).toBeInTheDocument();
+      expect(screen.getByText(/organizasyon davet key oluşturuldu/i)).toBeInTheDocument();
       expect(screen.getByText("Ab1!Cd2@Ef3#")).toBeInTheDocument();
     });
     expect(mockLogin).not.toHaveBeenCalled();

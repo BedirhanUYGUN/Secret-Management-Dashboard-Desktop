@@ -71,7 +71,7 @@ export function ExportModal({ open, onClose, projectId, projectName, activeEnv, 
 
   const handleCopyToClipboard = async () => {
     if (needsProdConfirm && !prodConfirmed) {
-      setErrorMessage("Prod ortamini iceren aktarim icin onay gereklidir.");
+      setErrorMessage("Prod ortamını içeren aktarım için onay gereklidir.");
       return;
     }
 
@@ -82,7 +82,7 @@ export function ExportModal({ open, onClose, projectId, projectName, activeEnv, 
 
       await copyWithTimer({
         value: payload,
-        successMessage: `${format.toUpperCase()} disari aktarimi panoya kopyalandi`,
+        successMessage: `${format.toUpperCase()} dışarı aktarımı panoya kopyalandı`,
       });
       handleClose();
     } catch (error) {
@@ -96,7 +96,7 @@ export function ExportModal({ open, onClose, projectId, projectName, activeEnv, 
 
   const handleDownloadFile = async () => {
     if (needsProdConfirm && !prodConfirmed) {
-      setErrorMessage("Prod ortamini iceren aktarim icin onay gereklidir.");
+      setErrorMessage("Prod ortamını içeren aktarım için onay gereklidir.");
       return;
     }
 
@@ -109,7 +109,7 @@ export function ExportModal({ open, onClose, projectId, projectName, activeEnv, 
       const mimeType = format === "env" ? "text/plain" : "application/json";
       downloadAsFile(payload, fileName, mimeType);
 
-      showToast(`${fileName} dosyasi indirildi`, "success");
+      showToast(`${fileName} dosyası indirildi`, "success");
       handleClose();
     } catch (error) {
       if (error instanceof Error) {
@@ -121,13 +121,13 @@ export function ExportModal({ open, onClose, projectId, projectName, activeEnv, 
   };
 
   return (
-    <Modal open={open} onClose={handleClose} title="Disari Aktar">
+    <Modal open={open} onClose={handleClose} title="Dışarı Aktar">
       <div className="export-modal-form">
         <label className="export-modal-label">
           Kapsam
           <select value={scope} onChange={(e) => { setScope(e.target.value as ExportScope); setProdConfirmed(false); }}>
             <option value="current">Mevcut ortam ({activeEnv.toUpperCase()})</option>
-            <option value="all">Tum ortamlar</option>
+            <option value="all">Tüm ortamlar</option>
           </select>
         </label>
 
@@ -143,7 +143,7 @@ export function ExportModal({ open, onClose, projectId, projectName, activeEnv, 
           <label className="export-modal-label">
             Etiket Filtresi
             <select value={selectedTag} onChange={(e) => setSelectedTag(e.target.value)}>
-              <option value="all">Tum etiketler</option>
+              <option value="all">Tüm etiketler</option>
               {availableTags.map((tag) => (
                 <option key={tag} value={tag}>
                   {tag}
@@ -161,7 +161,7 @@ export function ExportModal({ open, onClose, projectId, projectName, activeEnv, 
                 checked={prodConfirmed}
                 onChange={(e) => setProdConfirmed(e.target.checked)}
               />
-              Prod ortami hassas veri icerir. Disari aktarimi onayliyorum.
+              Prod ortamı hassas veri içerir. Dışarı aktarımı onaylıyorum.
             </label>
           </div>
         )}
@@ -174,17 +174,17 @@ export function ExportModal({ open, onClose, projectId, projectName, activeEnv, 
             onClick={() => void handleCopyToClipboard()}
             disabled={loading || (needsProdConfirm && !prodConfirmed)}
           >
-            {loading ? "Yukleniyor..." : "Panoya Kopyala"}
+            {loading ? "Yükleniyor..." : "Panoya Kopyala"}
           </button>
           <button
             type="button"
             onClick={() => void handleDownloadFile()}
             disabled={loading || (needsProdConfirm && !prodConfirmed)}
           >
-            {loading ? "Yukleniyor..." : "Dosya Indir"}
+            {loading ? "Yükleniyor..." : "Dosya İndir"}
           </button>
           <button type="button" onClick={handleClose}>
-            Iptal
+            İptal
           </button>
         </div>
       </div>

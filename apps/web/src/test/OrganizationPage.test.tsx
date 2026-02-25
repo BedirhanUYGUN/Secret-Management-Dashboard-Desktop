@@ -56,7 +56,7 @@ describe("OrganizationPage", () => {
     mockRevokeOrganizationInvite.mockResolvedValue(undefined);
   });
 
-  it("yonetilen organizasyonlari listeler ve yeni key olusturur", async () => {
+  it("yönetilen organizasyonlari listeler ve yeni key olusturur", async () => {
     const user = userEvent.setup();
     render(<OrganizationPage />);
 

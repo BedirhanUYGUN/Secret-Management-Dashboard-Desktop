@@ -15,7 +15,7 @@ import { useAppUi } from "@core/ui/AppUiContext";
 import { Spinner } from "@core/ui/Spinner";
 
 const roleOptions: Role[] = ["admin", "member", "viewer"];
-const roleLabels: Record<Role, string> = { admin: "Yonetici", member: "Uye", viewer: "Izleyici" };
+const roleLabels: Record<Role, string> = { admin: "Yönetici", member: "Uye", viewer: "Izleyici" };
 const envOptions: Environment[] = ["local", "dev", "prod"];
 
 export function ProjectManagePage() {
@@ -75,7 +75,7 @@ export function ProjectManagePage() {
 
   const handleCreate = async () => {
     if (!createForm.name.trim() || !createForm.slug.trim()) {
-      setErrorMessage("Proje adi ve slug zorunludur.");
+      setErrorMessage("Proje adı ve slug zorunludur.");
       return;
     }
     try {
@@ -88,7 +88,7 @@ export function ProjectManagePage() {
       });
       setShowCreate(false);
       setCreateForm({ name: "", slug: "", description: "", tags: "" });
-      showToast("Proje olusturuldu", "success");
+      showToast("Proje oluşturuldu", "success");
       await loadData();
     } catch (error) {
       if (error instanceof Error) setErrorMessage(error.message);
@@ -106,7 +106,7 @@ export function ProjectManagePage() {
         tags: editForm.tags.split(",").map((t) => t.trim()).filter(Boolean),
       });
       setEditMode(false);
-      showToast("Proje guncellendi", "success");
+      showToast("Proje güncellendi", "success");
       await loadData();
     } catch (error) {
       if (error instanceof Error) setErrorMessage(error.message);
@@ -115,7 +115,7 @@ export function ProjectManagePage() {
 
   const handleDelete = async () => {
     if (!selected) return;
-    const confirmed = window.confirm(`"${selected.name}" projesi silinsin mi? Bu islem geri alinamaz.`);
+    const confirmed = window.confirm(`"${selected.name}" projesi silinsin mi? Bu işlem geri alinamaz.`);
     if (!confirmed) return;
     try {
       setErrorMessage("");
@@ -134,7 +134,7 @@ export function ProjectManagePage() {
       setErrorMessage("");
       await addProjectMember({ projectId: selected.id, userId: addMemberUserId, role: addMemberRole });
       setAddMemberUserId("");
-      showToast("Uye eklendi", "success");
+      showToast("Üye eklendi", "success");
       await loadData();
     } catch (error) {
       if (error instanceof Error) setErrorMessage(error.message);
@@ -143,12 +143,12 @@ export function ProjectManagePage() {
 
   const handleRemoveMember = async (userId: string) => {
     if (!selected) return;
-    const confirmed = window.confirm("Bu uye projeden cikarilsin mi?");
+    const confirmed = window.confirm("Bu üye projeden çıkarılsın mı?");
     if (!confirmed) return;
     try {
       setErrorMessage("");
       await removeProjectMember({ projectId: selected.id, userId });
-      showToast("Uye cikarildi", "success");
+      showToast("Üye çıkarıldı", "success");
       await loadData();
     } catch (error) {
       if (error instanceof Error) setErrorMessage(error.message);
@@ -166,7 +166,7 @@ export function ProjectManagePage() {
         canRead: accessRead,
         canExport: accessExport,
       });
-      showToast("Ortam erisimi guncellendi", "success");
+      showToast("Ortam erişimi güncellendi", "success");
     } catch (error) {
       if (error instanceof Error) setErrorMessage(error.message);
     }
@@ -184,23 +184,23 @@ export function ProjectManagePage() {
       {/* Left: project list */}
       <section className="table-section">
         <div className="detail-inline-head">
-          <h2>Proje Yonetimi</h2>
+          <h2>Proje Yönetimi</h2>
           <button type="button" onClick={() => setShowCreate((prev) => !prev)}>
-            {showCreate ? "Iptal" : "Yeni Proje"}
+            {showCreate ? "İptal" : "Yeni Proje"}
           </button>
         </div>
 
         {showCreate && (
           <div className="detail-box form-box">
-            <strong>Yeni Proje Olustur</strong>
+            <strong>Yeni Proje Oluştur</strong>
             <div className="form-grid">
-              <input placeholder="Proje Adi" value={createForm.name} onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))} />
+              <input placeholder="Proje Adı" value={createForm.name} onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))} />
               <input placeholder="Slug (URL dostu)" value={createForm.slug} onChange={(e) => setCreateForm((p) => ({ ...p, slug: e.target.value }))} />
-              <input placeholder="Aciklama" value={createForm.description} onChange={(e) => setCreateForm((p) => ({ ...p, description: e.target.value }))} />
+              <input placeholder="Açıklama" value={createForm.description} onChange={(e) => setCreateForm((p) => ({ ...p, description: e.target.value }))} />
               <input placeholder="etiket1, etiket2" value={createForm.tags} onChange={(e) => setCreateForm((p) => ({ ...p, tags: e.target.value }))} />
             </div>
             <div className="action-row">
-              <button type="button" onClick={() => void handleCreate()}>Olustur</button>
+              <button type="button" onClick={() => void handleCreate()}>Oluştur</button>
             </div>
           </div>
         )}
@@ -224,7 +224,7 @@ export function ProjectManagePage() {
               </div>
             </div>
           ))}
-          {projects.length === 0 && !loading && <p className="inline-muted">Henuz proje yok.</p>}
+          {projects.length === 0 && !loading && <p className="inline-muted">Henüz proje yok.</p>}
         </div>
       </section>
 
@@ -236,19 +236,19 @@ export function ProjectManagePage() {
               <h3>{selected.name}</h3>
               <div className="action-row">
                 <button type="button" onClick={() => setEditMode((prev) => !prev)}>
-                  {editMode ? "Iptal" : "Duzenle"}
+                  {editMode ? "İptal" : "Düzenle"}
                 </button>
                 <button type="button" onClick={() => void handleDelete()}>Sil</button>
               </div>
             </div>
-            <p>{selected.slug} • {selected.description || "Aciklama yok"}</p>
+            <p>{selected.slug} • {selected.description || "Açıklama yok"}</p>
 
             {editMode && (
               <div className="detail-box form-box">
-                <strong>Proje Bilgilerini Duzenle</strong>
+                <strong>Proje Bilgilerini Düzenle</strong>
                 <div className="form-grid">
-                  <input value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} placeholder="Proje Adi" />
-                  <input value={editForm.description} onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))} placeholder="Aciklama" />
+                  <input value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} placeholder="Proje Adı" />
+                  <input value={editForm.description} onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))} placeholder="Açıklama" />
                   <input value={editForm.tags} onChange={(e) => setEditForm((p) => ({ ...p, tags: e.target.value }))} placeholder="etiket1, etiket2" />
                 </div>
                 <div className="action-row">
@@ -259,7 +259,7 @@ export function ProjectManagePage() {
 
             {/* Members */}
             <div className="detail-box">
-              <strong>Proje Uyeleri</strong>
+              <strong>Proje Üyeleri</strong>
               {selected.members.map((m) => (
                 <div key={m.userId} className="member-row">
                   <span>{m.displayName}</span>
@@ -268,11 +268,11 @@ export function ProjectManagePage() {
                   <button type="button" onClick={() => void handleRemoveMember(m.userId)}>Cikar</button>
                 </div>
               ))}
-              {selected.members.length === 0 && <p className="inline-muted">Uye bulunmuyor.</p>}
+              {selected.members.length === 0 && <p className="inline-muted">Üye bulunmuyor.</p>}
 
               <div className="filter-row" style={{ marginTop: 10 }}>
                 <select value={addMemberUserId} onChange={(e) => setAddMemberUserId(e.target.value)}>
-                  <option value="">Kullanici sec...</option>
+                  <option value="">Kullanıcı seç...</option>
                   {availableUsers.map((u) => (
                     <option key={u.id} value={u.id}>{u.displayName} ({u.email})</option>
                   ))}
@@ -283,18 +283,18 @@ export function ProjectManagePage() {
                   ))}
                 </select>
                 <button type="button" onClick={() => void handleAddMember()} disabled={!addMemberUserId}>
-                  Uye Ekle
+                  Üye Ekle
                 </button>
               </div>
             </div>
 
             {/* Environment access */}
             <div className="detail-box">
-              <strong>Ortam Erisim Yonetimi</strong>
-              <p className="inline-muted">Ozellikle prod ortami icin kullanici bazli erisim ayarla.</p>
+              <strong>Ortam Erişim Yönetimi</strong>
+              <p className="inline-muted">Özellikle prod ortami için kullanıcı bazli erişim ayarla.</p>
               <div className="filter-row" style={{ marginTop: 8 }}>
                 <select value={accessUserId} onChange={(e) => setAccessUserId(e.target.value)}>
-                  <option value="">Kullanici sec...</option>
+                  <option value="">Kullanıcı seç...</option>
                   {selected.members.map((m) => (
                     <option key={m.userId} value={m.userId}>{m.displayName}</option>
                   ))}
@@ -310,16 +310,16 @@ export function ProjectManagePage() {
                   <input type="checkbox" checked={accessRead} onChange={(e) => setAccessRead(e.target.checked)} /> Okuma
                 </label>
                 <label>
-                  <input type="checkbox" checked={accessExport} onChange={(e) => setAccessExport(e.target.checked)} /> Disari Aktarim
+                  <input type="checkbox" checked={accessExport} onChange={(e) => setAccessExport(e.target.checked)} /> Dışarı Aktarım
                 </label>
                 <button type="button" onClick={() => void handleSetAccess()} disabled={!accessUserId}>
-                  Erisimi Kaydet
+                  Erişimi Kaydet
                 </button>
               </div>
             </div>
           </>
         ) : (
-          <div className="page-panel">Detay gormek icin soldan bir proje secin.</div>
+          <div className="page-panel">Detay görmek için soldan bir proje seçin.</div>
         )}
       </aside>
     </div>

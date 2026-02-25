@@ -9,8 +9,9 @@ Takımlar için API key, token ve ortam değişkenlerini güvenli şekilde yöne
 
 ## Hızlı Erişim
 
-- Web (canlı): [Open Web App](https://your-netlify-site.netlify.app)
-- Windows indirme: [Download for Windows](https://github.com/BedirhanUYGUN/Secret-Management-Dashboard-Desktop/releases/latest)
+- Web (canlı): [Web Uygulaması](https://secret-management-dashboard-desktop.netlify.app)
+- API sağlık kontrolü: [Render Health](https://api-key-organizer-api.onrender.com/health)
+- Windows indirme: [GitHub Releases](https://github.com/BedirhanUYGUN/Secret-Management-Dashboard-Desktop/releases/latest)
 
 Masaüstü uygulamasını kurduktan sonra doğrudan açabilirsiniz. Uygulama canlı API’ye bağlanır; kullanıcı tarafında ayrıca backend kurulumu gerekmez.
 
@@ -153,7 +154,7 @@ Dosyaları GitHub Releases’a yükledikten sonra README’deki `Download for Wi
 - `DATABASE_URL` (Supabase Postgres + `?sslmode=require`)
 - `JWT_SECRET_KEY`
 - `SECRET_ENCRYPTION_KEY`
-- `CORS_ORIGINS=https://<your-netlify-site>.netlify.app`
+- `CORS_ORIGINS=https://secret-management-dashboard-desktop.netlify.app`
 - `SUPABASE_AUTH_ENABLED` (`true` / `false`)
 - `SUPABASE_URL` ve `SUPABASE_ANON_KEY` (Supabase auth açıksa)
 
@@ -192,4 +193,4 @@ npm run -w apps/web build
 
 ## Lisans
 
-Özel kullanım.
+MIT - detaylar için `LICENSE` dosyasına bakın.

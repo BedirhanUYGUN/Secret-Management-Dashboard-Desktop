@@ -76,7 +76,7 @@ describe("ProjectManagePage", () => {
     await waitFor(() => expect(screen.getByText("Apollo API")).toBeInTheDocument());
     await user.click(screen.getByText("Yeni Proje"));
 
-    expect(screen.getByPlaceholderText("Proje Adi")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Proje Adı")).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/slug/i)).toBeInTheDocument();
   });
 
@@ -95,15 +95,15 @@ describe("ProjectManagePage", () => {
     await waitFor(() => expect(screen.getByText("Apollo API")).toBeInTheDocument());
     await user.click(screen.getByText("Yeni Proje"));
 
-    await user.type(screen.getByPlaceholderText("Proje Adi"), "Yeni Proje");
+    await user.type(screen.getByPlaceholderText("Proje Adı"), "Yeni Proje");
     await user.type(screen.getByPlaceholderText(/slug/i), "yeni-proje");
-    await user.click(screen.getByText("Olustur"));
+    await user.click(screen.getByText("Oluştur"));
 
     await waitFor(() => {
       expect(mockCreateProject).toHaveBeenCalledWith(
         expect.objectContaining({ name: "Yeni Proje", slug: "yeni-proje" }),
       );
-      expect(mockShowToast).toHaveBeenCalledWith("Proje olusturuldu", "success");
+      expect(mockShowToast).toHaveBeenCalledWith("Proje oluşturuldu", "success");
     });
   });
 

@@ -28,29 +28,29 @@ function renderPage() {
 describe("LoginPage", () => {
   it("baslik ve form elemanlari gorunur", () => {
     renderPage();
-    expect(screen.getByRole("heading", { name: /giris yap/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /giriş yap/i })).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/ornek@sirket/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/sifrenizi girin/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /giris yap/i })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/şifrenizi girin/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /giriş yap/i })).toBeInTheDocument();
   });
 
   it("bos form gonderildiginde hata gosterir", async () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: /giris yap/i }));
+    await user.click(screen.getByRole("button", { name: /giriş yap/i }));
     expect(screen.getByText(/zorunludur/i)).toBeInTheDocument();
     expect(mockLogin).not.toHaveBeenCalled();
   });
 
-  it("basarili giris sonrasi yonlendirme yapar", async () => {
+  it("basarili giriş sonrasi yonlendirme yapar", async () => {
     mockLogin.mockResolvedValueOnce(undefined);
     const user = userEvent.setup();
     renderPage();
 
     await user.type(screen.getByPlaceholderText(/ornek@sirket/i), "admin@test.com");
-    await user.type(screen.getByPlaceholderText(/sifrenizi girin/i), "sifre123");
-    await user.click(screen.getByRole("button", { name: /giris yap/i }));
+    await user.type(screen.getByPlaceholderText(/şifrenizi girin/i), "sifre123");
+    await user.click(screen.getByRole("button", { name: /giriş yap/i }));
 
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalledWith("admin@test.com", "sifre123");
@@ -64,11 +64,11 @@ describe("LoginPage", () => {
     renderPage();
 
     await user.type(screen.getByPlaceholderText(/ornek@sirket/i), "admin@test.com");
-    await user.type(screen.getByPlaceholderText(/sifrenizi girin/i), "yanlis");
-    await user.click(screen.getByRole("button", { name: /giris yap/i }));
+    await user.type(screen.getByPlaceholderText(/şifrenizi girin/i), "yanlis");
+    await user.click(screen.getByRole("button", { name: /giriş yap/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/hatali/i)).toBeInTheDocument();
+      expect(screen.getByText(/hatalı/i)).toBeInTheDocument();
     });
   });
 
@@ -78,11 +78,11 @@ describe("LoginPage", () => {
     renderPage();
 
     await user.type(screen.getByPlaceholderText(/ornek@sirket/i), "admin@test.com");
-    await user.type(screen.getByPlaceholderText(/sifrenizi girin/i), "sifre123");
-    await user.click(screen.getByRole("button", { name: /giris yap/i }));
+    await user.type(screen.getByPlaceholderText(/şifrenizi girin/i), "sifre123");
+    await user.click(screen.getByRole("button", { name: /giriş yap/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/baglanilamiyor/i)).toBeInTheDocument();
+      expect(screen.getByText(/bağlanılamıyor/i)).toBeInTheDocument();
     });
   });
 });

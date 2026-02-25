@@ -9,10 +9,10 @@ const pageTitles: Record<string, string> = {
   "/organizations": "Organizasyonlar",
   "/search": "Arama",
   "/settings": "Ayarlar",
-  "/users": "Kullanicilar",
-  "/project-manage": "Proje Yonetimi",
-  "/import": "Iceri Aktar",
-  "/audit": "Denetim Kaydi",
+  "/users": "Kullanıcılar",
+  "/project-manage": "Proje Yönetimi",
+  "/import": "İçeri Aktar",
+  "/audit": "Denetim Kaydı",
 };
 
 export function MainLayout() {
@@ -119,7 +119,7 @@ export function MainLayout() {
   return (
     <div className="app-frame">
       <aside className="sidebar">
-        <div className="sidebar-title">Anahtar Yoneticisi</div>
+        <div className="sidebar-title">Anahtar Yöneticisi</div>
         <nav className="main-nav">
           <NavLink to="/projects" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Projeler
@@ -138,16 +138,16 @@ export function MainLayout() {
           {user.role === "admin" && (
             <>
               <NavLink to="/users" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-                Kullanicilar
+                Kullanıcılar
               </NavLink>
               <NavLink to="/project-manage" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-                Proje Yonetimi
+                Proje Yönetimi
               </NavLink>
               <NavLink to="/import" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-                Iceri Aktar
+                İçeri Aktar
               </NavLink>
               <NavLink to="/audit" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-                Denetim Kaydi
+                Denetim Kaydı
               </NavLink>
             </>
           )}
@@ -178,7 +178,7 @@ export function MainLayout() {
             <small>{user.role.toUpperCase()}</small>
           </div>
           <button type="button" onClick={logout}>
-            Cikis Yap
+            Çıkış Yap
           </button>
         </div>
       </aside>
@@ -192,11 +192,11 @@ export function MainLayout() {
             </span>
           ))}</div>
           <div className="content-header-right">
-            {isTauriRuntime() && <small className="desktop-shortcut-hint">Ctrl+1-4 hizli gecis, Ctrl+Shift+L cikis</small>}
+            {isTauriRuntime() && <small className="desktop-shortcut-hint">Ctrl+1-4 hızlı geçiş, Ctrl+Shift+L çıkış</small>}
             {user.role === "viewer" ? (
               <span className="readonly-pill">Salt okunur mod</span>
             ) : (
-              <span className="readonly-pill editable">Duzenleme aktif</span>
+              <span className="readonly-pill editable">Düzenleme aktif</span>
             )}
           </div>
         </header>

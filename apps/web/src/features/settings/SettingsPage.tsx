@@ -34,10 +34,10 @@ export function SettingsPage() {
 
   return (
     <section className="page-panel">
-      <h2>Guvenlik Tercihleri</h2>
+      <h2>Güvenlik Tercihleri</h2>
       <div className="settings-grid">
         <label>
-          Pano temizleme suresi (saniye)
+          Pano temizleme süresi (saniye)
           <input
             type="number"
             value={localClipboard}
@@ -47,10 +47,10 @@ export function SettingsPage() {
           />
         </label>
         <label>
-          Degerleri varsayilan olarak maskele
+          Değerleri varsayılan olarak maskele
           <select value={maskValues ? "yes" : "no"} onChange={(event) => setMaskValues(event.target.value === "yes")}>
             <option value="yes">Evet</option>
-            <option value="no">Hayir</option>
+            <option value="no">Hayır</option>
           </select>
         </label>
       </div>

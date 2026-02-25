@@ -39,9 +39,11 @@ class Settings(BaseSettings):
     @classmethod
     def split_origins(cls, value):
         def normalize(item: str) -> str:
-            candidate = item.strip()
+            candidate = item.strip().rstrip("/")
             if not candidate:
                 return ""
+            if candidate == "*":
+                return "*"
             if candidate.startswith("http://") or candidate.startswith("https://"):
                 return candidate
             return f"https://{candidate}"

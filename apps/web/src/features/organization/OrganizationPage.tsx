@@ -86,7 +86,7 @@ export function OrganizationPage() {
         maxUses,
       });
       setLatestCode(created.code);
-      showToast("Yeni davet key olusturuldu", "success");
+      showToast("Yeni davet key oluşturuldu", "success");
       await loadInvites(selectedProjectId);
     } catch (error) {
       if (error instanceof Error) {
@@ -142,9 +142,9 @@ export function OrganizationPage() {
     }
     try {
       await navigator.clipboard.writeText(latestCode);
-      showToast("Davet key panoya kopyalandi", "success");
+      showToast("Davet key panoya kopyalandı", "success");
     } catch {
-      showToast("Kopyalama basarisiz oldu", "error");
+      showToast("Kopyalama başarısız oldu", "error");
     }
   };
 
@@ -152,7 +152,7 @@ export function OrganizationPage() {
     <div className="workspace-grid">
       <section className="table-section">
         <div className="detail-inline-head">
-          <h2>Organizasyonlarim</h2>
+          <h2>Organizasyonlarım</h2>
         </div>
 
         {errorMessage && <p className="inline-error">{errorMessage}</p>}
@@ -178,7 +178,7 @@ export function OrganizationPage() {
               </div>
             </div>
           ))}
-          {organizations.length === 0 && !loading && <p className="inline-muted">Yonetebileceginiz organizasyon bulunmuyor.</p>}
+          {organizations.length === 0 && !loading && <p className="inline-muted">Yönetebileceginiz organizasyon bulunmuyor.</p>}
         </div>
       </section>
 
@@ -197,7 +197,7 @@ export function OrganizationPage() {
               <strong>Davet Key Ayarlari</strong>
               <div className="filter-row" style={{ marginTop: 8 }}>
                 <label>
-                  Gecerlilik (saat)
+                  Geçerlilik (saat)
                   <input
                     type="number"
                     min={1}
@@ -207,7 +207,7 @@ export function OrganizationPage() {
                   />
                 </label>
                 <label>
-                  Kullanim Limiti (0=sinirsiz)
+                  Kullanım Limiti (0=sınırsız)
                   <input
                     type="number"
                     min={0}
@@ -235,8 +235,8 @@ export function OrganizationPage() {
               {invites.map((invite) => (
                 <div key={invite.id} className="member-row">
                   <span>{invite.isActive ? "Aktif" : "Pasif"}</span>
-                  <span>Kullanim: {invite.usedCount}/{invite.maxUses === 0 ? "sinirsiz" : invite.maxUses}</span>
-                  <span>Bitis: {invite.expiresAt ? new Date(invite.expiresAt).toLocaleString() : "Yok"}</span>
+                  <span>Kullanım: {invite.usedCount}/{invite.maxUses === 0 ? "sınırsız" : invite.maxUses}</span>
+                  <span>Bitiş: {invite.expiresAt ? new Date(invite.expiresAt).toLocaleString() : "Yok"}</span>
                   <button
                     type="button"
                     onClick={() => void handleRevokeInvite(invite.id)}
@@ -249,7 +249,7 @@ export function OrganizationPage() {
             </div>
           </>
         ) : (
-          <div className="page-panel">Organizasyon secerek davet key yonetimini acin.</div>
+          <div className="page-panel">Organizasyon seçerek davet key yönetimini acin.</div>
         )}
       </aside>
     </div>

@@ -3,6 +3,7 @@ name = "api-key-organizer-api-py"
 version = "0.1.0"
 description = "FastAPI backend for API Key Organizer"
 requires-python = ">=3.9"
+license = { text = "MIT" }
 dependencies = [
   "alembic>=1.13.2",
   "cryptography>=43.0.0",

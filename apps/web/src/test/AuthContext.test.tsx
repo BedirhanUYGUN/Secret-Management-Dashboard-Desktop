@@ -15,14 +15,14 @@ vi.mock("@core/api/client", () => ({
   clearTokens: (...args: unknown[]) => mockClearTokens(...args),
 }));
 
-// Test icin AuthContext kullanan yardimci component
+// Test için AuthContext kullanan yardimci component
 function TestConsumer() {
   const { isAuthenticated, user, loading, login, logout } = useAuth();
   return (
     <div>
-      <span data-testid="auth">{isAuthenticated ? "giris-yapildi" : "giris-yapilmadi"}</span>
+      <span data-testid="auth">{isAuthenticated ? "giriş-yapildi" : "giriş-yapilmadı"}</span>
       <span data-testid="user">{user?.name ?? "yok"}</span>
-      <span data-testid="loading">{loading ? "yukleniyor" : "hazir"}</span>
+      <span data-testid="loading">{loading ? "yükleniyor" : "hazir"}</span>
       <button onClick={() => void login("a@b.com", "pass")}>login</button>
       <button onClick={logout}>logout</button>
     </div>
@@ -35,7 +35,7 @@ beforeEach(() => {
 });
 
 describe("AuthContext", () => {
-  it("token yoksa giris yapilmamis durumda baslar", async () => {
+  it("token yoksa giriş yapilmamis durumda baslar", async () => {
     render(
       <AuthProvider>
         <TestConsumer />
@@ -45,11 +45,11 @@ describe("AuthContext", () => {
     await waitFor(() => {
       expect(screen.getByTestId("loading")).toHaveTextContent("hazir");
     });
-    expect(screen.getByTestId("auth")).toHaveTextContent("giris-yapilmadi");
+    expect(screen.getByTestId("auth")).toHaveTextContent("giriş-yapilmadı");
     expect(screen.getByTestId("user")).toHaveTextContent("yok");
   });
 
-  it("token varsa otomatik olarak kullanici bilgisini yukler", async () => {
+  it("token varsa otomatik olarak kullanıcı bilgisini yukler", async () => {
     localStorage.setItem("api-key-organizer-access-token", "mock-token");
     mockFetchMe.mockResolvedValueOnce({
       id: "1",
@@ -68,11 +68,11 @@ describe("AuthContext", () => {
     await waitFor(() => {
       expect(screen.getByTestId("loading")).toHaveTextContent("hazir");
     });
-    expect(screen.getByTestId("auth")).toHaveTextContent("giris-yapildi");
+    expect(screen.getByTestId("auth")).toHaveTextContent("giriş-yapildi");
     expect(screen.getByTestId("user")).toHaveTextContent("Admin");
   });
 
-  it("login basarili oldugunda kullanici set edilir", async () => {
+  it("login basarili oldugunda kullanıcı set edilir", async () => {
     mockLoginWithCredentials.mockResolvedValueOnce(undefined);
     mockFetchMe.mockResolvedValueOnce({
       id: "2",
@@ -97,13 +97,13 @@ describe("AuthContext", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId("auth")).toHaveTextContent("giris-yapildi");
+      expect(screen.getByTestId("auth")).toHaveTextContent("giriş-yapildi");
       expect(screen.getByTestId("user")).toHaveTextContent("Test User");
     });
     expect(mockLoginWithCredentials).toHaveBeenCalledWith("a@b.com", "pass");
   });
 
-  it("logout yapildiginda kullanici temizlenir", async () => {
+  it("logout yapildiginda kullanıcı temizlenir", async () => {
     localStorage.setItem("api-key-organizer-access-token", "mock-token");
     mockFetchMe.mockResolvedValueOnce({
       id: "1",
@@ -120,14 +120,14 @@ describe("AuthContext", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("auth")).toHaveTextContent("giris-yapildi");
+      expect(screen.getByTestId("auth")).toHaveTextContent("giriş-yapildi");
     });
 
     act(() => {
       screen.getByText("logout").click();
     });
 
-    expect(screen.getByTestId("auth")).toHaveTextContent("giris-yapilmadi");
+    expect(screen.getByTestId("auth")).toHaveTextContent("giriş-yapilmadı");
     expect(screen.getByTestId("user")).toHaveTextContent("yok");
   });
 
@@ -144,7 +144,7 @@ describe("AuthContext", () => {
     await waitFor(() => {
       expect(screen.getByTestId("loading")).toHaveTextContent("hazir");
     });
-    expect(screen.getByTestId("auth")).toHaveTextContent("giris-yapilmadi");
+    expect(screen.getByTestId("auth")).toHaveTextContent("giriş-yapilmadı");
     expect(mockClearTokens).toHaveBeenCalled();
   });
 });

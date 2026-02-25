@@ -19,7 +19,7 @@ vi.mock("@core/auth/AuthContext", () => ({
 }));
 
 describe("RouteGuards", () => {
-  it("giris yoksa RequireAuth login sayfasina yonlendirir", () => {
+  it("giriş yoksa RequireAuth login sayfasina yonlendirir", () => {
     authState.isAuthenticated = false;
     authState.role = null;
 

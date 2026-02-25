@@ -98,7 +98,7 @@ beforeEach(() => {
 });
 
 describe("ProjectsPage", () => {
-  it("proje adi ve ortam tab'lari gorunur", async () => {
+  it("proje adı ve ortam tab'lari gorunur", async () => {
     renderPage();
 
     await waitFor(() => {
@@ -126,7 +126,7 @@ describe("ProjectsPage", () => {
 
     await waitFor(() => expect(screen.getAllByText("Stripe Key").length).toBeGreaterThanOrEqual(1));
 
-    // table-row icindeki Stripe Key satirina tikla
+    // table-row içindeki Stripe Key satırına tıkla
     const tableRows = document.querySelectorAll(".table-row");
     if (tableRows.length > 0) {
       await user.click(tableRows[0] as HTMLElement);
@@ -150,9 +150,9 @@ describe("ProjectsPage", () => {
     await user.click(screen.getByText("Anahtar Ekle"));
 
     expect(screen.getByPlaceholderText("Ad")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Saglayici")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Sağlayıcı")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("ANAHTAR_ADI")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Gizli Deger")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Gizli Değer")).toBeInTheDocument();
   });
 
   it("filtreleme secenekleri mevcut", async () => {
@@ -160,17 +160,17 @@ describe("ProjectsPage", () => {
 
     await waitFor(() => expect(screen.getAllByText("Stripe Key").length).toBeGreaterThanOrEqual(1));
 
-    expect(screen.getByText("Tum saglayicilar")).toBeInTheDocument();
-    expect(screen.getByText("Tum etiketler")).toBeInTheDocument();
-    expect(screen.getByText("Tum tipler")).toBeInTheDocument();
+    expect(screen.getByText("Tüm sağlayıcılar")).toBeInTheDocument();
+    expect(screen.getByText("Tüm etiketler")).toBeInTheDocument();
+    expect(screen.getByText("Tüm tipler")).toBeInTheDocument();
   });
 
-  it("atanmis proje yoksa uyari gosterir", async () => {
+  it("atanmış proje yoksa uyari gosterir", async () => {
     mockFetchProjects.mockResolvedValueOnce([]);
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText(/atanmis proje bulunmuyor/i)).toBeInTheDocument();
+      expect(screen.getByText(/atanmış proje bulunmuyor/i)).toBeInTheDocument();
     });
   });
 });
