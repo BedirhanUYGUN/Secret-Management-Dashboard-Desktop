@@ -1,315 +1,173 @@
 # Secret Management Dashboard
 
-Takim icindeki API anahtarlarini, token'lari ve endpoint'leri guvenli sekilde yoneten, rol tabanli erisim kontrolune sahip bir masaustu + web uygulamasi.
+Takimlar icin API key, token ve ortam degiskenlerini guvenli yonetmek uzere gelistirilmis web + desktop uygulamasi.
 
-## Ozellikler
+- Web: React + Vite
+- Desktop: Tauri (Windows odakli)
+- Backend: FastAPI + PostgreSQL
+- Guvenlik: AES-256-GCM secret sifreleme, Argon2 password hashing, JWT access/refresh auth
 
-- **Sifrelenmis Secret Depolama** — Tum secret degerleri backend'de AES ile sifrelenir, varsayilan olarak maskeli gosterilir
-- **Rol Tabanli Erisim Kontrolu (RBAC)** — Admin, Member ve Viewer rolleri ile farkli yetki seviyeleri
-- **Coklu Ortam Destegi** — Local, Dev ve Prod ortamlarina ayri erisim kontrolu
-- **Masaustu Uygulamasi (Tauri)** — Windows, macOS ve Linux'ta native calisir; token'lar isletim sistemi guvenli deposunda (keychain/credential store) saklanir
-- **Web Uygulamasi** — Ayni kod tabanini paylasan tarayici versiyonu
-- **Import / Export** — `.env` ve JSON formatinda toplu icerik aktarimi, surukle-birak destegi
-- **Denetim Kayitlari (Audit Log)** — Secret olusturma, guncelleme, kopyalama ve export islemleri kaydedilir
-- **Arama** — Tum projelerdeki secret'larda saglayici, etiket, ortam ve tip bazli filtreleme
-- **Kayit + Organizasyon Akisi** — Personel kaydi, organizasyon olusturma veya davet key ile organizasyona katilim
-- **Davet Key Yonetimi** — Organizasyon adminleri sure/kullanim limitli key uretebilir, yenileyebilir ve pasif edebilir
-- **Pano Guvenligi** — Kopyalanan degerler ayarlanabilir sure sonunda otomatik temizlenir
+## Hemen Basla
 
-## Teknoloji Yigini
+- Web (canli): [Open Web App](https://your-netlify-site.netlify.app)
+- Download for Windows: [Download for Windows](https://github.com/BedirhanUYGUN/Secret-Management-Dashboard-Desktop/releases/latest)
 
-| Katman | Teknoloji |
-|--------|-----------|
-| Frontend | React 19, TypeScript, React Router 7, Vite 7 |
-| Masaustu | Tauri 2 (Rust), OS Keyring entegrasyonu |
-| Backend | Python FastAPI, SQLAlchemy 2, Alembic |
-| Veritabani | PostgreSQL |
-| Guvenlik | JWT (access + refresh token), Argon2 sifre hashleme, AES sifreleme |
-| Test | Vitest + React Testing Library (frontend), pytest (backend) |
-| Deployment | Docker, Render.com |
+Desktop uygulamasi indirildikten sonra kurulum yapip direkt acabilirsiniz. Uygulama canli API'ye baglanarak calisir; kullanicinin lokalinde backend kurmasi gerekmez.
 
-## Proje Yapisi
+## One Cikan Ozellikler
+
+- Secret degerleri veritabaninda sifreli saklanir (AES-256-GCM)
+- RBAC: Admin / Member / Viewer rolleri
+- Multi-environment: local / dev / prod
+- Project, uye ve ortam erisim yonetimi
+- Import / Export (`.env` ve JSON)
+- Audit log ve gelismis arama/filtreleme
+- Desktop tarafta tokenlar OS keyring uzerinde saklanir
+
+## Desktop Dagitim (Windows)
+
+### Download for Windows linki nasil calisir?
+
+Bu repo `Releases` sayfasindan dagitima uygundur. En pratik link:
+
+- [Download for Windows](https://github.com/BedirhanUYGUN/Secret-Management-Dashboard-Desktop/releases/latest)
+
+Bu link README'de sabit kalir; her yeni surumde kullanici otomatik olarak son release sayfasina gider.
+
+### Kullanici kurunca direkt calisir mi?
+
+Evet, asagidaki 3 ayar dogru oldugu surece direkt calisir:
+
+1. Desktop build API hedefi Render URL'ine bakar
+2. Desktop API origin allowlist icinde Render origin vardir
+3. Tauri CSP `connect-src` icinde Render domain vardir
+
+Bu ayarlar projede yapildi:
+
+- `apps/desktop/.env.production`
+- `apps/web/src/core/api/client.ts`
+- `apps/desktop/src-tauri/tauri.conf.json`
+
+Varsayilan production API hedefi:
+
+- `https://api-key-organizer-api.onrender.com`
+
+Eger Render domain'in degisirse sadece bu dosyalardaki domaini guncelleyip desktop release'i yeniden alman yeterli.
+
+## Proje Mimarisi
 
 ```
 Secret-Management-Dashboard-Desktop/
-├── apps/
-│   ├── api_py/          # Python FastAPI backend
-│   │   ├── app/         # Uygulama kodu (routes, models, services, schemas)
-│   │   ├── alembic/     # Veritabani migration dosyalari
-│   │   ├── scripts/     # Dev betikleri (run, migrate, seed)
-│   │   └── tests/       # pytest test suite
-│   ├── desktop/         # Tauri masaustu uygulamasi
-│   │   ├── src/         # Desktop giris noktasi (titlebar, CSS)
-│   │   └── src-tauri/   # Rust backend (keyring token yonetimi)
-│   └── web/             # React web uygulamasi
-│       └── src/
-│           ├── app/         # Router/composition giris noktasi
-│           ├── core/        # Ortak katmanlar (api/auth/layout/platform/ui/types)
-│           ├── features/    # Ozellik bazli moduller (projects, users, import, audit...)
-│           └── test/        # Frontend testleri
-├── docs/
-│   ├── planning/        # Plan ve roadmap belgeleri
-│   └── design/          # Tasarim/stitch referanslari
-├── Dockerfile               # Python API Docker imaji
-└── render.yaml              # Render.com deployment tanimi
++-- apps/
+|   +-- api_py/      # FastAPI backend
+|   +-- web/         # React web frontend
+|   \-- desktop/     # Tauri desktop wrapper
++-- docker-compose.yml
++-- Dockerfile
++-- netlify.toml
+\-- render.yaml
 ```
 
-## Kurulum ve Calistirma
+## Kurulum (Lokal)
 
 ### Gereksinimler
 
-- **Node.js** 18+ ve **npm**
-- **Python** 3.11+
-- **PostgreSQL** 14+
-- **Rust** (sadece masaustu derlemesi icin)
+- Node.js 20+
+- Python 3.11+
+- Docker Desktop (onerilir)
 
-### 1. Depoyu Klonla
+### Secenek A - Docker ile hizli baslangic
 
 ```bash
-git clone <repo-url>
-cd Secret-Management-Dashboard-Desktop
+docker compose up --build
 npm install
+npm run dev:web
 ```
 
-### 2. Backend Kurulumu (Python API)
+- API: `http://localhost:4000`
+- Web: `http://localhost:5173`
+
+### Secenek B - Manual calistirma
+
+```bash
+npm install
+python -m venv apps/api_py/.venv
+apps/api_py/.venv/Scripts/activate
+pip install -e apps/api_py
+python apps/api_py/scripts/migrate.py
+python apps/api_py/scripts/run_dev.py
+npm run dev:web
+```
+
+## Desktop Build (Release)
+
+Windows installer almak icin:
+
+```bash
+npm install
+npm run tauri -w apps/desktop build
+```
+
+Uretilen paketler:
+
+- `apps/desktop/src-tauri/target/release/bundle/`
+
+Bu dosyalari GitHub Releases'a yukleyip README'deki `Download for Windows` linki ile kullanicilara sunabilirsiniz.
+
+## Deployment (Canli)
+
+### Backend - Render
+
+`render.yaml` hazir. Render panelinde su env'leri set et:
+
+- `DATABASE_URL` (Supabase Postgres + `?sslmode=require`)
+- `JWT_SECRET_KEY`
+- `SECRET_ENCRYPTION_KEY`
+- `CORS_ORIGINS=https://<your-netlify-site>.netlify.app`
+- `SUPABASE_AUTH_ENABLED=false`
+
+### Frontend - Netlify
+
+`netlify.toml` hazir. Netlify env:
+
+- `VITE_API_BASE_URL=https://api-key-organizer-api.onrender.com`
+- `VITE_SUPABASE_AUTH_ENABLED=false`
+
+## Guvenlik Ozeti
+
+- Secret at-rest encryption: AES-256-GCM
+- Password hashing: Argon2
+- Token modeli: JWT access + refresh rotation
+- Refresh tokenlar hashli saklanir
+- Login / refresh / register rate limit aktif
+- Production'da `/docs` ve `/redoc` kapali
+- API security headers aktif (CSP, HSTS, nosniff, frame deny)
+
+## Test ve Dogrulama
+
+Backend:
 
 ```bash
 cd apps/api_py
-
-# Sanal ortam olustur ve aktif et
-python -m venv .venv
-
-# Windows:
-.venv\Scripts\activate
-# macOS/Linux:
-source .venv/bin/activate
-
-# Bagimliklar
-pip install -e .
-
-# Ortam degiskenleri
-cp .env.example .env
+python -m pytest
 ```
 
-`.env` dosyasini duzenle:
-
-```env
-DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/api_key_organizer
-JWT_SECRET_KEY=en-az-32-karakter-uretim-icin-degistir
-SECRET_ENCRYPTION_KEY=   # Asagidaki komutla uret
-CORS_ORIGINS=http://localhost:5173,http://localhost:1420
-
-# Supabase auth (opsiyonel)
-SUPABASE_AUTH_ENABLED=false
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-SUPABASE_AUTO_PROVISION_USERS=false
-SUPABASE_DEFAULT_ROLE=viewer
-```
-
-Sifreleme anahtari uretmek icin:
+Web build:
 
 ```bash
-python -c "import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
+npm run -w apps/web build
 ```
 
-Veritabanini hazirla:
+## Altta Ne Olsun? (README icin iyi alt bolum onerisi)
 
-```bash
-python scripts/migrate.py     # Migration'lari calistir
-python scripts/seed_dev.py    # Test verilerini yukle
-```
+README alt kismina en cok deger katan 3 bolum:
 
-API'yi baslat:
+1. `Troubleshooting` (CORS, 401, desktop API baglanti sorunlari)
+2. `Roadmap` (auto refresh, error boundary, i18n, auto-update)
+3. `FAQ` ("Download link nasil guncellenir?", "Kurunca neden baglanmiyor?")
 
-```bash
-python scripts/run_dev.py     # http://localhost:4000
-```
+Istersen bir sonraki adimda bu uc bolumu de full metin olarak ekleyebilirim.
 
-### 3a. Web Uygulamasini Calistirma
+## License
 
-Proje kokunde:
-
-```bash
-npm run dev:web               # http://localhost:5173
-```
-
-Web `.env` (opsiyonel Supabase auth):
-
-```env
-VITE_API_BASE_URL=http://localhost:4000
-VITE_SUPABASE_AUTH_ENABLED=false
-VITE_SUPABASE_URL=
-VITE_SUPABASE_ANON_KEY=
-```
-
-### 3b. Masaustu Uygulamasini Calistirma (Tauri)
-
-```bash
-cd apps/desktop
-npm run tauri dev
-```
-
-> Tauri ilk calistirmada Rust bagimliklarini derler, bu birka dakika surebilir.
-
-### Varsayilan Test Hesaplari
-
-| Rol | E-posta | Sifre |
-|-----|---------|-------|
-| Admin | admin@company.local | admin123 |
-| Member | member@company.local | member123 |
-| Viewer | viewer@company.local | viewer123 |
-
-## Kullanim
-
-### Giris ve Navigasyon
-
-1. Uygulama acildiginda giris ekrani karsilar
-2. Test hesaplarindan biriyle giris yap
-3. Sol panelde atanmis projeler listelenir
-4. Bir proje sectiginde ortam tablari (Local / Dev / Prod) goruntulenir
-5. Secret'lara tiklayarak detay panelini ac
-
-### Secret Yonetimi (Admin & Member)
-
-- **Olusturma**: "Yeni Secret" butonu ile ad, saglayici, tip, deger, etiketler ve notlar gir
-- **Gorme**: Deger varsayilan maskeli; "Goster" ile gecici olarak ac
-- **Kopyalama**: Deger panoya kopyalanir, ayarlanabilir sure sonunda otomatik silinir
-- **Guncelleme / Silme**: Detay panelinden duzenle veya kaldir
-
-### Arama
-
-- Ust menuden "Arama" sayfasina git
-- Ad, saglayici veya anahtar ile ara
-- Ortam, tip, saglayici ve etiket filtrelerini kullan
-- Sonuca tikla, ilgili projeye dogrudan git
-
-### Import (Admin)
-
-- `.env` veya `.txt` dosyasi yukle ya da surukle-birak
-- Icerik onizlemesi goruntulenir
-- Hedef proje, ortam ve catisma stratejisi (atla / uzerine yaz) sec
-- Toplu olarak ice aktar
-
-### Export (Admin)
-
-- Proje sayfasindan "Disari Aktar" butonuna tikla
-- Tek ortam veya tum ortamlari sec
-- `.env` ya da `JSON` formati sec
-- Panoya kopyala veya dosya olarak indir
-- Prod ortami icin ek onay istenir
-
-### Kullanici Yonetimi (Admin)
-
-- Yeni kullanici olustur (email, ad, rol, sifre)
-- Var olan kullanicilari duzenle veya devre disi birak
-- Proje bazli uye atamasi ve ortam erisim kontrolu
-
-### Denetim Kayitlari (Admin)
-
-- Islem tipi, proje, kullanici e-postasi ve tarih araligi ile filtrele
-- Kim, ne zaman, hangi secret uzerinde ne yapti goruntulenir
-
-## API Dokumanatasyonu
-
-Backend calisirken FastAPI otomatik dokumantasyonuna eris:
-
-- **Swagger UI**: http://localhost:4000/docs
-- **ReDoc**: http://localhost:4000/redoc
-
-### Temel Endpointler
-
-| Yontem | Yol | Aciklama |
-|--------|-----|----------|
-| POST | `/auth/login` | Giris yap, token al |
-| POST | `/auth/refresh` | Token yenile |
-| GET | `/me` | Mevcut kullanici profili |
-| GET | `/projects` | Atanmis projeler |
-| GET | `/projects/{id}/secrets` | Projedeki secret'lar |
-| POST | `/projects/{id}/secrets` | Yeni secret olustur |
-| GET | `/secrets/{id}/reveal` | Secret degerini goster |
-| GET | `/search?q=...` | Genel arama |
-| POST | `/imports/preview` | Import onizleme |
-| POST | `/imports/commit` | Import uygula |
-| GET | `/exports/{id}` | Secret'lari disari aktar |
-| GET | `/audit` | Denetim kayitlari |
-| GET | `/users` | Kullanici listesi (admin) |
-| POST | `/projects/manage` | Proje olustur (admin) |
-
-## Testler
-
-### Backend Testleri
-
-```bash
-cd apps/api_py
-pytest
-```
-
-Kapsam: Auth, kullanici CRUD, proje CRUD, secret CRUD, import/export, audit, yetkilendirme.
-
-### Frontend Testleri
-
-```bash
-cd apps/web
-npx vitest run
-```
-
-Kapsam: LoginPage, AuthContext, UsersPage, ProjectManagePage, ProjectsPage, API client mock'lari.
-
-## Deployment
-
-### Docker (Backend)
-
-```bash
-docker build -t secret-dashboard-api .
-docker run -p 4000:4000 --env-file apps/api_py/.env secret-dashboard-api
-```
-
-### Render.com
-
-Proje `render.yaml` ile hazir yapilandirilmis:
-- **API**: Docker servisi olarak deploy edilir, PostgreSQL veritabani otomatik olusturulur
-- **Web**: Statik site olarak deploy edilir (`apps/web/dist`)
-
-### Masaustu Dagitimi
-
-```bash
-cd apps/desktop
-npm run tauri build
-```
-
-Platform-spesifik installer `src-tauri/target/release/bundle/` altinda olusur.
-
-## MVP Degerlendirmesi
-
-### Hazir Olanlar
-
-- [x] Kimlik dogrulama (JWT access + refresh token)
-- [x] Rol tabanli erisim kontrolu (Admin / Member / Viewer)
-- [x] Secret CRUD islemleri (sifrelenmis depolama)
-- [x] Coklu ortam destegi (Local / Dev / Prod)
-- [x] Proje ve kullanici yonetimi
-- [x] Import / Export (`.env`, `JSON`)
-- [x] Arama ve filtreleme
-- [x] Denetim kayitlari
-- [x] Masaustu uygulamasi (Tauri + OS keyring)
-- [x] Web uygulamasi
-- [x] Backend + frontend test altyapisi
-- [x] Docker ve Render.com deployment yapilandirmasi
-
-### Bilinen Sinirlamalar
-
-- **Token yenileme otomatik degil** — Access token suresi dolunca kullanici tekrar giris yapmali (varsayilan 30 dk). `refreshSession()` fonksiyonu mevcut ama otomatik tetiklenmiyor.
-- **Arama debounce yok** — Her tus vurusu API cagrisi tetikler; yogun kullanmida gereksiz yuk olusabilir.
-- **Hata siniri (Error Boundary) yok** — Beklenmeyen bir React hatasi uygulamanin tamamen beyaz ekran gostermesine neden olabilir.
-- **Dil sadece Turkce** — i18n altyapisi yok, tum metinler hardcoded Turkce.
-- **Frontend form dogrulama sinirli** — Cogu dogrulama backend tarafinda, bos form gonderimleri genel hata mesaji dondurur.
-
-### Sonuc
-
-Uygulama **MVP olarak kullanilabilir** durumdadir. Tum temel islevler (giris, secret yonetimi, RBAC, import/export, audit, arama) calismaktadir. Yukardaki sinirlamalar kullanici deneyimini etkiler ancak temel islevi engellemez. 30 dakikalik token suresi normal kullanim icin yeterlidir.
-
-## Lisans
-
-Bu proje ozel kullanim icindir.
+Ozel kullanim.

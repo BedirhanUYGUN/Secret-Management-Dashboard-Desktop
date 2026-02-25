@@ -1,3 +1,4 @@
+import base64
 from functools import lru_cache
 from typing import List
 
@@ -59,13 +60,33 @@ class Settings(BaseSettings):
     @field_validator("JWT_SECRET_KEY")
     @classmethod
     def validate_jwt_secret(cls, value: str) -> str:
-        if not value or not value.strip():
+        normalized = value.strip()
+        if not normalized:
             raise ValueError("JWT_SECRET_KEY is required")
-        if len(value.strip()) < 32:
+        if len(normalized) < 32:
             raise ValueError(
                 "JWT_SECRET_KEY must be at least 32 characters for security"
             )
-        return value
+        return normalized
+
+    @field_validator("SECRET_ENCRYPTION_KEY")
+    @classmethod
+    def validate_secret_encryption_key(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("SECRET_ENCRYPTION_KEY is required")
+
+        try:
+            decoded = base64.urlsafe_b64decode(normalized.encode("utf-8"))
+        except Exception as exc:
+            raise ValueError("SECRET_ENCRYPTION_KEY must be valid base64") from exc
+
+        if len(decoded) != 32:
+            raise ValueError(
+                "SECRET_ENCRYPTION_KEY must decode to exactly 32 bytes (AES-256)"
+            )
+
+        return normalized
 
     @field_validator("SUPABASE_DEFAULT_ROLE")
     @classmethod

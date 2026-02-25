@@ -1,12 +1,18 @@
 FROM python:3.11-slim
 
-WORKDIR /app/apps/api_py
-
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV PIP_NO_CACHE_DIR=1
 
-COPY apps/api_py/ ./
-RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -e .
+WORKDIR /app
+
+RUN addgroup --system app && adduser --system --ingroup app app
+
+COPY apps/api_py /app/apps/api_py
+RUN pip install --upgrade pip && pip install /app/apps/api_py
+
+WORKDIR /app/apps/api_py
+USER app
 
 EXPOSE 4000
 

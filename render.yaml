@@ -9,5 +9,19 @@ services:
     envVars:
       - key: PORT
         value: 10000
+      - key: APP_ENV
+        value: production
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: 7
+      - key: SUPABASE_AUTH_ENABLED
+        value: "false"
       - key: JWT_SECRET_KEY
         generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_ENCRYPTION_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false

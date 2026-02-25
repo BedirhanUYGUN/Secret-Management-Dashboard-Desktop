@@ -1,67 +1,59 @@
 # Render + Netlify + Supabase Kurulumu
 
-Bu senaryo icin mimari:
+Bu kurulumda onerilen mimari:
 
 - Backend API: Render (Docker service)
 - Frontend: Netlify (static Vite build)
-- Database + Auth: Supabase
+- Database: Supabase Postgres
+- Auth: Uygulamanin native JWT auth sistemi (`SUPABASE_AUTH_ENABLED=false`)
 
 ## 1) Supabase Hazirligi
 
 1. Supabase projesi olustur.
-2. `Settings -> API` altindan su degerleri al:
-   - `Project URL`
-   - `anon public key`
-3. Postgres baglanti bilgisini al (`DATABASE_URL`, sslmode=require).
+2. `Settings -> Database` altindan Postgres baglanti bilgisini al.
+3. `DATABASE_URL` icin `?sslmode=require` eklemeyi unutma.
 
 ## 2) Backend (Render)
 
-Render env degiskenleri:
+`render.yaml` dosyasi kullaniliyor. Render panelinde asagidaki env degerlerini gir:
 
 - `DATABASE_URL=<supabase postgres url>?sslmode=require`
 - `JWT_SECRET_KEY=<en az 32 karakter>`
 - `SECRET_ENCRYPTION_KEY=<base64 32-byte key>`
 - `CORS_ORIGINS=https://<netlify-site>.netlify.app`
-- `SUPABASE_AUTH_ENABLED=true`
-- `SUPABASE_URL=https://<project-ref>.supabase.co`
-- `SUPABASE_ANON_KEY=<supabase anon key>`
-- `SUPABASE_SERVICE_ROLE_KEY=<supabase service role key>`
-- `SUPABASE_AUTO_PROVISION_USERS=true` (istege bagli)
-- `SUPABASE_DEFAULT_ROLE=viewer`
+- `APP_ENV=production`
+- `SUPABASE_AUTH_ENABLED=false`
 
 Notlar:
 
-- `SECRET_ENCRYPTION_KEY` otomatik random yerine 32-byte base64 olacak sekilde elle uretilmeli.
-- Backend'de migration startup'ta calisir; Supabase DB'de tablo olusumunu bu migration'lar yapar.
-- `POST /auth/register` akisinin Supabase kullanicisi olusturabilmesi icin `SUPABASE_SERVICE_ROLE_KEY` zorunludur.
+- `SECRET_ENCRYPTION_KEY` icin ornek uretim:
+  - `python -c "import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"`
+- Backend startup'ta migration calistirir.
+- Production modunda `/docs` ve `/redoc` kapatilir.
 
 ## 3) Frontend (Netlify)
 
 Netlify env degiskenleri:
 
 - `VITE_API_BASE_URL=https://<render-api-domain>`
-- `VITE_SUPABASE_AUTH_ENABLED=true`
-- `VITE_SUPABASE_URL=https://<project-ref>.supabase.co`
-- `VITE_SUPABASE_ANON_KEY=<supabase anon key>`
+- `VITE_SUPABASE_AUTH_ENABLED=false`
 
-Build ayarlari:
+Build ayarlari (`netlify.toml`):
 
-- Base directory: repo root
-- Build command: `npm install && npm run build:web`
+- Build command: `npm ci && npm run -w apps/web build`
 - Publish directory: `apps/web/dist`
+- Redirect: `/* -> /index.html (200)`
 
-## 4) Role / Yetki Modeli
+## 4) Auth ve Kayit Akisi
 
-Supabase auth kimligi dogrular, uygulama yetkileri backend'deki `users` tablosundaki role ve proje atamalarina gore calisir.
-
-- Kullanici Supabase'de var olup uygulama DB'sinde yoksa:
-  - `SUPABASE_AUTO_PROVISION_USERS=true` ise otomatik acilir (varsayilan rol: `SUPABASE_DEFAULT_ROLE`)
-  - `false` ise 401 alir
+- Tum kayitlar sadece uygulamanin `POST /auth/register` endpoint'i uzerinden acilir.
+- Login `POST /auth/login` endpoint'inden yapilir.
+- Refresh token rotation aktif ve tokenlar DB'de hashlenmis saklanir.
 
 ## 5) Ilk Kontrol Listesi
 
 1. Render'da `/health` 200 donuyor mu?
-2. Netlify'den login ekrani aciliyor mu?
-3. Supabase kullanicisi ile giris basarili mi?
+2. Netlify'de login/register sayfalari aciliyor mu?
+3. Yeni kullanici sadece uygulama register formu ile olusuyor mu?
 4. `/me` cagrisi backend'de 200 donuyor mu?
-5. Secret CRUD ve audit akislari calisiyor mu?
+5. Secret CRUD, export ve audit akislari calisiyor mu?
