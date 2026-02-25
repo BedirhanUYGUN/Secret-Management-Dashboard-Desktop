@@ -53,9 +53,22 @@ class Settings(BaseSettings):
     @field_validator("DATABASE_URL")
     @classmethod
     def required_values(cls, value: str) -> str:
-        if not value or not value.strip():
+        normalized = value.strip()
+        if not normalized:
             raise ValueError("Required configuration is missing")
-        return value
+
+        if normalized.startswith("postgres://"):
+            normalized = normalized.replace("postgres://", "postgresql+psycopg://", 1)
+        elif normalized.startswith("postgresql://"):
+            normalized = normalized.replace(
+                "postgresql://", "postgresql+psycopg://", 1
+            )
+        elif normalized.startswith("postgresql+psycopg2://"):
+            normalized = normalized.replace(
+                "postgresql+psycopg2://", "postgresql+psycopg://", 1
+            )
+
+        return normalized
 
     @field_validator("JWT_SECRET_KEY")
     @classmethod
