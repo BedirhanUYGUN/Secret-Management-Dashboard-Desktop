@@ -1,82 +1,52 @@
 # Secret Management Dashboard
 
-Takimlar icin API key, token ve ortam degiskenlerini guvenli yonetmek uzere gelistirilmis web + desktop uygulamasi.
+Takımlar için API key, token ve ortam değişkenlerini güvenli şekilde yönetmek üzere geliştirilmiş web + masaüstü uygulaması.
 
 - Web: React + Vite
-- Desktop: Tauri (Windows odakli)
+- Masaüstü: Tauri (Windows odaklı)
 - Backend: FastAPI + PostgreSQL
-- Guvenlik: AES-256-GCM secret sifreleme, Argon2 password hashing, JWT access/refresh auth
+- Güvenlik: AES-256-GCM şifreleme, Argon2 parola hashleme, JWT access/refresh akışı
 
-## Hemen Basla
+## Hızlı Erişim
 
-- Web (canli): [Open Web App](https://your-netlify-site.netlify.app)
-- Download for Windows: [Download for Windows](https://github.com/BedirhanUYGUN/Secret-Management-Dashboard-Desktop/releases/latest)
+- Web (canlı): [Open Web App](https://your-netlify-site.netlify.app)
+- Windows indirme: [Download for Windows](https://github.com/BedirhanUYGUN/Secret-Management-Dashboard-Desktop/releases/latest)
 
-Desktop uygulamasi indirildikten sonra kurulum yapip direkt acabilirsiniz. Uygulama canli API'ye baglanarak calisir; kullanicinin lokalinde backend kurmasi gerekmez.
+Masaüstü uygulamasını kurduktan sonra doğrudan açabilirsiniz. Uygulama canlı API’ye bağlanır; kullanıcı tarafında ayrıca backend kurulumu gerekmez.
 
-## One Cikan Ozellikler
+## Öne Çıkan Özellikler
 
-- Secret degerleri veritabaninda sifreli saklanir (AES-256-GCM)
-- RBAC: Admin / Member / Viewer rolleri
-- Multi-environment: local / dev / prod
-- Project, uye ve ortam erisim yonetimi
-- Import / Export (`.env` ve JSON)
-- Audit log ve gelismis arama/filtreleme
-- Desktop tarafta tokenlar OS keyring uzerinde saklanir
+- Secret değerleri veritabanında şifreli saklanır (AES-256-GCM)
+- Rol tabanlı yetkilendirme (Admin / Member / Viewer)
+- Çoklu ortam desteği (local / dev / prod)
+- Proje, üye ve ortam erişim yönetimi
+- `.env` ve JSON import / export
+- Audit log, arama ve filtreleme
+- Masaüstünde token saklama için OS keyring kullanımı
 
-## Desktop Dagitim (Windows)
+## Proje Yapısı
 
-### Download for Windows linki nasil calisir?
-
-Bu repo `Releases` sayfasindan dagitima uygundur. En pratik link:
-
-- [Download for Windows](https://github.com/BedirhanUYGUN/Secret-Management-Dashboard-Desktop/releases/latest)
-
-Bu link README'de sabit kalir; her yeni surumde kullanici otomatik olarak son release sayfasina gider.
-
-### Kullanici kurunca direkt calisir mi?
-
-Evet, asagidaki 3 ayar dogru oldugu surece direkt calisir:
-
-1. Desktop build API hedefi Render URL'ine bakar
-2. Desktop API origin allowlist icinde Render origin vardir
-3. Tauri CSP `connect-src` icinde Render domain vardir
-
-Bu ayarlar projede yapildi:
-
-- `apps/desktop/.env.production`
-- `apps/web/src/core/api/client.ts`
-- `apps/desktop/src-tauri/tauri.conf.json`
-
-Varsayilan production API hedefi:
-
-- `https://api-key-organizer-api.onrender.com`
-
-Eger Render domain'in degisirse sadece bu dosyalardaki domaini guncelleyip desktop release'i yeniden alman yeterli.
-
-## Proje Mimarisi
-
-```
+```text
 Secret-Management-Dashboard-Desktop/
-+-- apps/
-|   +-- api_py/      # FastAPI backend
-|   +-- web/         # React web frontend
-|   \-- desktop/     # Tauri desktop wrapper
-+-- docker-compose.yml
-+-- Dockerfile
-+-- netlify.toml
-\-- render.yaml
+├─ apps/
+│  ├─ api_py/       # FastAPI backend
+│  ├─ web/          # React web uygulaması
+│  └─ desktop/      # Tauri masaüstü uygulaması
+├─ docker-compose.yml
+├─ Dockerfile
+├─ netlify.toml
+└─ render.yaml
 ```
 
-## Kurulum (Lokal)
+## Lokal Kurulum
 
 ### Gereksinimler
 
 - Node.js 20+
 - Python 3.11+
-- Docker Desktop (onerilir)
+- Docker Desktop (önerilir)
 
-### Secenek A - Docker ile hizli baslangic
+### Seçenek A — Docker ile hızlı başlangıç
 
 ```bash
 docker compose up --build
@@ -87,7 +57,7 @@ npm run dev:web
 - API: `http://localhost:4000`
 - Web: `http://localhost:5173`
 
-### Secenek B - Manual calistirma
+### Seçenek B — Manuel çalıştırma
 
 ```bash
 npm install
@@ -99,53 +69,115 @@ python apps/api_py/scripts/run_dev.py
 npm run dev:web
 ```
 
-## Desktop Build (Release)
+## Ortam Değişkenleri
 
-Windows installer almak icin:
+### Backend (`apps/api_py/.env`)
+
+`apps/api_py/.env.example` dosyasını kopyalayın ve değerleri doldurun.
+
+```env
+DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/api_key_organizer
+JWT_SECRET_KEY=en-az-32-karakter-guclu-rastgele-deger
+SECRET_ENCRYPTION_KEY=  # Aşağıdaki komutla üretin
+CORS_ORIGINS=http://localhost:5173,http://localhost:1420
+
+# Supabase auth (opsiyonel)
+SUPABASE_AUTH_ENABLED=false
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+SUPABASE_AUTO_PROVISION_USERS=false
+SUPABASE_DEFAULT_ROLE=viewer
+```
+
+`SECRET_ENCRYPTION_KEY` üretmek için:
+
+```bash
+python -c "import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
+```
+
+`JWT_SECRET_KEY` üretmek için:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(64))"
+```
+
+### Web (`apps/web/.env`)
+
+`apps/web/.env.example` dosyasını kopyalayın:
+
+```env
+VITE_API_BASE_URL=http://localhost:4000
+VITE_ALLOWED_API_ORIGINS=http://localhost:4000,https://localhost:4000
+
+# Supabase auth (opsiyonel)
+VITE_SUPABASE_AUTH_ENABLED=false
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+```
+
+## Veritabanı ve API
+
+```bash
+python apps/api_py/scripts/migrate.py
+python apps/api_py/scripts/seed_dev.py
+python apps/api_py/scripts/run_dev.py
+```
+
+Varsayılan test kullanıcıları:
+
+- `admin@company.local / admin123`
+- `member@company.local / member123`
+- `viewer@company.local / viewer123`
+
+## Masaüstü Build (Release)
+
+Windows installer üretmek için:
 
 ```bash
 npm install
 npm run tauri -w apps/desktop build
 ```
 
-Uretilen paketler:
+Üretilen paketler:
 
 - `apps/desktop/src-tauri/target/release/bundle/`
 
-Bu dosyalari GitHub Releases'a yukleyip README'deki `Download for Windows` linki ile kullanicilara sunabilirsiniz.
+Dosyaları GitHub Releases’a yükledikten sonra README’deki `Download for Windows` bağlantısı her zaman son sürüme gider.
 
-## Deployment (Canli)
+## Canlı Ortam (Deployment)
 
-### Backend - Render
+### Backend — Render
 
-`render.yaml` hazir. Render panelinde su env'leri set et:
+`render.yaml` hazır. Render ortam değişkenleri:
 
 - `DATABASE_URL` (Supabase Postgres + `?sslmode=require`)
 - `JWT_SECRET_KEY`
 - `SECRET_ENCRYPTION_KEY`
 - `CORS_ORIGINS=https://<your-netlify-site>.netlify.app`
-- `SUPABASE_AUTH_ENABLED=false`
+- `SUPABASE_AUTH_ENABLED` (`true` / `false`)
+- `SUPABASE_URL` ve `SUPABASE_ANON_KEY` (Supabase auth açıksa)
 
-### Frontend - Netlify
+### Frontend — Netlify
 
-`netlify.toml` hazir. Netlify env:
+`netlify.toml` hazır. Netlify ortam değişkenleri:
 
 - `VITE_API_BASE_URL=https://api-key-organizer-api.onrender.com`
-- `VITE_SUPABASE_AUTH_ENABLED=false`
+- `VITE_SUPABASE_AUTH_ENABLED` (`true` / `false`)
+- `VITE_SUPABASE_URL` ve `VITE_SUPABASE_ANON_KEY` (Supabase auth açıksa)
 
-## Guvenlik Ozeti
+## Güvenlik Özeti
 
-- Secret at-rest encryption: AES-256-GCM
-- Password hashing: Argon2
-- Token modeli: JWT access + refresh rotation
-- Refresh tokenlar hashli saklanir
-- Login / refresh / register rate limit aktif
-- Production'da `/docs` ve `/redoc` kapali
-- API security headers aktif (CSP, HSTS, nosniff, frame deny)
+- Secret veriler at-rest AES-256-GCM ile şifrelenir
+- Parolalar Argon2 ile hashlenir
+- JWT access + refresh token akışı kullanılır
+- Refresh token’lar hashli olarak saklanır
+- Login / refresh / register uçlarında rate limit aktiftir
+- Production’da `/docs` ve `/redoc` kapalıdır
+- API security header’ları aktiftir (CSP, HSTS, nosniff, frame deny)
 
-## Test ve Dogrulama
+## Test ve Doğrulama
 
-Backend:
+Backend testleri:
 
 ```bash
 cd apps/api_py
@@ -158,16 +190,6 @@ Web build:
 npm run -w apps/web build
 ```
 
-## Altta Ne Olsun? (README icin iyi alt bolum onerisi)
+## Lisans
 
-README alt kismina en cok deger katan 3 bolum:
-
-1. `Troubleshooting` (CORS, 401, desktop API baglanti sorunlari)
-2. `Roadmap` (auto refresh, error boundary, i18n, auto-update)
-3. `FAQ` ("Download link nasil guncellenir?", "Kurunca neden baglanmiyor?")
-
-Istersen bir sonraki adimda bu uc bolumu de full metin olarak ekleyebilirim.
-
-## License
-
-Ozel kullanim.
+Özel kullanım.
