@@ -1,6 +1,7 @@
+from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.db.models.enums import EnvironmentEnum, RoleEnum
 
@@ -57,3 +58,30 @@ class EnvironmentAccessRequest(BaseModel):
     environment: EnvironmentEnum
     canRead: bool
     canExport: bool = False
+
+
+class OrganizationSummaryOut(BaseModel):
+    projectId: str
+    projectName: str
+    memberCount: int
+
+
+class InviteCreateRequest(BaseModel):
+    expiresInHours: Optional[int] = Field(default=720, ge=1, le=24 * 365)
+    maxUses: Optional[int] = Field(default=0, ge=0, le=10000)
+
+
+class InviteOut(BaseModel):
+    id: str
+    projectId: str
+    isActive: bool
+    maxUses: int
+    usedCount: int
+    expiresAt: Optional[datetime] = None
+    lastUsedAt: Optional[datetime] = None
+    createdAt: datetime
+    codePreview: str
+
+
+class InviteCreateOut(InviteOut):
+    code: str

@@ -1,6 +1,6 @@
 import re
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 
 from fastapi import HTTPException, status
@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.security import get_password_hash
 from app.db.models import (
+    AuditEvent,
     Environment,
     EnvironmentAccess,
     EnvironmentEnum,
@@ -21,7 +22,6 @@ from app.db.models import (
 )
 from app.db.repositories.users_repo import get_user_by_email
 from app.schemas.auth import (
-    RegisterOrganizationModeEnum,
     RegisterOut,
     RegisterPurposeEnum,
     RegisterRequest,
@@ -138,12 +138,19 @@ def _create_project_invite(db: Session, *, project_id, created_by) -> str:
             is_active=True,
             max_uses=0,
             used_count=0,
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=720),
         )
     )
     return code
 
 
 def _join_project_by_invite(db: Session, *, user: User, invite_code: str) -> Project:
+    if len(invite_code.strip()) != INVITE_LENGTH:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invite code is invalid",
+        )
+
     code_hash = _hash_invite_code(invite_code.strip())
     invite = db.scalar(
         select(ProjectInvite).where(
@@ -238,7 +245,7 @@ def register_with_profile(db: Session, payload: RegisterRequest) -> RegisterOut:
         RoleEnum.viewer
         if (
             payload.purpose == RegisterPurposeEnum.organization
-            and payload.organizationMode == RegisterOrganizationModeEnum.join
+            and payload.organizationMode == "join"
         )
         else RoleEnum.member
     )
@@ -264,7 +271,7 @@ def register_with_profile(db: Session, payload: RegisterRequest) -> RegisterOut:
             project_name=f"{display_name} Workspace",
             description="Personal workspace",
         )
-    elif payload.organizationMode == RegisterOrganizationModeEnum.create:
+    elif payload.organizationMode == "create":
         project = _create_project_with_owner(
             db,
             user=user,
@@ -272,6 +279,15 @@ def register_with_profile(db: Session, payload: RegisterRequest) -> RegisterOut:
             description="Organization workspace",
         )
         invite_code = _create_project_invite(db, project_id=project.id, created_by=user.id)
+        db.add(
+            AuditEvent(
+                actor_user_id=user.id,
+                project_id=project.id,
+                action="invite_created",
+                target_type="project_invite",
+                meta={"source": "register", "maxUses": 0, "expiresInHours": 720},
+            )
+        )
     else:
         project = _join_project_by_invite(
             db,
@@ -279,6 +295,16 @@ def register_with_profile(db: Session, payload: RegisterRequest) -> RegisterOut:
             invite_code=(payload.inviteCode or "").strip(),
         )
         membership_role = RoleEnum.viewer
+        db.add(
+            AuditEvent(
+                actor_user_id=user.id,
+                project_id=project.id,
+                action="member_joined",
+                target_type="project_member",
+                target_id=user.id,
+                meta={"source": "invite", "role": "viewer"},
+            )
+        )
 
     db.commit()
 

@@ -5,6 +5,7 @@ from app.api.routes import (
     auth,
     exports,
     imports,
+    organizations,
     project_manage,
     projects,
     search,
@@ -17,6 +18,7 @@ api_router = APIRouter()
 api_router.include_router(auth.router)
 api_router.include_router(users.router)
 api_router.include_router(project_manage.router)
+api_router.include_router(organizations.router)
 api_router.include_router(projects.router)
 api_router.include_router(secrets.router)
 api_router.include_router(search.router)

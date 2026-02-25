@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+import re
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, EmailStr, model_validator
 
@@ -47,18 +48,13 @@ class RegisterPurposeEnum(str, Enum):
     organization = "organization"
 
 
-class RegisterOrganizationModeEnum(str, Enum):
-    create = "create"
-    join = "join"
-
-
 class RegisterRequest(BaseModel):
     firstName: str
     lastName: str
     email: EmailStr
     password: str
     purpose: RegisterPurposeEnum = RegisterPurposeEnum.personal
-    organizationMode: RegisterOrganizationModeEnum = RegisterOrganizationModeEnum.create
+    organizationMode: Literal["create", "join"] = "create"
     organizationName: Optional[str] = None
     inviteCode: Optional[str] = None
 
@@ -66,11 +62,19 @@ class RegisterRequest(BaseModel):
     def validate_flow(self):
         if len(self.password or "") < 8:
             raise ValueError("password must be at least 8 characters")
+        if not re.search(r"[a-z]", self.password):
+            raise ValueError("password must include at least one lowercase character")
+        if not re.search(r"[A-Z]", self.password):
+            raise ValueError("password must include at least one uppercase character")
+        if not re.search(r"\d", self.password):
+            raise ValueError("password must include at least one digit")
+        if not re.search(r"[^A-Za-z0-9]", self.password):
+            raise ValueError("password must include at least one special character")
         if self.purpose == RegisterPurposeEnum.organization:
-            if self.organizationMode == RegisterOrganizationModeEnum.create:
+            if self.organizationMode == "create":
                 if not (self.organizationName and self.organizationName.strip()):
                     raise ValueError("organizationName is required for create mode")
-            if self.organizationMode == RegisterOrganizationModeEnum.join:
+            if self.organizationMode == "join":
                 if not (self.inviteCode and self.inviteCode.strip()):
                     raise ValueError("inviteCode is required for join mode")
         return self

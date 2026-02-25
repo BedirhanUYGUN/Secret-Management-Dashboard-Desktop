@@ -101,7 +101,29 @@ Olay tipleri:
 - `secret_copied`
 - `secret_exported`
 
-## 5) Lokal Calistirma
+## 5) Organizasyon / Davet Key
+
+- `GET /organizations/managed`
+- `GET /organizations/{project_id}/invites`
+- `POST /organizations/{project_id}/invites`
+- `POST /organizations/{project_id}/invites/rotate`
+- `DELETE /organizations/{project_id}/invites/{invite_id}`
+
+`POST /organizations/{project_id}/invites` ornek payload:
+
+```json
+{
+  "expiresInHours": 720,
+  "maxUses": 0
+}
+```
+
+Notlar:
+
+- `maxUses=0` sinirsiz kullanim anlamina gelir.
+- Join ile katilan kullanici varsayilan olarak `viewer` rolunde eklenir.
+
+## 6) Lokal Calistirma
 
 Backend:
 

@@ -11,6 +11,7 @@ import { ImportPage } from "@features/import/ImportPage";
 import { NotFoundPage } from "@features/not-found/NotFoundPage";
 import { ProjectManagePage } from "@features/project-manage/ProjectManagePage";
 import { ProjectsPage } from "@features/projects/ProjectsPage";
+import { OrganizationPage } from "@features/organization/OrganizationPage";
 import { SearchPage } from "@features/search/SearchPage";
 import { SettingsPage } from "@features/settings/SettingsPage";
 import { UsersPage } from "@features/users/UsersPage";
@@ -30,6 +31,10 @@ function App() {
                 <Route path="/projects" element={<ProjectsPage />} />
                 <Route path="/search" element={<SearchPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
+
+                <Route element={<RequireRole allowed={["admin", "member"]} />}>
+                  <Route path="/organizations" element={<OrganizationPage />} />
+                </Route>
 
                 <Route element={<RequireRole allowed={["admin"]} />}>
                   <Route path="/users" element={<UsersPage />} />

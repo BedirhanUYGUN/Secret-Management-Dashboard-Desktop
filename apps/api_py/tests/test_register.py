@@ -103,3 +103,36 @@ class TestRegister:
         )
         assert membership is not None
         assert membership.role == RoleEnum.viewer
+
+    def test_register_zayif_sifre_icin_422_doner(self, client):
+        resp = client.post(
+            "/auth/register",
+            json={
+                "firstName": "Ali",
+                "lastName": "Yilmaz",
+                "email": "weak@test.com",
+                "password": "weakpass",
+                "purpose": "personal",
+                "organizationMode": "create",
+            },
+        )
+        assert resp.status_code == 422
+
+    def test_register_rate_limit_asilirsa_429_doner(self, client, monkeypatch):
+        monkeypatch.setattr(
+            "app.api.routes.auth.check_rate_limit",
+            lambda **kwargs: False,
+        )
+
+        resp = client.post(
+            "/auth/register",
+            json={
+                "firstName": "Ali",
+                "lastName": "Yilmaz",
+                "email": "ali-limit@test.com",
+                "password": "StrongPass1!",
+                "purpose": "personal",
+                "organizationMode": "create",
+            },
+        )
+        assert resp.status_code == 429

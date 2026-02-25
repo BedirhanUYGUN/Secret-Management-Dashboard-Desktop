@@ -1,4 +1,4 @@
-import type { Assignment, AuditEvent, Environment, ManagedUser, Project, ProjectDetail, ProjectMemberOut, Role, Secret, SecretType, User, UserPreferences } from "../types";
+import type { Assignment, AuditEvent, Environment, Invite, InviteCreateResult, ManagedUser, OrganizationSummary, Project, ProjectDetail, ProjectMemberOut, Role, Secret, SecretType, User, UserPreferences } from "../types";
 import { isTauriRuntime } from "../platform/runtime";
 import {
   clearStoredTokens,
@@ -532,5 +532,51 @@ export function updateEnvironmentAccess(params: {
       canRead: params.canRead,
       canExport: params.canExport,
     },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Organization (project-admin scoped)
+// ---------------------------------------------------------------------------
+
+export function fetchManagedOrganizations() {
+  return request<OrganizationSummary[]>("/organizations/managed");
+}
+
+export function fetchOrganizationInvites(projectId: string) {
+  return request<Invite[]>(`/organizations/${projectId}/invites`);
+}
+
+export function createOrganizationInvite(params: {
+  projectId: string;
+  expiresInHours?: number;
+  maxUses?: number;
+}) {
+  return request<InviteCreateResult>(`/organizations/${params.projectId}/invites`, {
+    method: "POST",
+    body: {
+      expiresInHours: params.expiresInHours,
+      maxUses: params.maxUses,
+    },
+  });
+}
+
+export function rotateOrganizationInvite(params: {
+  projectId: string;
+  expiresInHours?: number;
+  maxUses?: number;
+}) {
+  return request<InviteCreateResult>(`/organizations/${params.projectId}/invites/rotate`, {
+    method: "POST",
+    body: {
+      expiresInHours: params.expiresInHours,
+      maxUses: params.maxUses,
+    },
+  });
+}
+
+export function revokeOrganizationInvite(params: { projectId: string; inviteId: string }) {
+  return request<void>(`/organizations/${params.projectId}/invites/${params.inviteId}`, {
+    method: "DELETE",
   });
 }

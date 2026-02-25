@@ -6,6 +6,7 @@ import { isTauriRuntime } from "../platform/runtime";
 
 const pageTitles: Record<string, string> = {
   "/projects": "Projeler",
+  "/organizations": "Organizasyonlar",
   "/search": "Arama",
   "/settings": "Ayarlar",
   "/users": "Kullanicilar",
@@ -123,6 +124,11 @@ export function MainLayout() {
           <NavLink to="/projects" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Projeler
           </NavLink>
+          {user.role !== "viewer" && (
+            <NavLink to="/organizations" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+              Organizasyonlar
+            </NavLink>
+          )}
           <NavLink to="/search" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Arama
           </NavLink>

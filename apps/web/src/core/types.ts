@@ -69,6 +69,26 @@ export type ProjectMemberOut = {
   role: Role;
 };
 
+export type OrganizationSummary = {
+  projectId: string;
+  projectName: string;
+  memberCount: number;
+};
+
+export type Invite = {
+  id: string;
+  projectId: string;
+  isActive: boolean;
+  maxUses: number;
+  usedCount: number;
+  expiresAt: string | null;
+  lastUsedAt: string | null;
+  createdAt: string;
+  codePreview: string;
+};
+
+export type InviteCreateResult = Invite & { code: string };
+
 export type AuditAction = "secret_created" | "secret_updated" | "secret_deleted" | "secret_copied" | "secret_exported";
 
 export type AuditEvent = {

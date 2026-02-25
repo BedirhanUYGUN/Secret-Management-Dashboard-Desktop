@@ -12,6 +12,8 @@ Takim icindeki API anahtarlarini, token'lari ve endpoint'leri guvenli sekilde yo
 - **Import / Export** — `.env` ve JSON formatinda toplu icerik aktarimi, surukle-birak destegi
 - **Denetim Kayitlari (Audit Log)** — Secret olusturma, guncelleme, kopyalama ve export islemleri kaydedilir
 - **Arama** — Tum projelerdeki secret'larda saglayici, etiket, ortam ve tip bazli filtreleme
+- **Kayit + Organizasyon Akisi** — Personel kaydi, organizasyon olusturma veya davet key ile organizasyona katilim
+- **Davet Key Yonetimi** — Organizasyon adminleri sure/kullanim limitli key uretebilir, yenileyebilir ve pasif edebilir
 - **Pano Guvenligi** — Kopyalanan degerler ayarlanabilir sure sonunda otomatik temizlenir
 
 ## Teknoloji Yigini

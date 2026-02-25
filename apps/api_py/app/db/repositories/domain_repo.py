@@ -1,5 +1,7 @@
-from datetime import datetime, timezone
-from typing import Dict, List, Optional, Union
+from datetime import datetime, timedelta, timezone
+from hashlib import sha256
+import secrets
+from typing import Dict, List, Optional, Union, cast
 from uuid import UUID
 
 from sqlalchemy import and_, func, or_, select
@@ -12,8 +14,10 @@ from app.db.models import (
     EnvironmentAccess,
     EnvironmentEnum,
     Project,
+    ProjectInvite,
     ProjectMember,
     ProjectTag,
+    RoleEnum,
     Secret,
     SecretNote,
     SecretTag,
@@ -25,6 +29,18 @@ from app.db.models import (
 
 def _to_uuid(value: str) -> UUID:
     return UUID(value)
+
+
+INVITE_CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+"
+INVITE_LENGTH = 12
+
+
+def _generate_invite_code(length: int = INVITE_LENGTH) -> str:
+    return "".join(secrets.choice(INVITE_CHARSET) for _ in range(length))
+
+
+def _hash_invite_code(value: str) -> str:
+    return sha256(value.encode("utf-8")).hexdigest()
 
 
 def _normalize_env(env: Union[EnvironmentEnum, str]) -> EnvironmentEnum:
@@ -71,6 +87,21 @@ def has_project_access(db: Session, user_id: str, project_slug: str) -> bool:
         .where(ProjectMember.user_id == _to_uuid(user_id), Project.slug == project_slug)
     )
     return int(result or 0) > 0
+
+
+def get_project_member_role(
+    db: Session, user_id: str, project_slug: str
+) -> Optional[RoleEnum]:
+    return db.scalar(
+        select(ProjectMember.role)
+        .join(Project, Project.id == ProjectMember.project_id)
+        .where(ProjectMember.user_id == _to_uuid(user_id), Project.slug == project_slug)
+    )
+
+
+def is_project_admin(db: Session, user_id: str, project_slug: str) -> bool:
+    role = get_project_member_role(db, user_id, project_slug)
+    return role == RoleEnum.admin
 
 
 def has_environment_read_access(
@@ -394,7 +425,12 @@ def create_secret(db: Session, user_id: str, project_slug: str, payload: Dict) -
     env_name = db.scalar(
         select(Environment.name).where(Environment.id == secret.environment_id)
     )
-    return _to_secret_out(db, secret, env_name)
+    env_for_output = (
+        env_name
+        if env_name is not None
+        else _normalize_env(payload["environment"])
+    )
+    return _to_secret_out(db, secret, cast(EnvironmentEnum, env_for_output))
 
 
 def update_secret(
@@ -453,7 +489,8 @@ def update_secret(
     env_name = db.scalar(
         select(Environment.name).where(Environment.id == secret.environment_id)
     )
-    return _to_secret_out(db, secret, env_name)
+    env_for_output = env_name if env_name is not None else EnvironmentEnum.dev
+    return _to_secret_out(db, secret, cast(EnvironmentEnum, env_for_output))
 
 
 def delete_secret(db: Session, user_id: str, secret_id: str) -> Optional[Dict]:
@@ -741,7 +778,7 @@ def delete_project(db: Session, project_id: str) -> bool:
 
 
 def add_member_to_project(
-    db: Session, project_id: str, user_id: str, role: str
+    db: Session, project_id: str, user_id: str, role: Union[str, RoleEnum]
 ) -> Optional[Dict]:
     project = db.get(Project, _to_uuid(project_id))
     if not project:
@@ -751,6 +788,8 @@ def add_member_to_project(
     if not user:
         return None
 
+    role_enum: RoleEnum = RoleEnum(role)
+
     existing = db.scalar(
         select(ProjectMember).where(
             ProjectMember.project_id == project.id,
@@ -758,14 +797,14 @@ def add_member_to_project(
         )
     )
     if existing:
-        existing.role = role
+        existing.role = role_enum
         db.add(existing)
     else:
         db.add(
             ProjectMember(
                 project_id=project.id,
                 user_id=_to_uuid(user_id),
-                role=role,
+                role=role_enum,
             )
         )
 
@@ -799,7 +838,7 @@ def add_member_to_project(
         "userId": str(user.id),
         "email": user.email,
         "displayName": user.display_name,
-        "role": role,
+        "role": role_enum,
     }
 
 
@@ -875,3 +914,187 @@ def set_environment_access(
         )
     db.commit()
     return True
+
+
+# ---------------------------------------------------------------------------
+# Organization invite management
+# ---------------------------------------------------------------------------
+
+
+def _project_invite_to_out(invite: ProjectInvite) -> Dict:
+    return {
+        "id": str(invite.id),
+        "projectId": str(invite.project_id),
+        "isActive": invite.is_active,
+        "maxUses": invite.max_uses,
+        "usedCount": invite.used_count,
+        "expiresAt": invite.expires_at,
+        "lastUsedAt": invite.last_used_at,
+        "createdAt": invite.created_at,
+        "codePreview": "hidden",
+    }
+
+
+def list_managed_organizations_for_user(db: Session, user_id: str) -> List[Dict]:
+    rows = (
+        db.execute(
+            select(Project)
+            .join(ProjectMember, ProjectMember.project_id == Project.id)
+            .where(
+                ProjectMember.user_id == _to_uuid(user_id),
+                ProjectMember.role == RoleEnum.admin,
+            )
+            .order_by(Project.name.asc())
+        )
+        .scalars()
+        .all()
+    )
+
+    output: List[Dict] = []
+    for project in rows:
+        member_count = int(
+            db.scalar(
+                select(func.count(ProjectMember.id)).where(
+                    ProjectMember.project_id == project.id
+                )
+            )
+            or 0
+        )
+        output.append(
+            {
+                "projectId": project.slug,
+                "projectName": project.name,
+                "memberCount": member_count,
+            }
+        )
+    return output
+
+
+def list_project_invites_for_admin(
+    db: Session, user_id: str, project_slug: str
+) -> Optional[List[Dict]]:
+    if not is_project_admin(db, user_id, project_slug):
+        return None
+
+    project_id = resolve_project_id(db, project_slug)
+    if not project_id:
+        return []
+
+    invites = (
+        db.execute(
+            select(ProjectInvite)
+            .where(ProjectInvite.project_id == project_id)
+            .order_by(ProjectInvite.created_at.desc())
+            .limit(100)
+        )
+        .scalars()
+        .all()
+    )
+    return [_project_invite_to_out(inv) for inv in invites]
+
+
+def create_project_invite_for_admin(
+    db: Session,
+    *,
+    user_id: str,
+    project_slug: str,
+    expires_in_hours: Optional[int] = 720,
+    max_uses: Optional[int] = 0,
+) -> Optional[Dict]:
+    if not is_project_admin(db, user_id, project_slug):
+        return None
+
+    project_id = resolve_project_id(db, project_slug)
+    if not project_id:
+        return None
+
+    expires_at = None
+    if expires_in_hours and expires_in_hours > 0:
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=expires_in_hours)
+
+    code = _generate_invite_code()
+    code_hash = _hash_invite_code(code)
+    while db.scalar(select(ProjectInvite.id).where(ProjectInvite.code_hash == code_hash)):
+        code = _generate_invite_code()
+        code_hash = _hash_invite_code(code)
+
+    invite = ProjectInvite(
+        project_id=project_id,
+        code_hash=code_hash,
+        created_by=_to_uuid(user_id),
+        is_active=True,
+        max_uses=max(max_uses or 0, 0),
+        used_count=0,
+        expires_at=expires_at,
+    )
+    db.add(invite)
+    db.commit()
+    db.refresh(invite)
+
+    out = _project_invite_to_out(invite)
+    out["code"] = code
+    return out
+
+
+def revoke_project_invite_for_admin(
+    db: Session, user_id: str, project_slug: str, invite_id: str
+) -> Optional[bool]:
+    if not is_project_admin(db, user_id, project_slug):
+        return None
+
+    project_id = resolve_project_id(db, project_slug)
+    if not project_id:
+        return False
+
+    invite = db.scalar(
+        select(ProjectInvite).where(
+            ProjectInvite.id == _to_uuid(invite_id),
+            ProjectInvite.project_id == project_id,
+        )
+    )
+    if not invite:
+        return False
+
+    invite.is_active = False
+    db.add(invite)
+    db.commit()
+    return True
+
+
+def rotate_project_invite_for_admin(
+    db: Session,
+    *,
+    user_id: str,
+    project_slug: str,
+    expires_in_hours: Optional[int] = 720,
+    max_uses: Optional[int] = 0,
+) -> Optional[Dict]:
+    if not is_project_admin(db, user_id, project_slug):
+        return None
+
+    project_id = resolve_project_id(db, project_slug)
+    if not project_id:
+        return None
+
+    active_invites = (
+        db.execute(
+            select(ProjectInvite).where(
+                ProjectInvite.project_id == project_id,
+                ProjectInvite.is_active.is_(True),
+            )
+        )
+        .scalars()
+        .all()
+    )
+    for invite in active_invites:
+        invite.is_active = False
+        db.add(invite)
+    db.commit()
+
+    return create_project_invite_for_admin(
+        db,
+        user_id=user_id,
+        project_slug=project_slug,
+        expires_in_hours=expires_in_hours,
+        max_uses=max_uses,
+    )
