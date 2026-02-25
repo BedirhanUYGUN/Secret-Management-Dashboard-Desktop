@@ -4,6 +4,27 @@ Bu belge MVP icin temel API kullanimini ozetler.
 
 ## 1) Authentication Akisi
 
+### Register
+
+`POST /auth/register`
+
+```json
+{
+  "firstName": "Ali",
+  "lastName": "Yilmaz",
+  "email": "ali@company.local",
+  "password": "StrongPass1!",
+  "purpose": "organization",
+  "organizationMode": "create",
+  "organizationName": "Nova Labs"
+}
+```
+
+Not:
+
+- `organizationMode=join` icin `inviteCode` zorunludur.
+- Join ile gelen kullanici varsayilan `viewer` olarak eklenir.
+
 ### Login
 
 `POST /auth/login`

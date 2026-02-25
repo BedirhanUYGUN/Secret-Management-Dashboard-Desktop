@@ -25,6 +25,7 @@ Render env degiskenleri:
 - `SUPABASE_AUTH_ENABLED=true`
 - `SUPABASE_URL=https://<project-ref>.supabase.co`
 - `SUPABASE_ANON_KEY=<supabase anon key>`
+- `SUPABASE_SERVICE_ROLE_KEY=<supabase service role key>`
 - `SUPABASE_AUTO_PROVISION_USERS=true` (istege bagli)
 - `SUPABASE_DEFAULT_ROLE=viewer`
 
@@ -32,6 +33,7 @@ Notlar:
 
 - `SECRET_ENCRYPTION_KEY` otomatik random yerine 32-byte base64 olacak sekilde elle uretilmeli.
 - Backend'de migration startup'ta calisir; Supabase DB'de tablo olusumunu bu migration'lar yapar.
+- `POST /auth/register` akisinin Supabase kullanicisi olusturabilmesi icin `SUPABASE_SERVICE_ROLE_KEY` zorunludur.
 
 ## 3) Frontend (Netlify)
 

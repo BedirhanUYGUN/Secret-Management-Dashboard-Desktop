@@ -12,6 +12,10 @@ def get_user_by_email(db: Session, email: str) -> Optional[User]:
     return db.scalar(select(User).where(User.email == email))
 
 
+def get_user_by_supabase_user_id(db: Session, supabase_user_id: str) -> Optional[User]:
+    return db.scalar(select(User).where(User.supabase_user_id == supabase_user_id))
+
+
 def get_user_by_id(db: Session, user_id: str) -> Optional[User]:
     return db.get(User, user_id)
 

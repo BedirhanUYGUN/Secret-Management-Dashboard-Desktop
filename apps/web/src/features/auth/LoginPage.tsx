@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@core/auth/AuthContext";
 import { useState } from "react";
 
@@ -70,6 +70,9 @@ export function LoginPage() {
           <button type="submit" className="login-submit" disabled={loading}>
             {loading ? "Giris yapiliyor..." : "Giris Yap"}
           </button>
+          <p className="auth-switch-text">
+            Hesabin yok mu? <Link to="/register">Kayit Ol</Link>
+          </p>
         </form>
       </section>
     </div>

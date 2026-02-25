@@ -59,6 +59,31 @@ export type SecretMutationPayload = {
   notes: string;
 };
 
+export type RegisterPurpose = "personal" | "organization";
+export type RegisterOrganizationMode = "create" | "join";
+
+export type RegisterRequestPayload = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  purpose: RegisterPurpose;
+  organizationMode: RegisterOrganizationMode;
+  organizationName?: string;
+  inviteCode?: string;
+};
+
+export type RegisterResponse = {
+  userId: string;
+  name: string;
+  email: string;
+  role: Role;
+  projectId: string;
+  projectName: string;
+  membershipRole: Role;
+  inviteCode: string | null;
+};
+
 type MeResponse = {
   id: string;
   email: string;
@@ -204,6 +229,13 @@ export async function loginWithCredentials(email: string, password: string) {
     body: { email, password },
   });
   await setTokens(response);
+}
+
+export function registerWithProfile(payload: RegisterRequestPayload) {
+  return request<RegisterResponse>("/auth/register", {
+    method: "POST",
+    body: payload,
+  });
 }
 
 export async function refreshSession() {

@@ -5,6 +5,7 @@ import { MainLayout } from "@core/layout/MainLayout";
 import { AppUiProvider } from "@core/ui/AppUiContext";
 import { ToastViewport } from "@core/ui/ToastViewport";
 import { LoginPage } from "@features/auth/LoginPage";
+import { RegisterPage } from "@features/auth/RegisterPage";
 import { AuditPage } from "@features/audit/AuditPage";
 import { ImportPage } from "@features/import/ImportPage";
 import { NotFoundPage } from "@features/not-found/NotFoundPage";
@@ -21,6 +22,7 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
 
             <Route element={<RequireAuth />}>
               <Route element={<MainLayout />}>

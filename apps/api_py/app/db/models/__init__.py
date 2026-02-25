@@ -4,6 +4,7 @@ from app.db.models.project import (
     Environment,
     EnvironmentAccess,
     Project,
+    ProjectInvite,
     ProjectMember,
     ProjectTag,
 )
@@ -17,6 +18,7 @@ __all__ = [
     "EnvironmentAccess",
     "EnvironmentEnum",
     "Project",
+    "ProjectInvite",
     "ProjectMember",
     "ProjectTag",
     "RefreshToken",

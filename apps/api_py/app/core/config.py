@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     SUPABASE_AUTH_ENABLED: bool = False
     SUPABASE_URL: str = ""
     SUPABASE_ANON_KEY: str = ""
+    SUPABASE_SERVICE_ROLE_KEY: str = ""
     SUPABASE_AUTO_PROVISION_USERS: bool = False
     SUPABASE_DEFAULT_ROLE: str = "viewer"
 

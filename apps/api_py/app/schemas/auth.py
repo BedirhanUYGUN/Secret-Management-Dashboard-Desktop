@@ -1,7 +1,8 @@
 from datetime import datetime
+from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, model_validator
 
 from app.db.models.enums import RoleEnum
 
@@ -39,3 +40,48 @@ class RefreshRequest(BaseModel):
 class PreferencesUpdateRequest(BaseModel):
     maskValues: Optional[bool] = None
     clipboardSeconds: Optional[int] = None
+
+
+class RegisterPurposeEnum(str, Enum):
+    personal = "personal"
+    organization = "organization"
+
+
+class RegisterOrganizationModeEnum(str, Enum):
+    create = "create"
+    join = "join"
+
+
+class RegisterRequest(BaseModel):
+    firstName: str
+    lastName: str
+    email: EmailStr
+    password: str
+    purpose: RegisterPurposeEnum = RegisterPurposeEnum.personal
+    organizationMode: RegisterOrganizationModeEnum = RegisterOrganizationModeEnum.create
+    organizationName: Optional[str] = None
+    inviteCode: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_flow(self):
+        if len(self.password or "") < 8:
+            raise ValueError("password must be at least 8 characters")
+        if self.purpose == RegisterPurposeEnum.organization:
+            if self.organizationMode == RegisterOrganizationModeEnum.create:
+                if not (self.organizationName and self.organizationName.strip()):
+                    raise ValueError("organizationName is required for create mode")
+            if self.organizationMode == RegisterOrganizationModeEnum.join:
+                if not (self.inviteCode and self.inviteCode.strip()):
+                    raise ValueError("inviteCode is required for join mode")
+        return self
+
+
+class RegisterOut(BaseModel):
+    userId: str
+    name: str
+    email: EmailStr
+    role: RoleEnum
+    projectId: str
+    projectName: str
+    membershipRole: RoleEnum
+    inviteCode: Optional[str] = None

@@ -22,6 +22,8 @@ os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["JWT_SECRET_KEY"] = "test-jwt-secret-key-that-is-at-least-32-chars-long!!"
 os.environ["SECRET_ENCRYPTION_KEY"] = _test_encryption_key
 os.environ["APP_ENV"] = "test"
+os.environ["SUPABASE_AUTH_ENABLED"] = "false"
+os.environ["SUPABASE_AUTO_PROVISION_USERS"] = "false"
 
 # --- Simdi guvenle import edebiliriz ---
 from app.core.config import get_settings  # noqa: E402
