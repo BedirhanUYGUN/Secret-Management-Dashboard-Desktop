@@ -15,12 +15,12 @@ import { useAppUi } from "@core/ui/AppUiContext";
 import { Spinner } from "@core/ui/Spinner";
 
 const roleOptions: Role[] = ["admin", "member", "viewer"];
-const roleLabels: Record<Role, string> = { admin: "Yönetici", member: "Uye", viewer: "Izleyici" };
+const roleLabels: Record<Role, string> = { admin: "Yönetici", member: "Üye", viewer: "İzleyici" };
 const envOptions: Environment[] = ["local", "dev", "prod"];
 
 export function ProjectManagePage() {
   const { user } = useAuth();
-  const { showToast } = useAppUi();
+  const { showToast, confirm } = useAppUi();
 
   const [projects, setProjects] = useState<ProjectDetail[]>([]);
   const [allUsers, setAllUsers] = useState<ManagedUser[]>([]);
@@ -46,15 +46,34 @@ export function ProjectManagePage() {
   const [accessRead, setAccessRead] = useState(true);
   const [accessExport, setAccessExport] = useState(false);
 
+  const parseErrorMessage = (message: string) => {
+    if (message.includes("Forbidden") || message.includes("403")) {
+      return "Bu sayfayı kullanmak için en az bir projede yönetici olmanız gerekiyor.";
+    }
+    return message;
+  };
+
   const loadData = async () => {
     setLoading(true);
     setErrorMessage("");
     try {
-      const [p, u] = await Promise.all([fetchProjectDetails(), fetchUsers()]);
+      const p = await fetchProjectDetails();
+      const u = await fetchUsers();
       setProjects(p);
       setAllUsers(u);
+      setSelectedId((prev) => {
+        if (prev && p.some((project) => project.id === prev)) {
+          return prev;
+        }
+        return p[0]?.id ?? null;
+      });
     } catch (error) {
-      if (error instanceof Error) setErrorMessage(error.message);
+      if (error instanceof Error) {
+        setErrorMessage(parseErrorMessage(error.message));
+      }
+      setProjects([]);
+      setAllUsers([]);
+      setSelectedId(null);
     } finally {
       setLoading(false);
     }
@@ -91,7 +110,7 @@ export function ProjectManagePage() {
       showToast("Proje oluşturuldu", "success");
       await loadData();
     } catch (error) {
-      if (error instanceof Error) setErrorMessage(error.message);
+      if (error instanceof Error) setErrorMessage(parseErrorMessage(error.message));
     }
   };
 
@@ -109,13 +128,19 @@ export function ProjectManagePage() {
       showToast("Proje güncellendi", "success");
       await loadData();
     } catch (error) {
-      if (error instanceof Error) setErrorMessage(error.message);
+      if (error instanceof Error) setErrorMessage(parseErrorMessage(error.message));
     }
   };
 
   const handleDelete = async () => {
     if (!selected) return;
-    const confirmed = window.confirm(`"${selected.name}" projesi silinsin mi? Bu işlem geri alinamaz.`);
+    const confirmed = await confirm({
+      title: "Projeyi Sil",
+      message: `"${selected.name}" projesi silinsin mi? Bu işlem geri alınamaz.`,
+      confirmLabel: "Sil",
+      cancelLabel: "Vazgeç",
+      variant: "danger",
+    });
     if (!confirmed) return;
     try {
       setErrorMessage("");
@@ -124,7 +149,7 @@ export function ProjectManagePage() {
       showToast("Proje silindi", "success");
       await loadData();
     } catch (error) {
-      if (error instanceof Error) setErrorMessage(error.message);
+      if (error instanceof Error) setErrorMessage(parseErrorMessage(error.message));
     }
   };
 
@@ -137,13 +162,19 @@ export function ProjectManagePage() {
       showToast("Üye eklendi", "success");
       await loadData();
     } catch (error) {
-      if (error instanceof Error) setErrorMessage(error.message);
+      if (error instanceof Error) setErrorMessage(parseErrorMessage(error.message));
     }
   };
 
   const handleRemoveMember = async (userId: string) => {
     if (!selected) return;
-    const confirmed = window.confirm("Bu üye projeden çıkarılsın mı?");
+    const confirmed = await confirm({
+      title: "Üyeyi Çıkar",
+      message: "Bu üye projeden çıkarılsın mı?",
+      confirmLabel: "Çıkar",
+      cancelLabel: "Vazgeç",
+      variant: "danger",
+    });
     if (!confirmed) return;
     try {
       setErrorMessage("");
@@ -151,7 +182,7 @@ export function ProjectManagePage() {
       showToast("Üye çıkarıldı", "success");
       await loadData();
     } catch (error) {
-      if (error instanceof Error) setErrorMessage(error.message);
+      if (error instanceof Error) setErrorMessage(parseErrorMessage(error.message));
     }
   };
 
@@ -168,7 +199,7 @@ export function ProjectManagePage() {
       });
       showToast("Ortam erişimi güncellendi", "success");
     } catch (error) {
-      if (error instanceof Error) setErrorMessage(error.message);
+      if (error instanceof Error) setErrorMessage(parseErrorMessage(error.message));
     }
   };
 
@@ -195,12 +226,12 @@ export function ProjectManagePage() {
             <strong>Yeni Proje Oluştur</strong>
             <div className="form-grid">
               <input placeholder="Proje Adı" value={createForm.name} onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))} />
-              <input placeholder="Slug (URL dostu)" value={createForm.slug} onChange={(e) => setCreateForm((p) => ({ ...p, slug: e.target.value }))} />
+              <input placeholder="Slug (URL dostu, örn: my-project)" value={createForm.slug} onChange={(e) => setCreateForm((p) => ({ ...p, slug: e.target.value }))} />
               <input placeholder="Açıklama" value={createForm.description} onChange={(e) => setCreateForm((p) => ({ ...p, description: e.target.value }))} />
-              <input placeholder="etiket1, etiket2" value={createForm.tags} onChange={(e) => setCreateForm((p) => ({ ...p, tags: e.target.value }))} />
+              <input placeholder="Etiketler (virgül ile ayırın, örn: backend, web)" value={createForm.tags} onChange={(e) => setCreateForm((p) => ({ ...p, tags: e.target.value }))} />
             </div>
             <div className="action-row">
-              <button type="button" onClick={() => void handleCreate()}>Oluştur</button>
+              <button type="button" className="btn-primary" onClick={() => void handleCreate()}>Oluştur</button>
             </div>
           </div>
         )}
@@ -220,11 +251,17 @@ export function ProjectManagePage() {
             >
               <div>
                 <strong>{p.name}</strong>
-                <small>{p.slug} • {p.members.length} uye • {p.tags.join(", ") || "etiketsiz"}</small>
+                <small>{p.slug} • {p.members.length} üye • {p.tags.join(", ") || "etiketsiz"}</small>
               </div>
             </div>
           ))}
-          {projects.length === 0 && !loading && <p className="inline-muted">Henüz proje yok.</p>}
+          {projects.length === 0 && !loading && (
+            <div className="empty-state">
+              <span className="empty-state-icon">📂</span>
+              <h3 className="empty-state-title">Henüz proje yok</h3>
+              <p className="empty-state-description">İlk projenizi oluşturmak için "Yeni Proje" butonuna tıklayın.</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -238,7 +275,7 @@ export function ProjectManagePage() {
                 <button type="button" onClick={() => setEditMode((prev) => !prev)}>
                   {editMode ? "İptal" : "Düzenle"}
                 </button>
-                <button type="button" onClick={() => void handleDelete()}>Sil</button>
+                <button type="button" className="btn-danger" onClick={() => void handleDelete()}>Sil</button>
               </div>
             </div>
             <p>{selected.slug} • {selected.description || "Açıklama yok"}</p>
@@ -249,10 +286,10 @@ export function ProjectManagePage() {
                 <div className="form-grid">
                   <input value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} placeholder="Proje Adı" />
                   <input value={editForm.description} onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))} placeholder="Açıklama" />
-                  <input value={editForm.tags} onChange={(e) => setEditForm((p) => ({ ...p, tags: e.target.value }))} placeholder="etiket1, etiket2" />
+                  <input value={editForm.tags} onChange={(e) => setEditForm((p) => ({ ...p, tags: e.target.value }))} placeholder="Etiketler (virgül ile ayırın, örn: backend, web)" />
                 </div>
                 <div className="action-row">
-                  <button type="button" onClick={() => void handleUpdate()}>Kaydet</button>
+                  <button type="button" className="btn-primary" onClick={() => void handleUpdate()}>Kaydet</button>
                 </div>
               </div>
             )}
@@ -265,10 +302,16 @@ export function ProjectManagePage() {
                   <span>{m.displayName}</span>
                   <span>{m.email}</span>
                   <span>{roleLabels[m.role]}</span>
-                  <button type="button" onClick={() => void handleRemoveMember(m.userId)}>Cikar</button>
+                  <button type="button" onClick={() => void handleRemoveMember(m.userId)}>Çıkar</button>
                 </div>
               ))}
-              {selected.members.length === 0 && <p className="inline-muted">Üye bulunmuyor.</p>}
+              {selected.members.length === 0 && (
+                <div className="empty-state" style={{ padding: "20px 10px" }}>
+                  <span className="empty-state-icon">👥</span>
+                  <h3 className="empty-state-title">Üye bulunmuyor</h3>
+                  <p className="empty-state-description">Aşağıdaki formdan üye ekleyebilirsiniz.</p>
+                </div>
+              )}
 
               <div className="filter-row" style={{ marginTop: 10 }}>
                 <select value={addMemberUserId} onChange={(e) => setAddMemberUserId(e.target.value)}>
@@ -291,7 +334,7 @@ export function ProjectManagePage() {
             {/* Environment access */}
             <div className="detail-box">
               <strong>Ortam Erişim Yönetimi</strong>
-              <p className="inline-muted">Özellikle prod ortami için kullanıcı bazli erişim ayarla.</p>
+              <p className="inline-muted">Özellikle prod ortamı için kullanıcı bazlı erişim ayarla.</p>
               <div className="filter-row" style={{ marginTop: 8 }}>
                 <select value={accessUserId} onChange={(e) => setAccessUserId(e.target.value)}>
                   <option value="">Kullanıcı seç...</option>
@@ -319,7 +362,11 @@ export function ProjectManagePage() {
             </div>
           </>
         ) : (
-          <div className="page-panel">Detay görmek için soldan bir proje seçin.</div>
+          <div className="empty-state">
+            <span className="empty-state-icon">👈</span>
+            <h3 className="empty-state-title">Proje seçilmedi</h3>
+            <p className="empty-state-description">Detay görmek için soldan bir proje seçin.</p>
+          </div>
         )}
       </aside>
     </div>

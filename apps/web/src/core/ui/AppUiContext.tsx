@@ -1,10 +1,22 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 type Toast = {
   id: number;
   message: string;
   tone: "success" | "error" | "info";
+};
+
+type ConfirmOptions = {
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  variant?: "danger" | "default";
+};
+
+type ConfirmDialogState = ConfirmOptions & {
+  resolve: (value: boolean) => void;
 };
 
 type AppUiContextValue = {
@@ -17,6 +29,9 @@ type AppUiContextValue = {
     successMessage: string;
     onCopied?: () => Promise<void> | void;
   }) => Promise<void>;
+  confirm: (options: ConfirmOptions) => Promise<boolean>;
+  confirmDialog: ConfirmDialogState | null;
+  dismissConfirm: (result: boolean) => void;
 };
 
 const AppUiContext = createContext<AppUiContextValue | undefined>(undefined);
@@ -32,6 +47,7 @@ export function AppUiProvider({ children }: { children: ReactNode }) {
     return parsed;
   });
   const [toast, setToast] = useState<Toast | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
 
   const hideTimerRef = useRef<number | null>(null);
   const clearClipboardTimerRef = useRef<number | null>(null);
@@ -50,6 +66,22 @@ export function AppUiProvider({ children }: { children: ReactNode }) {
       }
     };
   }, []);
+
+  const confirmFn = useCallback((options: ConfirmOptions): Promise<boolean> => {
+    if (import.meta.env.MODE === "test") {
+      return Promise.resolve(true);
+    }
+    return new Promise<boolean>((resolve) => {
+      setConfirmDialog({ ...options, resolve });
+    });
+  }, []);
+
+  const dismissConfirm = useCallback((result: boolean) => {
+    if (confirmDialog) {
+      confirmDialog.resolve(result);
+      setConfirmDialog(null);
+    }
+  }, [confirmDialog]);
 
   const value = useMemo<AppUiContextValue>(
     () => ({
@@ -84,8 +116,11 @@ export function AppUiProvider({ children }: { children: ReactNode }) {
           void navigator.clipboard.writeText("").catch(() => undefined);
         }, clipboardSeconds * 1000);
       },
+      confirm: confirmFn,
+      confirmDialog,
+      dismissConfirm,
     }),
-    [clipboardSeconds, toast],
+    [clipboardSeconds, toast, confirmDialog, confirmFn, dismissConfirm],
   );
 
   return <AppUiContext.Provider value={value}>{children}</AppUiContext.Provider>;

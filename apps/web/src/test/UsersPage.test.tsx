@@ -30,7 +30,7 @@ vi.mock("@core/auth/AuthContext", () => ({
 }));
 
 vi.mock("@core/ui/AppUiContext", () => ({
-  useAppUi: () => ({ showToast: mockShowToast }),
+  useAppUi: () => ({ showToast: mockShowToast, confirm: () => Promise.resolve(true), dismissConfirm: () => {}, confirmDialog: null }),
 }));
 
 beforeEach(() => {

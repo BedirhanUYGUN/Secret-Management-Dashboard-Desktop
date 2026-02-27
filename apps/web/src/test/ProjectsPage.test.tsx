@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi, beforeEach } from "vitest";
@@ -76,6 +76,9 @@ vi.mock("@core/ui/AppUiContext", () => ({
   useAppUi: () => ({
     showToast: mockShowToast,
     copyWithTimer: mockCopyWithTimer,
+    confirm: () => Promise.resolve(true),
+    dismissConfirm: () => {},
+    confirmDialog: null,
   }),
 }));
 
@@ -120,25 +123,23 @@ describe("ProjectsPage", () => {
     });
   });
 
-  it("secret secildiginde detay paneli goruntulenir", async () => {
+  it("secret satırına çift tıklayınca detay modalı açılır", async () => {
     const user = userEvent.setup();
-    const { container } = renderPage();
+    renderPage();
 
     await waitFor(() => expect(screen.getAllByText("Stripe Key").length).toBeGreaterThanOrEqual(1));
 
-    // table-row içindeki Stripe Key satırına tıkla
+    // Stripe satırına çift tıkla
     const tableRows = document.querySelectorAll(".table-row");
-    if (tableRows.length > 0) {
-      await user.click(tableRows[0] as HTMLElement);
+    const stripeRow = Array.from(tableRows).find((row) => row.textContent?.includes("Stripe Key"));
+    if (stripeRow) {
+      await user.dblClick(stripeRow as HTMLElement);
     }
 
-    // Detay panelinde bilgiler gorunur
-    const detailSection = container.querySelector(".detail-section");
-    expect(detailSection).not.toBeNull();
-
     await waitFor(() => {
-      expect(within(detailSection as HTMLElement).getByText("payment")).toBeInTheDocument();
-      expect(within(detailSection as HTMLElement).getByText("Test key")).toBeInTheDocument();
+      expect(screen.getByText("Anahtar Detayları")).toBeInTheDocument();
+      expect(screen.getAllByText("payment").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText("Test key")).toBeInTheDocument();
     });
   });
 
@@ -149,10 +150,10 @@ describe("ProjectsPage", () => {
     await waitFor(() => expect(screen.getByText("Apollo API")).toBeInTheDocument());
     await user.click(screen.getByText("Anahtar Ekle"));
 
-    expect(screen.getByPlaceholderText("Ad")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Sağlayıcı")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("ANAHTAR_ADI")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Gizli Değer")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Örn: Stripe API Key")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Örn: AWS, Stripe")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Örn: STRIPE_SECRET_KEY")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Gizli anahtar değeri")).toBeInTheDocument();
   });
 
   it("filtreleme secenekleri mevcut", async () => {
@@ -165,12 +166,26 @@ describe("ProjectsPage", () => {
     expect(screen.getByText("Tüm tipler")).toBeInTheDocument();
   });
 
+  it("listeden kalem aksiyonu ile düzenleme modalı açılır", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => expect(screen.getAllByText("Stripe Key").length).toBeGreaterThanOrEqual(1));
+
+    await user.click(screen.getByRole("button", { name: /stripe key düzenle/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Anahtarı Düzenle")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Kaydet" })).toBeInTheDocument();
+    });
+  });
+
   it("atanmış proje yoksa uyari gosterir", async () => {
     mockFetchProjects.mockResolvedValueOnce([]);
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText(/atanmış proje bulunmuyor/i)).toBeInTheDocument();
+      expect(screen.getByText(/henüz size atanmış bir proje yok/i)).toBeInTheDocument();
     });
   });
 });

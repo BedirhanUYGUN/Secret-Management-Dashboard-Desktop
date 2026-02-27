@@ -15,7 +15,7 @@ const roleLabels: Record<Role, string> = {
 
 export function UsersPage() {
   const { user } = useAuth();
-  const { showToast } = useAppUi();
+  const { showToast, confirm } = useAppUi();
 
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
@@ -112,11 +112,15 @@ export function UsersPage() {
   };
 
   const toggleActive = async (u: ManagedUser) => {
-    const confirmed = window.confirm(
-      u.isActive
+    const confirmed = await confirm({
+      title: u.isActive ? "Kullaniciyi Deaktif Et" : "Kullaniciyi Aktif Et",
+      message: u.isActive
         ? `${u.displayName} deaktif edilsin mi?`
         : `${u.displayName} aktif edilsin mi?`,
-    );
+      confirmLabel: u.isActive ? "Deaktif Et" : "Aktif Et",
+      cancelLabel: "Vazgec",
+      variant: u.isActive ? "danger" : "default",
+    });
     if (!confirmed) return;
 
     try {

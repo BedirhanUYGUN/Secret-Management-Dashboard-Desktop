@@ -18,12 +18,13 @@ class TestUserList:
         data = resp.json()
         assert len(data) == 2
 
-    def test_member_kullanicilari_listeleyemez(self, client, db):
+    def test_member_kullanicilari_listeleyebilir(self, client, db):
         _make_user(db, email="member@test.com", role=RoleEnum.member)
         token = _login(client, "member@test.com")
 
         resp = client.get("/users", headers=_auth_header(token))
-        assert resp.status_code == 403
+        assert resp.status_code == 200
+        assert len(resp.json()) == 1
 
     def test_viewer_kullanicilari_listeleyemez(self, client, db):
         _make_user(db, email="viewer@test.com", role=RoleEnum.viewer)

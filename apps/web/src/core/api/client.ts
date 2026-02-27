@@ -199,8 +199,24 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   });
 
   if (!response.ok) {
+    const contentType = response.headers.get("content-type") ?? "";
+
+    if (contentType.includes("application/json")) {
+      const payload = (await response.json().catch(() => null)) as { detail?: unknown; message?: unknown } | null;
+      const detail = payload?.detail;
+      if (typeof detail === "string" && detail.trim() !== "") {
+        throw new Error(detail);
+      }
+      if (typeof payload?.message === "string" && payload.message.trim() !== "") {
+        throw new Error(payload.message);
+      }
+
+      const fallback = payload ? JSON.stringify(payload) : "";
+      throw new Error(fallback || `İstek başarısız oldu (HTTP ${response.status})`);
+    }
+
     const errorText = await response.text();
-    throw new Error(errorText || `Request failed with status ${response.status}`);
+    throw new Error(errorText || `İstek başarısız oldu (HTTP ${response.status})`);
   }
 
   if (options.responseType === "text") {

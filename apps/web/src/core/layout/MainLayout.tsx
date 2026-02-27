@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from
 import { useAuth } from "../auth/AuthContext";
 import { fetchProjects, type ProjectSummary } from "../api/client";
 import { isTauriRuntime } from "../platform/runtime";
+import { Modal } from "../ui/Modal";
 
 const pageTitles: Record<string, string> = {
   "/projects": "Projeler",
@@ -15,6 +16,8 @@ const pageTitles: Record<string, string> = {
   "/audit": "Denetim Kaydı",
 };
 
+const brandName = "SırIKI";
+
 export function MainLayout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -22,6 +25,13 @@ export function MainLayout() {
   const { user, logout } = useAuth();
   const [assignedProjects, setAssignedProjects] = useState<ProjectSummary[]>([]);
   const [projectQuery, setProjectQuery] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+
+  useEffect(() => {
+    const pageTitle = pageTitles[pathname];
+    document.title = pageTitle ? `${brandName} • ${pageTitle}` : brandName;
+  }, [pathname]);
 
   useEffect(() => {
     if (!user) {
@@ -33,12 +43,29 @@ export function MainLayout() {
       .catch(() => setAssignedProjects([]));
   }, [user]);
 
+  // Close sidebar on route change
   useEffect(() => {
-    if (!isTauriRuntime()) {
-      return;
-    }
+    setSidebarOpen(false);
+  }, [pathname]);
 
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      // Shift+? for shortcuts modal (works everywhere)
+      if (event.shiftKey && event.key === "?") {
+        const target = event.target as HTMLElement | null;
+        const tagName = target?.tagName ?? "";
+        const isTypingTarget = tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT";
+        if (!isTypingTarget && !target?.isContentEditable) {
+          event.preventDefault();
+          setShowShortcuts((prev) => !prev);
+          return;
+        }
+      }
+
+      if (!isTauriRuntime()) {
+        return;
+      }
+
       const isModifierPressed = event.ctrlKey || event.metaKey;
       if (!isModifierPressed || event.altKey) {
         return;
@@ -118,16 +145,43 @@ export function MainLayout() {
 
   return (
     <div className="app-frame">
-      <aside className="sidebar">
-        <div className="sidebar-title">Anahtar Yöneticisi</div>
+      <a href="#main-content" className="skip-to-content">Ana icerige atla</a>
+
+      <button
+        type="button"
+        className="sidebar-toggle"
+        onClick={() => setSidebarOpen((prev) => !prev)}
+        aria-label="Menu"
+      >
+        ☰
+      </button>
+
+      <div
+        className={`sidebar-backdrop ${sidebarOpen ? "sidebar-backdrop-visible" : ""}`}
+        onClick={() => setSidebarOpen(false)}
+      />
+
+      <aside className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
+        <div className="sidebar-brand">
+          <img className="sidebar-brand-logo" src="/siriki-logo.svg" alt="" aria-hidden="true" />
+          <div className="sidebar-brand-text">
+            <strong>{brandName}</strong>
+            <small>Secret Management Workspace</small>
+          </div>
+        </div>
         <nav className="main-nav">
           <NavLink to="/projects" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Projeler
           </NavLink>
           {user.role !== "viewer" && (
-            <NavLink to="/organizations" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-              Organizasyonlar
-            </NavLink>
+            <>
+              <NavLink to="/organizations" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+                Organizasyonlar
+              </NavLink>
+              <NavLink to="/project-manage" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+                Proje Yönetimi
+              </NavLink>
+            </>
           )}
           <NavLink to="/search" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Arama
@@ -139,9 +193,6 @@ export function MainLayout() {
             <>
               <NavLink to="/users" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
                 Kullanıcılar
-              </NavLink>
-              <NavLink to="/project-manage" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-                Proje Yönetimi
               </NavLink>
               <NavLink to="/import" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
                 İçeri Aktar
@@ -177,13 +228,13 @@ export function MainLayout() {
             <strong>{user.name}</strong>
             <small>{user.role.toUpperCase()}</small>
           </div>
-          <button type="button" onClick={logout}>
+          <button type="button" onClick={logout} data-tooltip="Oturumu kapat" data-tooltip-position="left">
             Çıkış Yap
           </button>
         </div>
       </aside>
 
-      <main className="content-area">
+      <main className="content-area" id="main-content">
         <header className="content-header">
           <div className="breadcrumb">{breadcrumb.map((part, index) => (
             <span key={index}>
@@ -192,7 +243,15 @@ export function MainLayout() {
             </span>
           ))}</div>
           <div className="content-header-right">
-            {isTauriRuntime() && <small className="desktop-shortcut-hint">Ctrl+1-4 hızlı geçiş, Ctrl+Shift+L çıkış</small>}
+            {isTauriRuntime() && <small className="desktop-shortcut-hint" data-tooltip="Shift+? ile tum kisayollari gor">Ctrl+1-4 hızlı geçiş, Ctrl+Shift+L çıkış</small>}
+            <button
+              type="button"
+              className="shortcuts-help-btn"
+              onClick={() => setShowShortcuts(true)}
+              data-tooltip="Klavye kisayollari"
+            >
+              ?
+            </button>
             {user.role === "viewer" ? (
               <span className="readonly-pill">Salt okunur mod</span>
             ) : (
@@ -202,6 +261,37 @@ export function MainLayout() {
         </header>
         <Outlet />
       </main>
+
+      <Modal open={showShortcuts} onClose={() => setShowShortcuts(false)} title="Klavye Kisayollari">
+        <table className="shortcut-table">
+          <tbody>
+            <tr>
+              <td><kbd className="shortcut-kbd">Ctrl</kbd> + <kbd className="shortcut-kbd">1</kbd></td>
+              <td>Projeler sayfasi</td>
+            </tr>
+            <tr>
+              <td><kbd className="shortcut-kbd">Ctrl</kbd> + <kbd className="shortcut-kbd">2</kbd></td>
+              <td>Arama sayfasi</td>
+            </tr>
+            <tr>
+              <td><kbd className="shortcut-kbd">Ctrl</kbd> + <kbd className="shortcut-kbd">3</kbd></td>
+              <td>Ayarlar sayfasi</td>
+            </tr>
+            <tr>
+              <td><kbd className="shortcut-kbd">Ctrl</kbd> + <kbd className="shortcut-kbd">4</kbd></td>
+              <td>Kullanicilar sayfasi (admin)</td>
+            </tr>
+            <tr>
+              <td><kbd className="shortcut-kbd">Ctrl</kbd> + <kbd className="shortcut-kbd">Shift</kbd> + <kbd className="shortcut-kbd">L</kbd></td>
+              <td>Oturumu kapat</td>
+            </tr>
+            <tr>
+              <td><kbd className="shortcut-kbd">Shift</kbd> + <kbd className="shortcut-kbd">?</kbd></td>
+              <td>Bu yardim penceresini ac/kapat</td>
+            </tr>
+          </tbody>
+        </table>
+      </Modal>
     </div>
   );
 }

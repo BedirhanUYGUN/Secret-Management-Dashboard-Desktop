@@ -101,12 +101,68 @@ class TestProjectManageCRUD:
         resp2 = client.get("/projects/manage", headers=_auth_header(token))
         assert len(resp2.json()) == 0
 
-    def test_member_proje_yonetemez(self, client, db):
+    def test_member_yonettigi_proje_yoksa_bos_liste_alir(self, client, db):
         _make_user(db, email="member@test.com", role=RoleEnum.member)
         token = _login(client, "member@test.com")
 
         resp = client.get("/projects/manage", headers=_auth_header(token))
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_member_admin_oldugu_projeyi_yonetebilir(self, client, db):
+        owner = _make_user(db, email="owner@test.com", role=RoleEnum.admin)
+        member = _make_user(db, email="member@test.com", role=RoleEnum.member)
+        project = _make_project(db, slug="manage-me", name="Manage Me", created_by=str(owner.id))
+        _assign_member(db, project_id=project.id, user_id=member.id, role=RoleEnum.admin)
+        token = _login(client, "member@test.com")
+
+        list_resp = client.get("/projects/manage", headers=_auth_header(token))
+        assert list_resp.status_code == 200
+        assert len(list_resp.json()) == 1
+        assert list_resp.json()[0]["slug"] == "manage-me"
+
+        update_resp = client.patch(
+            f"/projects/manage/{project.id}",
+            json={"description": "Updated by member-admin"},
+            headers=_auth_header(token),
+        )
+        assert update_resp.status_code == 200
+        assert update_resp.json()["description"] == "Updated by member-admin"
+
+    def test_member_admin_olmadigi_projeyi_yonetemez(self, client, db):
+        owner = _make_user(db, email="owner@test.com", role=RoleEnum.admin)
+        member = _make_user(db, email="member@test.com", role=RoleEnum.member)
+        project = _make_project(db, slug="forbidden", name="Forbidden", created_by=str(owner.id))
+        _assign_member(db, project_id=project.id, user_id=member.id, role=RoleEnum.member)
+        token = _login(client, "member@test.com")
+
+        resp = client.patch(
+            f"/projects/manage/{project.id}",
+            json={"name": "Hack"},
+            headers=_auth_header(token),
+        )
         assert resp.status_code == 403
+
+    def test_member_proje_olusturunca_kendisi_admin_olarak_eklenir(self, client, db):
+        _make_user(db, email="member@test.com", role=RoleEnum.member)
+        token = _login(client, "member@test.com")
+
+        create_resp = client.post(
+            "/projects/manage",
+            json={
+                "name": "Member Workspace",
+                "slug": "member-workspace",
+                "description": "Member created",
+                "tags": [],
+            },
+            headers=_auth_header(token),
+        )
+        assert create_resp.status_code == 201
+        created = create_resp.json()
+
+        list_resp = client.get("/projects", headers=_auth_header(token))
+        assert list_resp.status_code == 200
+        assert any(project["id"] == created["slug"] for project in list_resp.json())
 
 
 class TestProjectMembers:

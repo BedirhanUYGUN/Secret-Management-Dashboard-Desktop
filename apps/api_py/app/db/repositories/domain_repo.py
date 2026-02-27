@@ -695,6 +695,38 @@ def list_all_projects(db: Session) -> List[Dict]:
     return [_project_detail(db, p) for p in projects]
 
 
+def list_managed_projects_for_user(db: Session, user_id: str) -> List[Dict]:
+    projects = (
+        db.execute(
+            select(Project)
+            .join(ProjectMember, ProjectMember.project_id == Project.id)
+            .where(
+                ProjectMember.user_id == _to_uuid(user_id),
+                ProjectMember.role == RoleEnum.admin,
+            )
+            .order_by(Project.name.asc())
+        )
+        .scalars()
+        .all()
+    )
+    return [_project_detail(db, p) for p in projects]
+
+
+def can_manage_project(db: Session, user_id: str, project_id: str) -> bool:
+    try:
+        project_uuid = _to_uuid(project_id)
+    except ValueError:
+        return False
+
+    role = db.scalar(
+        select(ProjectMember.role).where(
+            ProjectMember.project_id == project_uuid,
+            ProjectMember.user_id == _to_uuid(user_id),
+        )
+    )
+    return role == RoleEnum.admin
+
+
 def create_project(
     db: Session,
     *,
@@ -708,22 +740,45 @@ def create_project(
     if existing:
         raise ValueError("Bu slug zaten kullanilmaktadir")
 
+    creator_uuid = _to_uuid(created_by)
+
     project = Project(
         slug=slug,
         name=name,
         description=description,
-        created_by=_to_uuid(created_by),
+        created_by=creator_uuid,
     )
     db.add(project)
     db.flush()
 
     # Default ortamlar olustur (local, dev, prod)
+    created_envs: List[Environment] = []
     for env_name in EnvironmentEnum:
+        env = Environment(
+            project_id=project.id,
+            name=env_name,
+            restricted=(env_name == EnvironmentEnum.prod),
+        )
+        db.add(env)
+        created_envs.append(env)
+
+    db.flush()
+
+    db.add(
+        ProjectMember(
+            project_id=project.id,
+            user_id=creator_uuid,
+            role=RoleEnum.admin,
+        )
+    )
+
+    for env in created_envs:
         db.add(
-            Environment(
-                project_id=project.id,
-                name=env_name,
-                restricted=(env_name == EnvironmentEnum.prod),
+            EnvironmentAccess(
+                environment_id=env.id,
+                user_id=creator_uuid,
+                can_read=True,
+                can_export=True,
             )
         )
 

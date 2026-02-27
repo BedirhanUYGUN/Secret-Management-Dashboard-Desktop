@@ -1,6 +1,6 @@
-# Secret Management Dashboard
+# SırIKI
 
-Takımlar için API key, token ve ortam değişkenlerini güvenli şekilde yönetmek üzere geliştirilmiş web + masaüstü uygulaması.
+SırIKI, takımlar için API key, token ve ortam değişkenlerini güvenli şekilde yönetmek üzere geliştirilmiş web + masaüstü uygulamasıdır.
 
 - Web: React + Vite
 - Masaüstü: Tauri (Windows odaklı)
@@ -9,11 +9,11 @@ Takımlar için API key, token ve ortam değişkenlerini güvenli şekilde yöne
 
 ## Hızlı Erişim
 
-- Web (canlı): [Web Uygulaması](https://secret-management-dashboard-desktop.netlify.app)
-- API sağlık kontrolü: [Render Health](https://api-key-organizer-api.onrender.com/health)
-- Windows indirme: [GitHub Releases](https://github.com/BedirhanUYGUN/Secret-Management-Dashboard-Desktop/releases/latest)
+- Web (canlı): [SırIKI Web](https://secret-management.netlify.app)
+- API sağlık kontrolü: [Render Health](https://secret-management-dashboard-desktop.onrender.com)
+- Windows indirme: [SirIKI-Desktop.exe](https://github.com/BedirhanUYGUN/Secret-Management-Dashboard-Desktop/raw/main/downloads/windows/SirIKI-Desktop.exe)
 
-Masaüstü uygulamasını kurduktan sonra doğrudan açabilirsiniz. Uygulama canlı API’ye bağlanır; kullanıcı tarafında ayrıca backend kurulumu gerekmez.
+SırIKI masaüstü uygulamasını kurduktan sonra doğrudan açabilirsiniz. Uygulama canlı API’ye bağlanır; kullanıcı tarafında ayrıca backend kurulumu gerekmez.
 
 ## Öne Çıkan Özellikler
 
@@ -143,7 +143,7 @@ npm run tauri -w apps/desktop build
 
 - `apps/desktop/src-tauri/target/release/bundle/`
 
-Dosyaları GitHub Releases’a yükledikten sonra README’deki `Download for Windows` bağlantısı her zaman son sürüme gider.
+README’deki `Windows indirme` bağlantısı SırIKI için depodaki güncel `.exe` dosyasına gider.
 
 ## Canlı Ortam (Deployment)
 
@@ -154,7 +154,7 @@ Dosyaları GitHub Releases’a yükledikten sonra README’deki `Download for Wi
 - `DATABASE_URL` (Supabase Postgres + `?sslmode=require`)
 - `JWT_SECRET_KEY`
 - `SECRET_ENCRYPTION_KEY`
-- `CORS_ORIGINS=https://secret-management-dashboard-desktop.netlify.app`
+- `CORS_ORIGINS=https://secret-management.netlify.app`
 - `SUPABASE_AUTH_ENABLED` (`true` / `false`)
 - `SUPABASE_URL` ve `SUPABASE_ANON_KEY` (Supabase auth açıksa)
 
@@ -162,7 +162,7 @@ Dosyaları GitHub Releases’a yükledikten sonra README’deki `Download for Wi
 
 `netlify.toml` hazır. Netlify ortam değişkenleri:
 
-- `VITE_API_BASE_URL=https://api-key-organizer-api.onrender.com`
+- `VITE_API_BASE_URL=https://secret-management-dashboard-desktop.onrender.com`
 - `VITE_SUPABASE_AUTH_ENABLED` (`true` / `false`)
 - `VITE_SUPABASE_URL` ve `VITE_SUPABASE_ANON_KEY` (Supabase auth açıksa)
 

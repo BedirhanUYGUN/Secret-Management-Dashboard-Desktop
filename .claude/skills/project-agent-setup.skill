@@ -1,0 +1,596 @@
+# Project Agent Setup Skill
+
+Sen proje analiz ve agent sistemi kurulum uzmanisın. Bir projenin yapisini, mimarisini ve amacini analiz ederek proje-spesifik CLAUDE.md, agent tanimlari ve subagent orkestrasyon sistemi olusturursun.
+
+Her agent'a uygun model seviyesi atanir:
+- **opus** — Karmasik mimari kararlar, multi-file refactor, kritik sistemler
+- **sonnet** — Standart gelistirme, feature ekleme, bug fix (VARSAYILAN)
+- **haiku** — Basit gorevler: dokumantasyon, linting, format, kucuk duzeltmeler
+
+Bu skill calistirildiginda asagidaki 3 fazi SIRASIYLA uygula. Hicbir fazi atlama.
+
+---
+
+## Faz 1: Proje Analizi
+
+### 1.1 Proje Yapisini Tara
+
+Oncelikle mevcut calisma dizininin bir proje koku olup olmadigini dogrula. Asagidaki dosyalardan EN AZ biri olmalidir:
+- `package.json`, `requirements.txt`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `build.gradle`, `pom.xml`, `Gemfile`, `pubspec.yaml`, `composer.json`, `setup.py`, `Pipfile`, `Makefile`, `README.md`
+
+Hicbiri yoksa kullaniciya "Bu dizin bir proje koku gibi gorunmuyor. Dogru dizinde oldugunuzdan emin olun." de ve DUR.
+
+### 1.2 Anahtar Dosyalari Oku
+
+`Read` ile asagidaki dosyalari oku (varsa):
+
+**Bagimlilik dosyalari:**
+- `package.json` (Node.js/JS/TS)
+- `requirements.txt`, `pyproject.toml`, `setup.py`, `Pipfile` (Python)
+- `go.mod` (Go)
+- `Cargo.toml` (Rust)
+- `pubspec.yaml` (Flutter/Dart)
+- `composer.json` (PHP)
+
+**Konfigurasyon dosyalari:**
+- `tsconfig.json`, `jsconfig.json`
+- `vite.config.*`, `next.config.*`, `nuxt.config.*`, `remix.config.*`
+- `docker-compose.yml`, `Dockerfile`
+- `.env.example`, `.env.local.example`
+- `prisma/schema.prisma`, `drizzle.config.*`
+- `vitest.config.*`, `jest.config.*`, `pytest.ini`
+- `tailwind.config.*`
+
+**Dokumantasyon:**
+- `README.md`
+- Mevcut `CLAUDE.md` (varsa)
+
+### 1.3 Dizin Yapisini Tara
+
+`Glob` ile ilk 3 seviye dizin yapisini tara. Ozellikle su dizinleri ara:
+- `src/`, `app/`, `lib/`, `pages/`, `components/`, `modules/`, `services/`, `utils/`, `routes/`
+- `tests/`, `__tests__/`, `test/`, `spec/`
+- `scripts/`, `public/`, `static/`, `assets/`
+- `prisma/`, `migrations/`, `db/`
+- `extensions/`, `plugins/`
+- `.claude/agents/` (mevcut agent sistemi var mi?)
+
+### 1.4 Tech Stack Tespiti
+
+Okudugun dosyalardan su bilgileri cikar:
+
+| Tespit Edilecek | Kaynak |
+|----------------|--------|
+| Framework | package.json dependencies, config dosyalari |
+| Dil | Dosya uzantilari, tsconfig, setup.py |
+| UI kutuphanesi | package.json (react, vue, svelte, angular) |
+| CSS | tailwind.config, postcss.config, .scss dosyalari |
+| Veritabani | prisma schema, drizzle config, models/ dizini |
+| ORM | package.json (prisma, drizzle, sequelize, typeorm, sqlalchemy) |
+| Test framework | vitest/jest/pytest config, test dosyalari |
+| Build araci | vite/webpack/esbuild config, package.json scripts |
+| API stili | REST routes, GraphQL schema, tRPC router |
+| Deploy | Dockerfile, docker-compose, vercel.json, netlify.toml |
+
+### 1.5 Mimari Analiz
+
+Klasor yapisindan ve dosya organizasyonundan mimari pattern'i belirle:
+- **Monolith**: Tek src/ veya app/ dizini
+- **Modular monolith**: modules/ veya features/ bazli organizasyon
+- **Microservices**: Birden fazla bagimsiz servis dizini
+- **Serverless**: functions/ veya api/ bazli
+- **Full-stack**: Hem frontend hem backend ayni repoda
+
+### 1.6 Mevcut Dosya Kontrolu (Idempotency)
+
+Kontrol et:
+- `CLAUDE.md` mevcut mu?
+- `.claude/agents/` dizini ve icindeki dosyalar mevcut mu?
+
+Sonuclari not al - Faz 2'de kullaniciya sorulacak.
+
+### 1.7 Plugin Ihtiyac Analizi
+
+Tech stack tespitine dayanarak, marketplace'teki plugin'lerden hangilerinin bu projeye faydali olacagini belirle.
+
+**Plugin Eslistirme Tablosu:**
+
+| Proje Sinyali | Onerilen Plugin | Tur | Neden |
+|---------------|----------------|-----|-------|
+| TypeScript/JavaScript projesi | `typescript-lsp` | official | Go-to-definition, find references, diagnostics |
+| Python projesi | `pyright-lsp` | official | Python LSP code intelligence |
+| Go projesi | `gopls-lsp` | official | Go LSP code intelligence |
+| Rust projesi | `rust-analyzer-lsp` | official | Rust LSP code intelligence |
+| C/C++ projesi | `clangd-lsp` | official | C/C++ LSP code intelligence |
+| Java projesi | `jdtls-lsp` | official | Java LSP code intelligence |
+| Kotlin projesi | `kotlin-lsp` | official | Kotlin LSP code intelligence |
+| PHP projesi | `php-lsp` | official | PHP LSP code intelligence |
+| Swift projesi | `swift-lsp` | official | Swift LSP code intelligence |
+| C# projesi | `csharp-lsp` | official | C# LSP code intelligence |
+| Lua projesi | `lua-lsp` | official | Lua LSP code intelligence |
+| Git repo (.git/ mevcut) | `commit-commands` | official | /commit, /commit-push-pr komutlari |
+| Git repo + GitHub remote | `github` | external | GitHub PR, issue, code review |
+| Git repo + GitLab remote | `gitlab` | external | GitLab MR, pipeline, issue |
+| Herhangi bir proje | `feature-dev` | official | 7-fazli feature gelistirme workflow'u |
+| Herhangi bir proje | `security-guidance` | official | Guvenlik uyarilari (XSS, injection vb.) |
+| Herhangi bir proje | `code-review` | official | Otomatik PR review |
+| Mevcut CLAUDE.md var | `claude-md-management` | official | CLAUDE.md bakimi ve guncelleme |
+| Playwright/E2E test | `playwright` | external | Browser otomasyon MCP |
+| Stripe entegrasyonu | `stripe` | external | Stripe API MCP |
+| Supabase kullanimi | `supabase` | external | Supabase DB/auth/storage MCP |
+| Firebase kullanimi | `firebase` | external | Firebase MCP |
+| Laravel projesi | `laravel-boost` | external | Laravel toolkit MCP |
+
+**Plugin oneri kurallari:**
+- Dile ozel LSP plugin'i HER ZAMAN oner (varsa)
+- `commit-commands` git repo ise HER ZAMAN oner
+- `security-guidance` HER ZAMAN oner
+- `feature-dev` orta/buyuk projeler icin oner
+- External plugin'leri SADECE proje gercekten o teknolojiyi kullaniyorsa oner
+- Toplam 3-7 plugin oner, cok fazla olmamali
+- Zaten kurulu olan plugin'leri kontrol et (`/plugin list` ciktisiyla veya `~/.claude/plugins/installed_plugins.json` okuyarak)
+
+---
+
+## Faz 2: Kullanici Onay
+
+### 2.1 Analiz Ozetini Goster
+
+Kullaniciya su formatta analiz sonuclarini goster:
+
+```
+## Proje Analiz Sonuclari
+
+**Proje:** [adi - package.json name veya dizin adi]
+**Tech Stack:** [framework], [dil], [UI], [DB], [test]
+**Mimari:** [pattern]
+**Klasor Sayisi:** [sayi] ana dizin
+**Dosya Sayisi:** ~[tahmini sayi]
+
+### Tespit Edilen Katmanlar:
+- [Frontend / Backend / Database / API / Worker / vb.]
+
+### Onerilen Agent'lar:
+| Agent | Model | Sorumluluk | Tahmini Dosya Sayisi |
+|-------|-------|-----------|---------------------|
+| [ad]  | [opus/sonnet/haiku] | [kisa aciklama] | [sayi] |
+
+### Model Dagitimi:
+- **opus**: [agent listesi] (karmasik/kritik isler)
+- **sonnet**: [agent listesi] (standart gelistirme)
+- **haiku**: [agent listesi] (basit gorevler)
+
+### Onerilen Plugin'ler:
+| Plugin | Tur | Neden |
+|--------|-----|-------|
+| [plugin-adi] | [official/external] | [kisa aciklama] |
+
+Kurulacak: [sayi] plugin (onay sonrasi)
+```
+
+### 2.2 Kullaniciya Sor
+
+`AskUserQuestion` kullanarak su sorulari sor:
+
+1. "Proje analizi dogru mu? Projenin ana amacini kısaca anlatir misiniz?" (eger README'den net anlasilamadiysa)
+2. Eger mevcut CLAUDE.md varsa: "Mevcut CLAUDE.md bulundu. Ne yapayim?" (Uzerine yaz / Guncelle / Atla)
+3. Eger mevcut agent dosyalari varsa: "Mevcut agent dosyalari bulundu: [liste]. Ne yapayim?" (Uzerine yaz / Koru ve yenilerini ekle / Atla)
+4. "Onerilen plugin'leri kurayim mi?" (Hepsini kur / Secerek kur / Atla)
+   - "Secerek kur" secilirse: plugin listesini goster ve multiSelect ile secim yaptir
+
+Kullanici onayladiktan sonra Faz 3'e gec.
+
+---
+
+## Faz 3: Dosya Olusturma
+
+### 3.1 CLAUDE.md Olusturma
+
+Proje kokunde `CLAUDE.md` dosyasi olustur. TURKCE yaz.
+
+**Kucuk proje (10'dan az kaynak dosya) icin minimal sablon:**
+
+```markdown
+# CLAUDE.md - [Proje Adi]
+
+## Proje Ozeti
+[1-3 cumle]
+
+## Teknoloji
+| Katman | Teknoloji |
+|--------|-----------|
+| ... | ... |
+
+## Dizin Yapisi
+[agac formati]
+
+## Onemli Komutlar
+[dev, test, build]
+```
+
+**Orta/buyuk proje icin tam sablon:**
+
+```markdown
+# CLAUDE.md - [Proje Adi]
+
+## Proje Ozeti
+[1-3 cumle: Ne yapar, kimin icin, temel teknoloji]
+
+## KRITIK KURALLAR
+[Projeye ozel en onemli kurallar - hardcoded deger yasagi, guvenlik kurallari vb.]
+
+## Teknoloji ve Mimari
+| Katman | Teknoloji |
+|--------|-----------|
+| Framework | [X] |
+| Dil | [X] |
+| UI | [X] |
+| Veritabani | [X] |
+| Test | [X] |
+| Build | [X] |
+
+### Istek Akisi (Request Flow)
+[ASCII diagram veya adim adim akis - projenin ana istek/veri akisini goster]
+
+## Dizin Yapisi
+[Agac formati, her dizinin yaninda kisa aciklama]
+
+## Onemli Komutlar
+```bash
+# Gelistirme
+[package.json scripts'ten alinan dev komutu]
+
+# Test
+[test komutu]
+
+# Build
+[build komutu]
+
+# Veritabani (varsa)
+[migration komutlari]
+```
+
+## Ortam Degiskenleri
+[.env.example veya koddan tespit edilen degiskenler tablosu]
+
+## Veritabani Modelleri
+[ORM varsa - model/tablo listesi ve iliskileri]
+
+## Kod Standartlari
+### Dosya Adlandirma
+[Projedeki mevcut convention]
+
+### Pattern'ler
+[Factory, repository, service vb. - koddan tespit edilen]
+
+### Genel Kurallar
+[Import style, naming convention, log format]
+
+## Bagimsiz Moduller
+[Her ana modul/feature icin: Sahip oldugu dosyalar, bagimliliklari, dis arayuzu]
+
+## Test Altyapisi
+[Framework, mock pattern, coverage araci, komutlar]
+```
+
+**CLAUDE.md yazarken KURALLAR:**
+- Gercek verileri kullan, ASLA tahmin etme
+- Komutlari `package.json` scripts'ten veya `Makefile`'dan al
+- Ortam degiskenlerini `.env.example` veya koddan tespit et
+- Dizin yapisini gercek dosya sistemi taramasindan olustur
+- Kod pattern'lerini mevcut koddan ornekle
+- Proje buyuklugune uygun derinlikte yaz
+
+### 3.2 Agent Dosyalari Olusturma
+
+Once `.claude/agents/` dizinini olustur (`mkdir -p`).
+
+Her agent icin `.claude/agents/<agent-adi>.md` dosyasi olustur. INGILIZCE yaz.
+
+**Agent secim kurallari:**
+- Minimum: 2 agent (core + test-runner)
+- Maksimum: 8 agent
+- Tipik: 3-6 agent
+- Her agent en az 3 dosyaya sahip olmali
+- 3'ten az dosyasi olan aday agent'i baska bir agent'la birlestir
+- Dosya sahipligi cakismamali
+- Paylasilan dosyalar icin "Shared File Warning" ekle
+
+**Agent .md dosya yapisi:**
+
+```markdown
+# [Agent Name] Agent
+
+You are the [specialty] specialist for [project name], [1-line project description].
+
+## Model
+
+**Default:** `[sonnet|opus|haiku]`
+**Escalate to opus when:** [specific scenarios for this agent, e.g. "multi-file refactor touching 4+ files", "new subsystem design"]
+**Downgrade to haiku when:** [specific scenarios, e.g. "adding a single log line", "updating comments", "simple rename"]
+
+## Responsibility
+[1-2 sentence: What this agent owns and is responsible for]
+
+## Files You Own
+
+### [Category 1]
+- `path/to/file.ext` — [what this file does]
+- `path/to/file2.ext` — [what this file does]
+
+### [Category 2]
+- `path/to/file.ext` — [what this file does]
+
+## Key Architecture
+
+### [Subsystem/Pattern 1]
+[How it works: flow description, key patterns, important decisions]
+
+### [Subsystem/Pattern 2]
+[Description]
+
+## Common Tasks
+
+### [Task 1: e.g. "Adding a New API Endpoint"]
+1. [Step 1]
+2. [Step 2]
+3. [Step 3]
+
+### [Task 2: e.g. "Modifying the Schema"]
+1. [Step 1]
+2. [Step 2]
+
+## Subagent Usage
+
+When delegating work related to this agent's domain, use the Task tool:
+
+```
+Task(subagent_type="general-purpose", model="[sonnet|opus|haiku]", prompt="
+You are the [Agent Name] agent for [project name].
+Read .claude/agents/[agent-file].md for your full instructions.
+Task: [specific task description]
+")
+```
+
+### Parallel Subagent Patterns
+[When this agent's work can be parallelized with other agents, describe the pattern. E.g.:]
+- Run `[this agent]` (sonnet) + `test-runner` (sonnet) in parallel after feature implementation
+- Run `[this agent]` (haiku) for docs update while `[other agent]` (sonnet) handles code changes
+
+## Shared File Warning
+[ONLY include if files are shared with another agent. Specify which files, which agent shares them, and what each agent owns within that file.]
+
+## Code Conventions
+- [Convention 1 specific to this agent's domain]
+- [Convention 2]
+- [Convention 3]
+
+## Before Making Changes
+Always read the project CLAUDE.md at the repository root for the latest conventions and constraints.
+```
+
+**Agent dosyasi yazarken KURALLAR:**
+- Gercek dosya yollarini kullan (Glob sonuclarindan)
+- Her dosyanin yanina ne ise yaradigini yaz
+- Common Tasks bolumunde proje-spesifik step-by-step checklist'ler yaz
+- Code Conventions bolumunde BU agent'in alanina ozel convention'lar yaz
+- Shared File Warning SADECE gercekten paylasilan dosyalar varsa ekle
+- Her agent'a Model bolumu MUTLAKA ekle (escalation ve downgrade senaryolariyla)
+
+**Model atama kurallari:**
+- `opus` — Projenin en karmasik, cok dosyali, mimari karar gerektiren agent'ina ata. Genellikle 1, en fazla 2 agent opus olur.
+- `sonnet` — Cogu agent sonnet olur. Standart gelistirme, feature ekleme, bug fix, test yazma.
+- `haiku` — Dokumantasyon, basit config degisiklikleri, format/lint islemleri icin. Genellikle 1-2 agent haiku olur.
+
+### 3.3 Subagent Orkestrasyon Dosyasi
+
+`.claude/agents/orchestrator.md` dosyasi olustur. Bu dosya tum agent'larin nasil koordine edilecegini tanimlar.
+
+```markdown
+# Subagent Orchestration Guide
+
+This file defines how to coordinate agents for [project name] using Claude Code's Task tool.
+
+## Agent Registry
+
+| Agent | File | Default Model | Escalation Trigger |
+|-------|------|--------------|-------------------|
+| [agent-1] | `.claude/agents/[file].md` | sonnet | [when to use opus] |
+| [agent-2] | `.claude/agents/[file].md` | sonnet | [when to use opus] |
+| [agent-3] | `.claude/agents/[file].md` | haiku | N/A |
+
+## Model Selection Guide
+
+### Use `opus` when:
+- Designing a new subsystem or architectural component
+- Refactoring that touches 4+ files simultaneously
+- Debugging complex cross-module issues
+- Making decisions that affect multiple agents' domains
+- Implementing security-critical features
+
+### Use `sonnet` (default) when:
+- Adding a new feature within an existing pattern
+- Fixing a bug with known root cause
+- Writing or updating tests
+- Standard CRUD operations
+- Most day-to-day development work
+
+### Use `haiku` when:
+- Updating documentation or comments
+- Simple renames or formatting changes
+- Adding log lines or minor config changes
+- Generating boilerplate from established patterns
+- Quick file reads and analysis tasks
+
+## How to Launch a Subagent
+
+### Single Agent Task
+```
+Task(subagent_type="general-purpose", model="sonnet", prompt="
+You are the [Agent Name] agent for [project name].
+Read .claude/agents/[agent-file].md for your full instructions.
+Task: [describe the specific task]
+")
+```
+
+### Parallel Agents (Independent Tasks)
+Launch multiple Task calls in a SINGLE message when tasks are independent:
+```
+// Message with multiple Task calls:
+Task(model="sonnet", prompt="[Agent A task]")  // runs in parallel
+Task(model="sonnet", prompt="[Agent B task]")  // runs in parallel
+Task(model="haiku", prompt="[Agent C task]")   // runs in parallel
+```
+
+### Sequential Agents (Dependent Tasks)
+When one agent's output feeds into another:
+```
+// Step 1: Run first agent
+Task(model="sonnet", prompt="[Agent A: create the API endpoint]")
+// Step 2: After completion, run dependent agent
+Task(model="sonnet", prompt="[Agent B: write tests for the new endpoint]")
+```
+
+## Workflow Templates
+
+### [Workflow 1: e.g. "New Feature"]
+1. **[agent-1]** (sonnet) — [what it does first]
+2. **[agent-2]** (sonnet) + **[agent-3]** (haiku) — [parallel tasks]
+3. **[agent-4]** (sonnet) — [final step]
+
+### [Workflow 2: e.g. "Bug Fix"]
+1. **[debug agent]** (opus) — Investigate root cause
+2. **[code agent]** (sonnet) — Implement fix
+3. **[test agent]** (sonnet) — Add regression test
+
+### [Workflow 3: e.g. "Documentation Update"]
+1. **[docs agent]** (haiku) — Update docs based on recent changes
+
+## Anti-Patterns (AVOID)
+- Do NOT launch opus for simple tasks — it's slower and more expensive
+- Do NOT run agents sequentially when they can run in parallel
+- Do NOT skip reading the agent's .md file before starting work
+- Do NOT assign a task to an agent outside its domain — check Files You Own
+```
+
+**orchestrator.md yazarken KURALLAR:**
+- Workflow template'lerini projenin gercek ihtiyaclarina gore olustur
+- Agent Registry tablosunu gercek agent dosyalariyla doldur
+- Model Selection Guide'i projenin karmasikligina gore ayarla
+- Parallel vs Sequential pattern'lerini projenin bagimlilik yapisina gore belirle
+- En az 2, en fazla 5 workflow template olustur
+
+### 3.5 Plugin Kurulumu
+
+Kullanici onayladigi plugin'leri kur. Her plugin icin `Bash` ile su komutu calistir:
+
+```bash
+claude /plugin install [plugin-adi]
+```
+
+**Kurulum sirasi:**
+1. Once LSP plugin'lerini kur (dil destegi oncelikli)
+2. Sonra workflow plugin'lerini kur (commit-commands, feature-dev)
+3. Son olarak external plugin'leri kur (github, playwright, supabase vb.)
+
+**Kurulum sonrasi:**
+- Her plugin icin kurulum basarili mi kontrol et
+- Basarisiz kurulumlar icin kullaniciya bilgi ver
+- External plugin'ler icin ek konfigurasyona ihtiyac varsa kullaniciya bildir (ornegin: API key, env variable)
+
+**ONEMLI: External plugin uyarilari:**
+- `stripe` — `STRIPE_API_KEY` env variable gerektirir
+- `supabase` — Supabase project URL ve API key gerektirir
+- `firebase` — Firebase proje konfigurasyonu gerektirir
+- `github` — `gh auth login` ile GitHub CLI auth gerektirebilir
+- `gitlab` — GitLab token gerektirir
+- `slack` — Slack workspace token gerektirir
+- `playwright` — `npx playwright install` ile browser kurulumu gerektirebilir
+
+Kullaniciya hangi ek konfigurasyonlarin gerektigini listele.
+
+### 3.6 Ozet Rapor
+
+Tum dosyalar olusturduktan sonra kullaniciya su formatta rapor goster:
+
+```
+## Proje Agent Setup Tamamlandi
+
+### Olusturulan Dosyalar:
+- `CLAUDE.md` ([satir sayisi] satir)
+- `.claude/agents/orchestrator.md` (subagent orkestrasyon rehberi)
+- `.claude/agents/[agent1].md`
+- `.claude/agents/[agent2].md`
+- ...
+
+### Agent ve Model Ozeti:
+| Agent | Model | Dosya Sayisi | Sorumluluk |
+|-------|-------|-------------|------------|
+| [ad]  | opus  | [sayi]      | [kisa aciklama] |
+| [ad]  | sonnet| [sayi]      | [kisa aciklama] |
+| [ad]  | haiku | [sayi]      | [kisa aciklama] |
+
+### Workflow Template'leri:
+- **[Workflow 1]**: [agent1] (model) -> [agent2] (model) -> ...
+- **[Workflow 2]**: [agent1] (model) + [agent2] (model) (paralel)
+
+### Kurulan Plugin'ler:
+| Plugin | Tur | Durum |
+|--------|-----|-------|
+| [ad]   | [official/external] | [basarili/basarisiz/atlanmis] |
+
+[Eger external plugin kurulduysa:]
+### Ek Konfigürasyon Gereksinimleri:
+- **[plugin]**: [gerekli env variable veya setup adimi]
+
+### Kullanim:
+Agent'lari subagent olarak calistirmak icin:
+  Task(model="sonnet", prompt="You are the [X] agent. Read .claude/agents/[X].md ...")
+
+### Sonraki Adimlar:
+1. CLAUDE.md'yi inceleyin ve eksik/yanlis bilgileri duzeltin
+2. Agent tanimlarini ve model atamalarini inceleyin
+3. orchestrator.md'deki workflow'lari projenize uyarlayin
+4. Ek konfigurasyonlari tamamlayin (varsa)
+5. Agent'lari kullanmaya baslayin
+```
+
+---
+
+## Proje Turune Gore Agent ve Model Kilavuzu
+
+Bu kilavuz ZORUNLU DEGIL, sadece ilham amacli. Her projeyi bireysel analiz et.
+
+| Proje Turu | Tipik Agent'lar | Model Dagitimi |
+|------------|----------------|----------------|
+| Next.js / Remix / Nuxt | ui-components, api-routes, database, test-runner, (auth) | api-routes:sonnet, database:sonnet, ui:sonnet, test:sonnet, docs:haiku |
+| Express / Fastify / NestJS | api-endpoints, database, middleware, test-runner | api:sonnet, db:sonnet, middleware:sonnet, test:sonnet |
+| FastAPI / Django / Flask | api-endpoints, database, test-runner, (worker) | api:sonnet, db:sonnet, test:sonnet, worker:sonnet |
+| React Native / Flutter | ui-screens, navigation, api-client, state, test-runner | ui:sonnet, nav:sonnet, api:sonnet, state:sonnet, test:sonnet |
+| Python ML/Data | data-pipeline, model, evaluation, api | model:opus, data:sonnet, eval:sonnet, api:sonnet |
+| Go / Rust backend | handlers, storage, domain, test-runner | domain:sonnet, handlers:sonnet, storage:sonnet, test:sonnet |
+| CLI tool | commands, core-logic, output, test-runner | core:sonnet, commands:sonnet, output:haiku, test:sonnet |
+| Monorepo | Her paket icin ayri agent + shared-utils | core-pkg:opus, diger-pkg:sonnet, shared:haiku |
+| Shopify App | chat-engine, tool-pipeline, widget, shopify-integration, database, test-runner | chat-engine:opus, tool-pipeline:sonnet, widget:sonnet, db:sonnet, test:sonnet |
+
+### Model Dagitim Genel Kurali
+- Projenin en karmasik, en cok dosya iceren, en kritik agent'i -> **opus** (1-2 agent)
+- Standart gelistirme agent'lari -> **sonnet** (cogunluk)
+- Dokumantasyon, basit config, format agent'lari -> **haiku** (0-2 agent)
+- Eger proje kucukse (toplam 3-4 agent) hepsi **sonnet** olabilir, opus sart degil
+
+---
+
+## Onemli Notlar
+
+- CLAUDE.md TURKCE yazilir
+- Agent dosyalari ve orchestrator.md INGILIZCE yazilir
+- Tum dosya yollari GERCEK olmali, tahmin etme
+- Proje kucukse CLAUDE.md'yi de kisa tut (gereksiz bolum ekleme)
+- Buyuk projelerde detayli yaz ama 700 satiri gecme
+- Mevcut dosyalari ASLA sormadan uzerine yazma
+- Her agent'a Model bolumu MUTLAKA ekle (default + escalation + downgrade)
+- orchestrator.md her zaman olusturulur - subagent koordinasyonu icin zorunlu
+- Subagent calistirirken model parametresi MUTLAKA belirtilmeli
+- opus sadece gercekten gerektiginde kullan (pahali ve yavas), cogu is icin sonnet yeterli
+- haiku'yu hafife alma - basit ama hizli gorevlerde cok etkili (docs, format, lint, quick analysis)

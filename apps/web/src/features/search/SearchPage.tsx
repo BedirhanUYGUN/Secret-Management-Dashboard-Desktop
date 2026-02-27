@@ -104,11 +104,17 @@ export function SearchPage() {
             <strong>{item.name}</strong>
             <span>{projects.find((project) => project.id === item.projectId)?.name ?? item.projectId}</span>
             <span>{item.provider}</span>
-            <span>{item.environment.toUpperCase()}</span>
+            <span><span className={`env-badge env-badge-${item.environment}`}>{item.environment.toUpperCase()}</span></span>
             <code>{item.valueMasked}</code>
           </Link>
         ))}
-        {results.length === 0 && <p>Mevcut filtrelerle eşleşme bulunamadı.</p>}
+        {results.length === 0 && !loading && (
+          <div className="empty-state">
+            <span className="empty-state-icon">🔍</span>
+            <h3 className="empty-state-title">Sonuc bulunamadi</h3>
+            <p className="empty-state-description">Mevcut filtrelerle eslesen anahtar bulunamadi. Filtrelerinizi degistirmeyi deneyin.</p>
+          </div>
+        )}
       </div>
     </section>
   );

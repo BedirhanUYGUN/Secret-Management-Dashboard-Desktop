@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">SırIKI Logo</title>
+  <desc id="desc">Shield and keyhole mark for SırIKI.</desc>
+  <defs>
+    <linearGradient id="sirikiBg" x1="0" y1="0" x2="96" y2="96" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B1C45" />
+      <stop offset="1" stop-color="#1A7FA8" />
+    </linearGradient>
+    <linearGradient id="sirikiGlow" x1="22" y1="16" x2="74" y2="80" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3BE0CA" />
+      <stop offset="1" stop-color="#7AE3FF" />
+    </linearGradient>
+  </defs>
+
+  <rect x="8" y="8" width="80" height="80" rx="24" fill="url(#sirikiBg)" />
+  <path
+    d="M48 20L67 27C68.5 27.6 69.6 29.1 69.6 30.8V44.4C69.6 58.8 60.7 72.1 48 76.5C35.3 72.1 26.4 58.8 26.4 44.4V30.8C26.4 29.1 27.5 27.6 29 27L48 20Z"
+    fill="none"
+    stroke="url(#sirikiGlow)"
+    stroke-width="4"
+    stroke-linejoin="round"
+  />
+  <circle cx="48" cy="42" r="8.5" fill="#E9F4FF" />
+  <path d="M43.5 49.5H52.5V64H43.5Z" fill="#E9F4FF" />
+  <circle cx="48" cy="58" r="2.6" fill="#0F2B5E" />
+</svg>

@@ -194,9 +194,21 @@ class TestMemberKisitlamalari:
         token = _login(client, "member@test.com")
 
         resp = client.get("/users", headers=_auth_header(token))
-        assert resp.status_code == 403
+        assert resp.status_code == 200
 
-    def test_member_proje_yonetemez(self, client, db):
+        resp_create = client.post(
+            "/users",
+            json={
+                "email": "new-user@test.com",
+                "displayName": "Yeni",
+                "role": "member",
+                "password": "testpass123",
+            },
+            headers=_auth_header(token),
+        )
+        assert resp_create.status_code == 403
+
+    def test_member_proje_olusturabilir(self, client, db):
         _make_user(db, email="member@test.com", role=RoleEnum.member)
         token = _login(client, "member@test.com")
 
@@ -205,7 +217,7 @@ class TestMemberKisitlamalari:
             json={"name": "Hack", "slug": "hack"},
             headers=_auth_header(token),
         )
-        assert resp.status_code == 403
+        assert resp.status_code == 201
 
     def test_uye_olmadigi_projeye_secret_olusturamaz(self, client, db):
         owner = _make_user(db, email="owner@test.com", role=RoleEnum.admin)

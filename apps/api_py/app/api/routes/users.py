@@ -13,7 +13,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get("", response_model=List[UserOut])
 def get_users(
-    user=Depends(require_roles(["admin"])),
+    user=Depends(require_roles(["admin", "member"])),
     db: Session = Depends(get_db_session),
 ):
     return list_users(db)
@@ -47,11 +47,13 @@ def patch_user(
     db: Session = Depends(get_db_session),
 ):
     data = payload.model_dump(exclude_unset=True)
+    role_raw = data.get("role")
+    role_value = getattr(role_raw, "value", role_raw)
     updated = update_user(
         db,
         user_id,
         display_name=data.get("displayName"),
-        role=data.get("role").value if data.get("role") else None,
+        role=role_value,
         is_active=data.get("isActive"),
         password=data.get("password"),
     )

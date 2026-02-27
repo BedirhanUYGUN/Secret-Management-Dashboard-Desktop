@@ -51,7 +51,7 @@ vi.mock("@core/auth/AuthContext", () => ({
 }));
 
 vi.mock("@core/ui/AppUiContext", () => ({
-  useAppUi: () => ({ showToast: mockShowToast }),
+  useAppUi: () => ({ showToast: mockShowToast, confirm: () => Promise.resolve(true), dismissConfirm: () => {}, confirmDialog: null }),
 }));
 
 beforeEach(() => {
@@ -65,7 +65,7 @@ describe("ProjectManagePage", () => {
     render(<ProjectManagePage />);
 
     await waitFor(() => {
-      expect(screen.getByText("Apollo API")).toBeInTheDocument();
+      expect(screen.getAllByText("Apollo API").length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -73,7 +73,7 @@ describe("ProjectManagePage", () => {
     const user = userEvent.setup();
     render(<ProjectManagePage />);
 
-    await waitFor(() => expect(screen.getByText("Apollo API")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText("Apollo API").length).toBeGreaterThanOrEqual(1));
     await user.click(screen.getByText("Yeni Proje"));
 
     expect(screen.getByPlaceholderText("Proje Adı")).toBeInTheDocument();
@@ -92,7 +92,7 @@ describe("ProjectManagePage", () => {
     const user = userEvent.setup();
     render(<ProjectManagePage />);
 
-    await waitFor(() => expect(screen.getByText("Apollo API")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText("Apollo API").length).toBeGreaterThanOrEqual(1));
     await user.click(screen.getByText("Yeni Proje"));
 
     await user.type(screen.getByPlaceholderText("Proje Adı"), "Yeni Proje");
@@ -111,8 +111,8 @@ describe("ProjectManagePage", () => {
     const user = userEvent.setup();
     const { container } = render(<ProjectManagePage />);
 
-    await waitFor(() => expect(screen.getByText("Apollo API")).toBeInTheDocument());
-    await user.click(screen.getByText("Apollo API"));
+    await waitFor(() => expect(screen.getAllByText("Apollo API").length).toBeGreaterThanOrEqual(1));
+    await user.click(screen.getAllByText("Apollo API")[0]);
 
     const detailSection = container.querySelector(".detail-section");
     expect(detailSection).not.toBeNull();
@@ -128,8 +128,7 @@ describe("ProjectManagePage", () => {
     const user = userEvent.setup();
     render(<ProjectManagePage />);
 
-    await waitFor(() => expect(screen.getByText("Apollo API")).toBeInTheDocument());
-    await user.click(screen.getByText("Apollo API"));
+    await waitFor(() => expect(screen.getAllByText("Apollo API").length).toBeGreaterThanOrEqual(1));
 
     await waitFor(() => expect(screen.getByText("Sil")).toBeInTheDocument());
     await user.click(screen.getByText("Sil"));

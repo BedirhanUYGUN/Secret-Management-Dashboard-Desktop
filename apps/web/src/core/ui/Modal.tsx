@@ -6,9 +6,10 @@ type ModalProps = {
   onClose: () => void;
   title: string;
   children: ReactNode;
+  className?: string;
 };
 
-export function Modal({ open, onClose, title, children }: ModalProps) {
+export function Modal({ open, onClose, title, children, className }: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -16,9 +17,17 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
     if (!dialog) return;
 
     if (open && !dialog.open) {
-      dialog.showModal();
+      if (typeof dialog.showModal === "function") {
+        dialog.showModal();
+      } else {
+        dialog.setAttribute("open", "");
+      }
     } else if (!open && dialog.open) {
-      dialog.close();
+      if (typeof dialog.close === "function") {
+        dialog.close();
+      } else {
+        dialog.removeAttribute("open");
+      }
     }
   }, [open]);
 
@@ -44,7 +53,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
   return (
     <dialog
       ref={dialogRef}
-      className="modal-dialog"
+      className={className ? `modal-dialog ${className}` : "modal-dialog"}
       onClick={handleBackdropClick}
       onCancel={handleCancel}
     >

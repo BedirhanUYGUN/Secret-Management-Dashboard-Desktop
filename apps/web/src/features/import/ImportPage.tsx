@@ -236,7 +236,7 @@ export function ImportPage() {
         </select>
 
         <input value={provider} onChange={(event) => setProvider(event.target.value)} placeholder="Sağlayıcı" />
-        <input value={tags} onChange={(event) => setTags(event.target.value)} placeholder="etiket1, etiket2" />
+        <input value={tags} onChange={(event) => setTags(event.target.value)} placeholder="Etiketler (virgul ile ayirin, orn: backend, production)" />
       </div>
 
       {/* Dosya yükleme ve sürükle-bırak alanı */}

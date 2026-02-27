@@ -21,6 +21,18 @@
   font-size: 0.8rem;
 }
 
+.desktop-titlebar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.desktop-titlebar-logo {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+}
+
 .tauri-desktop .login-shell,
 .tauri-desktop .app-frame {
   min-height: calc(100vh - 30px);

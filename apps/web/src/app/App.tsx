@@ -34,11 +34,11 @@ function App() {
 
                 <Route element={<RequireRole allowed={["admin", "member"]} />}>
                   <Route path="/organizations" element={<OrganizationPage />} />
+                  <Route path="/project-manage" element={<ProjectManagePage />} />
                 </Route>
 
                 <Route element={<RequireRole allowed={["admin"]} />}>
                   <Route path="/users" element={<UsersPage />} />
-                  <Route path="/project-manage" element={<ProjectManagePage />} />
                   <Route path="/import" element={<ImportPage />} />
                   <Route path="/audit" element={<AuditPage />} />
                 </Route>
