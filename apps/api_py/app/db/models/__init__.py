@@ -9,6 +9,7 @@ from app.db.models.project import (
     ProjectTag,
 )
 from app.db.models.refresh_token import RefreshToken
+from app.db.models.service_token import ServiceToken
 from app.db.models.secret import Secret, SecretNote, SecretTag, SecretVersion
 from app.db.models.user import User
 
@@ -23,6 +24,7 @@ __all__ = [
     "ProjectTag",
     "RefreshToken",
     "RoleEnum",
+    "ServiceToken",
     "Secret",
     "SecretNote",
     "SecretTag",

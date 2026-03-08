@@ -13,7 +13,7 @@ vi.mock("@core/api/client", () => ({
 
 vi.mock("@core/auth/AuthContext", () => ({
   useAuth: () => ({
-    user: { id: "u1", name: "Admin", role: "admin", assignments: [], preferences: {} },
+    user: { id: "u1", email: "admin@test.com", name: "Admin", role: "admin", assignments: [], preferences: {} },
   }),
 }));
 

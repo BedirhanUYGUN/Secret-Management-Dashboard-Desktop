@@ -14,6 +14,7 @@ class SecretOut(BaseModel):
     type: SecretTypeEnum
     environment: EnvironmentEnum
     keyName: str
+    version: int
     valueMasked: str
     updatedAt: datetime
     tags: List[str]
@@ -45,5 +46,18 @@ class SecretUpdateRequest(BaseModel):
 
 class SecretRevealOut(BaseModel):
     secretId: str
+    projectId: str
     keyName: str
     value: str
+
+
+class SecretRevealRequest(BaseModel):
+    reason: Optional[str] = None
+
+
+class SecretVersionOut(BaseModel):
+    version: int
+    maskedValue: str
+    createdAt: datetime
+    createdByName: Optional[str] = None
+    isCurrent: bool = False

@@ -4,7 +4,21 @@ import { useAuth } from "@core/auth/AuthContext";
 import type { AuditEvent } from "@core/types";
 import { Spinner } from "@core/ui/Spinner";
 
-const actionOptions = ["all", "secret_created", "secret_updated", "secret_deleted", "secret_copied", "secret_exported"] as const;
+const actionOptions = [
+  "all",
+  "secret_created",
+  "secret_updated",
+  "secret_deleted",
+  "secret_copied",
+  "secret_exported",
+  "secret_revealed",
+  "secret_restored",
+  "invite_created",
+  "invite_rotated",
+  "invite_revoked",
+  "member_joined",
+  "service_exported",
+] as const;
 
 const actionLabels: Record<string, string> = {
   all: "Tüm işlemler",
@@ -13,6 +27,13 @@ const actionLabels: Record<string, string> = {
   secret_deleted: "Silme",
   secret_copied: "Kopyalama",
   secret_exported: "Dışarı Aktarım",
+  secret_revealed: "Görüntüleme",
+  secret_restored: "Sürüm Geri Yükleme",
+  invite_created: "Davet Oluşturma",
+  invite_rotated: "Davet Yenileme",
+  invite_revoked: "Davet İptali",
+  member_joined: "Üye Katılımı",
+  service_exported: "Servis Export",
 };
 
 export function AuditPage() {

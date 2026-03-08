@@ -53,6 +53,7 @@ describe("AuthContext", () => {
     localStorage.setItem("api-key-organizer-access-token", "mock-token");
     mockFetchMe.mockResolvedValueOnce({
       id: "1",
+      email: "admin@test.com",
       name: "Admin",
       role: "admin",
       assignments: [],
@@ -76,6 +77,7 @@ describe("AuthContext", () => {
     mockLoginWithCredentials.mockResolvedValueOnce(undefined);
     mockFetchMe.mockResolvedValueOnce({
       id: "2",
+      email: "user@test.com",
       name: "Test User",
       role: "member",
       assignments: [],
@@ -107,6 +109,7 @@ describe("AuthContext", () => {
     localStorage.setItem("api-key-organizer-access-token", "mock-token");
     mockFetchMe.mockResolvedValueOnce({
       id: "1",
+      email: "admin@test.com",
       name: "Admin",
       role: "admin",
       assignments: [],

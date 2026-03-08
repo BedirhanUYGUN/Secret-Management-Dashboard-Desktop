@@ -7,11 +7,14 @@ from app.api.deps import get_db_session, require_roles
 from app.db.repositories.domain_repo import (
     add_member_to_project,
     can_manage_project,
+    create_service_token_for_admin,
     create_project,
     delete_project,
     list_all_projects,
     list_managed_projects_for_user,
+    list_service_tokens_for_admin,
     remove_member_from_project,
+    revoke_service_token_for_admin,
     set_environment_access,
     update_project,
 )
@@ -21,6 +24,10 @@ from app.schemas.projects import (
     ProjectDetailOut,
     ProjectMemberAddRequest,
     ProjectMemberOut,
+    ProjectMemberRoleUpdateRequest,
+    ServiceTokenCreateOut,
+    ServiceTokenCreateRequest,
+    ServiceTokenOut,
     ProjectUpdateRequest,
 )
 
@@ -141,6 +148,26 @@ def remove_member(
         )
 
 
+@router.patch("/{project_id}/members/{user_id}", response_model=ProjectMemberOut)
+def update_member_role(
+    project_id: str,
+    user_id: str,
+    payload: ProjectMemberRoleUpdateRequest,
+    user=Depends(require_roles(["admin", "member"])),
+    db: Session = Depends(get_db_session),
+):
+    if user.role.value != "admin" and not can_manage_project(db, str(user.id), project_id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
+    result = add_member_to_project(db, project_id, user_id, payload.role.value)
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project or user not found",
+        )
+    return result
+
+
 # ---------------------------------------------------------------------------
 # Environment access
 # ---------------------------------------------------------------------------
@@ -170,3 +197,60 @@ def set_access(
             detail="Project or environment not found",
         )
     return {"ok": True}
+
+
+@router.get("/{project_id}/service-tokens", response_model=List[ServiceTokenOut])
+def get_service_tokens(
+    project_id: str,
+    user=Depends(require_roles(["admin", "member"])),
+    db: Session = Depends(get_db_session),
+):
+    result = list_service_tokens_for_admin(db, str(user.id), project_id)
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    return result
+
+
+@router.post(
+    "/{project_id}/service-tokens",
+    response_model=ServiceTokenCreateOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_service_token(
+    project_id: str,
+    payload: ServiceTokenCreateRequest,
+    user=Depends(require_roles(["admin", "member"])),
+    db: Session = Depends(get_db_session),
+):
+    result = create_service_token_for_admin(
+        db,
+        user_id=str(user.id),
+        project_id=project_id,
+        name=payload.name,
+    )
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    return result
+
+
+@router.delete(
+    "/{project_id}/service-tokens/{token_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+def revoke_service_token(
+    project_id: str,
+    token_id: str,
+    user=Depends(require_roles(["admin", "member"])),
+    db: Session = Depends(get_db_session),
+):
+    result = revoke_service_token_for_admin(
+        db,
+        user_id=str(user.id),
+        project_id=project_id,
+        token_id=token_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    if result is False:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Service token not found"
+        )

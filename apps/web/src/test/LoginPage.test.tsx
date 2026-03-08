@@ -7,6 +7,11 @@ import { LoginPage } from "@features/auth/LoginPage";
 // --- Mock'lar ---
 const mockLogin = vi.fn();
 const mockNavigate = vi.fn();
+const mockRequestPasswordReset = vi.fn();
+
+vi.mock("@core/api/client", () => ({
+  requestPasswordReset: (...args: unknown[]) => mockRequestPasswordReset(...args),
+}));
 
 vi.mock("@core/auth/AuthContext", () => ({
   useAuth: () => ({ login: mockLogin, loading: false }),

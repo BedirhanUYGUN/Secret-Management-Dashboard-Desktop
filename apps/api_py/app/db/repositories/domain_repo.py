@@ -18,6 +18,7 @@ from app.db.models import (
     ProjectMember,
     ProjectTag,
     RoleEnum,
+    ServiceToken,
     Secret,
     SecretNote,
     SecretTag,
@@ -40,6 +41,10 @@ def _generate_invite_code(length: int = INVITE_LENGTH) -> str:
 
 
 def _hash_invite_code(value: str) -> str:
+    return sha256(value.encode("utf-8")).hexdigest()
+
+
+def _hash_service_token(value: str) -> str:
     return sha256(value.encode("utf-8")).hexdigest()
 
 
@@ -277,6 +282,7 @@ def _to_secret_out(db: Session, secret: Secret, env_name: EnvironmentEnum) -> Di
         "type": secret.type,
         "environment": env_name,
         "keyName": secret.key_name,
+        "version": secret.key_version,
         "valueMasked": mask_value(decrypt_secret_value(secret.value_encrypted)),
         "updatedAt": secret.updated_at,
         "tags": tags,
@@ -377,11 +383,105 @@ def get_secret_value(db: Session, user_id: str, secret_id: str) -> Optional[Dict
     secret = get_secret_for_user(db, user_id, secret_id)
     if not secret:
         return None
+    project_slug = resolve_project_slug(db, secret.project_id)
     return {
         "secretId": str(secret.id),
+        "projectId": project_slug,
         "keyName": secret.key_name,
         "value": decrypt_secret_value(secret.value_encrypted),
     }
+
+
+def list_secret_versions(db: Session, user_id: str, secret_id: str) -> Optional[List[Dict]]:
+    secret = get_secret_for_user(db, user_id, secret_id)
+    if not secret:
+        return None
+
+    current_created_by_name = None
+    if secret.updated_by:
+        current_created_by_name = db.scalar(
+            select(User.display_name).where(User.id == secret.updated_by)
+        )
+
+    versions = [
+        {
+            "version": secret.key_version,
+            "maskedValue": mask_value(decrypt_secret_value(secret.value_encrypted)),
+            "createdAt": secret.updated_at,
+            "createdByName": current_created_by_name,
+            "isCurrent": True,
+        }
+    ]
+
+    history_rows = (
+        db.execute(
+            select(SecretVersion)
+            .where(SecretVersion.secret_id == secret.id)
+            .order_by(SecretVersion.version.desc())
+        )
+        .scalars()
+        .all()
+    )
+    for version_row in history_rows:
+        created_by_name = None
+        if version_row.created_by:
+            created_by_name = db.scalar(
+                select(User.display_name).where(User.id == version_row.created_by)
+            )
+        versions.append(
+            {
+                "version": version_row.version,
+                "maskedValue": mask_value(
+                    decrypt_secret_value(version_row.value_encrypted)
+                ),
+                "createdAt": version_row.created_at,
+                "createdByName": created_by_name,
+                "isCurrent": False,
+            }
+        )
+
+    return versions
+
+
+def restore_secret_version(
+    db: Session, user_id: str, secret_id: str, version: int
+) -> Optional[Dict]:
+    secret = get_secret_for_user(db, user_id, secret_id)
+    if not secret:
+        return None
+
+    if version == secret.key_version:
+        raise ValueError("Current version is already active")
+
+    version_row = db.scalar(
+        select(SecretVersion).where(
+            SecretVersion.secret_id == secret.id,
+            SecretVersion.version == version,
+        )
+    )
+    if not version_row:
+        raise ValueError("Requested version not found")
+
+    db.add(
+        SecretVersion(
+            secret_id=secret.id,
+            version=secret.key_version,
+            value_encrypted=secret.value_encrypted,
+            created_by=_to_uuid(user_id),
+        )
+    )
+    secret.key_version += 1
+    secret.value_encrypted = version_row.value_encrypted
+    secret.updated_by = _to_uuid(user_id)
+    secret.updated_at = datetime.now(timezone.utc)
+    db.add(secret)
+    db.commit()
+
+    env_name = db.scalar(
+        select(Environment.name).where(Environment.id == secret.environment_id)
+    )
+    env_for_output = env_name if env_name is not None else EnvironmentEnum.dev
+    return _to_secret_out(db, secret, cast(EnvironmentEnum, env_for_output))
 
 
 def create_secret(db: Session, user_id: str, project_slug: str, payload: Dict) -> Dict:
@@ -591,10 +691,140 @@ def export_secrets_all_envs(
     return output
 
 
+def _service_token_to_out(token: ServiceToken) -> Dict:
+    return {
+        "id": str(token.id),
+        "name": token.name,
+        "createdAt": token.created_at,
+        "lastUsedAt": token.last_used_at,
+        "revokedAt": token.revoked_at,
+        "tokenPreview": f"srv_{str(token.id)[:8]}...",
+    }
+
+
+def list_service_tokens_for_admin(
+    db: Session, user_id: str, project_id: str
+) -> Optional[List[Dict]]:
+    if not can_manage_project(db, user_id, project_id):
+        return None
+
+    rows = (
+        db.execute(
+            select(ServiceToken)
+            .where(ServiceToken.project_id == _to_uuid(project_id))
+            .order_by(ServiceToken.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+    return [_service_token_to_out(item) for item in rows]
+
+
+def create_service_token_for_admin(
+    db: Session, *, user_id: str, project_id: str, name: str
+) -> Optional[Dict]:
+    if not can_manage_project(db, user_id, project_id):
+        return None
+
+    raw_token = f"srv_{secrets.token_urlsafe(32)}"
+    token = ServiceToken(
+        project_id=_to_uuid(project_id),
+        name=name.strip(),
+        token_hash=_hash_service_token(raw_token),
+        created_by=_to_uuid(user_id),
+    )
+    db.add(token)
+    db.commit()
+    db.refresh(token)
+
+    output = _service_token_to_out(token)
+    output["token"] = raw_token
+    return output
+
+
+def revoke_service_token_for_admin(
+    db: Session, *, user_id: str, project_id: str, token_id: str
+) -> Optional[bool]:
+    if not can_manage_project(db, user_id, project_id):
+        return None
+
+    token = db.scalar(
+        select(ServiceToken).where(
+            ServiceToken.id == _to_uuid(token_id),
+            ServiceToken.project_id == _to_uuid(project_id),
+        )
+    )
+    if not token:
+        return False
+
+    token.revoked_at = datetime.now(timezone.utc)
+    db.add(token)
+    db.commit()
+    return True
+
+
+def export_secrets_with_service_token(
+    db: Session,
+    *,
+    service_token: str,
+    project_slug: str,
+    environment: EnvironmentEnum,
+    tag: Optional[str] = None,
+) -> Optional[List[Dict]]:
+    token_row = db.scalar(
+        select(ServiceToken)
+        .join(Project, Project.id == ServiceToken.project_id)
+        .where(
+            ServiceToken.token_hash == _hash_service_token(service_token),
+            Project.slug == project_slug,
+            ServiceToken.revoked_at.is_(None),
+        )
+    )
+    if not token_row:
+        return None
+
+    project_id = resolve_project_id(db, project_slug)
+    if not project_id:
+        return None
+    env_id = resolve_environment_id(db, project_id, environment)
+    if not env_id:
+        return None
+
+    rows = db.execute(
+        select(Secret).where(
+            Secret.project_id == project_id,
+            Secret.environment_id == env_id,
+        )
+    ).scalars()
+
+    result: List[Dict] = []
+    for row in rows:
+        if tag:
+            secret_tags = [
+                item.tag
+                for item in db.execute(
+                    select(SecretTag).where(SecretTag.secret_id == row.id)
+                ).scalars()
+            ]
+            if tag not in secret_tags:
+                continue
+        result.append(
+            {
+                "key_name": row.key_name,
+                "value_plain": decrypt_secret_value(row.value_encrypted),
+            }
+        )
+
+    token_row.last_used_at = datetime.now(timezone.utc)
+    db.add(token_row)
+    db.commit()
+    return result
+
+
 def add_audit_event(
     db: Session,
     *,
-    actor_user_id: str,
+    actor_user_id: Optional[str],
     project_slug: Optional[str],
     action: str,
     target_type: str,
@@ -603,7 +833,7 @@ def add_audit_event(
 ) -> None:
     project_id = resolve_project_id(db, project_slug) if project_slug else None
     event = AuditEvent(
-        actor_user_id=_to_uuid(actor_user_id),
+        actor_user_id=_to_uuid(actor_user_id) if actor_user_id else None,
         project_id=project_id,
         action=action,
         target_type=target_type,

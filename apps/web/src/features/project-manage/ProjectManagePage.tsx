@@ -1,16 +1,20 @@
 import { useEffect, useState } from "react";
 import {
   addProjectMember,
+  createServiceToken,
   createProject,
   deleteProject,
+  fetchServiceTokens,
   fetchProjectDetails,
   fetchUsers,
   removeProjectMember,
+  revokeServiceToken,
   updateEnvironmentAccess,
+  updateProjectMemberRole,
   updateProject,
 } from "@core/api/client";
 import { useAuth } from "@core/auth/AuthContext";
-import type { Environment, ManagedUser, ProjectDetail, Role } from "@core/types";
+import type { Environment, ManagedUser, ProjectDetail, Role, ServiceTokenInfo } from "@core/types";
 import { useAppUi } from "@core/ui/AppUiContext";
 import { Spinner } from "@core/ui/Spinner";
 
@@ -39,12 +43,16 @@ export function ProjectManagePage() {
   // Add member form
   const [addMemberUserId, setAddMemberUserId] = useState("");
   const [addMemberRole, setAddMemberRole] = useState<Role>("member");
+  const [memberRoleDrafts, setMemberRoleDrafts] = useState<Record<string, Role>>({});
 
   // Env access form
   const [accessUserId, setAccessUserId] = useState("");
   const [accessEnv, setAccessEnv] = useState<Environment>("prod");
   const [accessRead, setAccessRead] = useState(true);
   const [accessExport, setAccessExport] = useState(false);
+  const [serviceTokens, setServiceTokens] = useState<ServiceTokenInfo[]>([]);
+  const [serviceTokenName, setServiceTokenName] = useState("");
+  const [latestServiceToken, setLatestServiceToken] = useState<string | null>(null);
 
   const parseErrorMessage = (message: string) => {
     if (message.includes("Forbidden") || message.includes("403")) {
@@ -89,8 +97,22 @@ export function ProjectManagePage() {
   useEffect(() => {
     if (selected) {
       setEditForm({ name: selected.name, description: selected.description, tags: selected.tags.join(", ") });
+      setMemberRoleDrafts(
+        Object.fromEntries(selected.members.map((member) => [member.userId, member.role])) as Record<string, Role>,
+      );
     }
   }, [selected]);
+
+  useEffect(() => {
+    if (!selected) {
+      setServiceTokens([]);
+      return;
+    }
+
+    void fetchServiceTokens(selected.id)
+      .then((rows) => setServiceTokens(rows))
+      .catch((error: Error) => setErrorMessage(parseErrorMessage(error.message)));
+  }, [selectedId]);
 
   const handleCreate = async () => {
     if (!createForm.name.trim() || !createForm.slug.trim()) {
@@ -186,6 +208,22 @@ export function ProjectManagePage() {
     }
   };
 
+  const handleUpdateMemberRole = async (userId: string) => {
+    if (!selected) return;
+    try {
+      setErrorMessage("");
+      await updateProjectMemberRole({
+        projectId: selected.id,
+        userId,
+        role: memberRoleDrafts[userId] ?? "member",
+      });
+      showToast("Üye rolü güncellendi", "success");
+      await loadData();
+    } catch (error) {
+      if (error instanceof Error) setErrorMessage(parseErrorMessage(error.message));
+    }
+  };
+
   const handleSetAccess = async () => {
     if (!selected || !accessUserId) return;
     try {
@@ -198,6 +236,39 @@ export function ProjectManagePage() {
         canExport: accessExport,
       });
       showToast("Ortam erişimi güncellendi", "success");
+    } catch (error) {
+      if (error instanceof Error) setErrorMessage(parseErrorMessage(error.message));
+    }
+  };
+
+  const handleCreateServiceToken = async () => {
+    if (!selected || !serviceTokenName.trim()) return;
+    try {
+      setErrorMessage("");
+      const created = await createServiceToken({ projectId: selected.id, name: serviceTokenName.trim() });
+      setLatestServiceToken(created.token);
+      setServiceTokenName("");
+      showToast("Servis token oluşturuldu", "success");
+      setServiceTokens(await fetchServiceTokens(selected.id));
+    } catch (error) {
+      if (error instanceof Error) setErrorMessage(parseErrorMessage(error.message));
+    }
+  };
+
+  const handleRevokeServiceToken = async (tokenId: string) => {
+    if (!selected) return;
+    const confirmed = await confirm({
+      title: "Servis Tokenını İptal Et",
+      message: "Bu token artık CI/CD veya script erişimi için kullanılamayacak.",
+      confirmLabel: "İptal Et",
+      cancelLabel: "Vazgeç",
+      variant: "danger",
+    });
+    if (!confirmed) return;
+    try {
+      await revokeServiceToken({ projectId: selected.id, tokenId });
+      showToast("Servis tokenı iptal edildi", "success");
+      setServiceTokens(await fetchServiceTokens(selected.id));
     } catch (error) {
       if (error instanceof Error) setErrorMessage(parseErrorMessage(error.message));
     }
@@ -301,7 +372,15 @@ export function ProjectManagePage() {
                 <div key={m.userId} className="member-row">
                   <span>{m.displayName}</span>
                   <span>{m.email}</span>
-                  <span>{roleLabels[m.role]}</span>
+                  <select
+                    value={memberRoleDrafts[m.userId] ?? m.role}
+                    onChange={(event) => setMemberRoleDrafts((prev) => ({ ...prev, [m.userId]: event.target.value as Role }))}
+                  >
+                    {roleOptions.map((role) => (
+                      <option key={role} value={role}>{roleLabels[role]}</option>
+                    ))}
+                  </select>
+                  <button type="button" onClick={() => void handleUpdateMemberRole(m.userId)}>Rolü Kaydet</button>
                   <button type="button" onClick={() => void handleRemoveMember(m.userId)}>Çıkar</button>
                 </div>
               ))}
@@ -359,6 +438,45 @@ export function ProjectManagePage() {
                   Erişimi Kaydet
                 </button>
               </div>
+            </div>
+
+            <div className="detail-box">
+              <strong>CI / Servis Tokenları</strong>
+              <p className="inline-muted">Build pipeline veya otomasyon araçları için proje bazlı dışa aktarım tokenı oluşturun.</p>
+              <div className="filter-row" style={{ marginTop: 8 }}>
+                <input
+                  value={serviceTokenName}
+                  onChange={(event) => setServiceTokenName(event.target.value)}
+                  placeholder="Örn: GitHub Actions Prod Export"
+                />
+                <button type="button" onClick={() => void handleCreateServiceToken()} disabled={!serviceTokenName.trim()}>
+                  Token Oluştur
+                </button>
+              </div>
+
+              {latestServiceToken && (
+                <div className="auth-info-box" style={{ marginTop: 10 }}>
+                  <strong>Yeni servis tokenı</strong>
+                  <code>{latestServiceToken}</code>
+                  <p>Bu değer sadece bir kez gösterilir. CI/CD sisteminize şimdi ekleyin.</p>
+                  <pre style={{ whiteSpace: "pre-wrap", marginTop: 8 }}>{`curl -H "X-Service-Token: ${latestServiceToken}" "${window.location.origin.includes("localhost") ? "http://localhost:4000" : window.location.origin}/service-access/projects/${selected.slug}/exports?env=dev&format=env"`}</pre>
+                </div>
+              )}
+
+              {serviceTokens.map((token) => (
+                <div key={token.id} className="member-row">
+                  <div>
+                    <strong>{token.name}</strong>
+                    <div className="inline-muted">{token.tokenPreview}</div>
+                    <div className="inline-muted">Son kullanım: {token.lastUsedAt ? new Date(token.lastUsedAt).toLocaleString() : "Henüz kullanılmadı"}</div>
+                  </div>
+                  <button type="button" onClick={() => void handleRevokeServiceToken(token.id)} disabled={Boolean(token.revokedAt)}>
+                    {token.revokedAt ? "İptal Edildi" : "İptal Et"}
+                  </button>
+                </div>
+              ))}
+
+              {serviceTokens.length === 0 && <p className="inline-muted">Henüz servis tokenı oluşturulmadı.</p>}
             </div>
           </>
         ) : (

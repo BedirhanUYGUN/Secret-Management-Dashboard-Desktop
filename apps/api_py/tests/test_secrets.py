@@ -104,9 +104,66 @@ class TestSecretCRUD:
         create_resp = _create_secret(client, token, "proj", value="super-secret-value")
         secret_id = create_resp.json()["id"]
 
-        resp = client.get(f"/secrets/{secret_id}/reveal", headers=_auth_header(token))
+        resp = client.get(
+            f"/secrets/{secret_id}/reveal?reason=debug-check",
+            headers=_auth_header(token),
+        )
         assert resp.status_code == 200
         assert resp.json()["value"] == "super-secret-value"
+
+    def test_secret_reveal_reason_gerekli(self, client, db):
+        admin = _make_user(db, email="admin@test.com", role=RoleEnum.admin)
+        project = _make_project(db, slug="proj", name="Proje", created_by=str(admin.id))
+        _assign_member(db, project_id=project.id, user_id=admin.id)
+        token = _login(client, "admin@test.com")
+
+        create_resp = _create_secret(client, token, "proj", value="super-secret-value")
+        secret_id = create_resp.json()["id"]
+
+        resp = client.get(f"/secrets/{secret_id}/reveal", headers=_auth_header(token))
+        assert resp.status_code == 400
+
+    def test_secret_surumleri_listelenir_ve_geri_yuklenir(self, client, db):
+        admin = _make_user(db, email="admin@test.com", role=RoleEnum.admin)
+        project = _make_project(db, slug="proj", name="Proje", created_by=str(admin.id))
+        _assign_member(db, project_id=project.id, user_id=admin.id)
+        token = _login(client, "admin@test.com")
+
+        create_resp = _create_secret(client, token, "proj", value="value-v1")
+        secret_id = create_resp.json()["id"]
+
+        update_resp = client.patch(
+            f"/secrets/{secret_id}",
+            json={"value": "value-v2"},
+            headers=_auth_header(token),
+        )
+        assert update_resp.status_code == 200
+        assert update_resp.json()["version"] == 2
+
+        versions_resp = client.get(
+            f"/secrets/{secret_id}/versions",
+            headers=_auth_header(token),
+        )
+        assert versions_resp.status_code == 200
+        versions = versions_resp.json()
+        assert versions[0]["version"] == 2
+        assert versions[0]["isCurrent"] is True
+        assert any(item["version"] == 1 for item in versions)
+
+        restore_resp = client.post(
+            f"/secrets/{secret_id}/versions/1/restore",
+            headers=_auth_header(token),
+        )
+        assert restore_resp.status_code == 200
+        restored = restore_resp.json()
+        assert restored["version"] == 3
+
+        reveal_resp = client.get(
+            f"/secrets/{secret_id}/reveal?reason=rollback-check",
+            headers=_auth_header(token),
+        )
+        assert reveal_resp.status_code == 200
+        assert reveal_resp.json()["value"] == "value-v1"
 
     def test_secret_filtreleme(self, client, db):
         admin = _make_user(db, email="admin@test.com", role=RoleEnum.admin)

@@ -146,6 +146,10 @@ export function UsersPage() {
         </button>
       </div>
 
+      <div className="auth-info-box" style={{ marginBottom: 12 }}>
+        Yeni kullanıcı onboarding için öncelikli akış organizasyon davet bağlantısıdır. Bu ekrandaki manuel oluşturma seçeneğini sadece istisnai yönetici işlemlerinde kullanın.
+      </div>
+
       {showCreateForm && (
         <div className="detail-box form-box">
           <strong>Yeni Kullanıcı Oluştur</strong>

@@ -206,7 +206,7 @@ class TestExport:
         token = self._seed_secrets(client, db)
 
         resp = client.get(
-            "/exports/proj?env=dev&format=env",
+            "/exports/proj?env=dev&format=env&reason=automation-export",
             headers=_auth_header(token),
         )
         assert resp.status_code == 200
@@ -218,7 +218,7 @@ class TestExport:
         token = self._seed_secrets(client, db)
 
         resp = client.get(
-            "/exports/proj?env=dev&format=json",
+            "/exports/proj?env=dev&format=json&reason=automation-export",
             headers=_auth_header(token),
         )
         assert resp.status_code == 200
@@ -230,7 +230,7 @@ class TestExport:
         token = self._seed_secrets(client, db)
 
         resp = client.get(
-            "/exports/proj/all?format=json",
+            "/exports/proj/all?format=json&reason=automation-export",
             headers=_auth_header(token),
         )
         assert resp.status_code == 200
@@ -247,7 +247,7 @@ class TestExport:
         token = _login(client, "viewer@test.com")
 
         resp = client.get(
-            "/exports/proj?env=dev&format=env",
+            "/exports/proj?env=dev&format=env&reason=automation-export",
             headers=_auth_header(token),
         )
         assert resp.status_code == 403
@@ -256,7 +256,7 @@ class TestExport:
         token = self._seed_secrets(client, db)
 
         resp = client.get(
-            "/exports/proj?env=dev&format=json&tag=api",
+            "/exports/proj?env=dev&format=json&tag=api&reason=automation-export",
             headers=_auth_header(token),
         )
         assert resp.status_code == 200
@@ -268,7 +268,7 @@ class TestExport:
         token = self._seed_secrets(client, db)
 
         resp = client.get(
-            "/exports/proj?env=dev&format=json&tag=nonexistent",
+            "/exports/proj?env=dev&format=json&tag=nonexistent&reason=automation-export",
             headers=_auth_header(token),
         )
         assert resp.status_code == 200

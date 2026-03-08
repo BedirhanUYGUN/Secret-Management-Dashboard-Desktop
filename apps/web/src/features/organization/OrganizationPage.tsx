@@ -9,6 +9,7 @@ import {
   removeProjectMember,
   revokeOrganizationInvite,
   rotateOrganizationInvite,
+  updateProjectMemberRole,
 } from "@core/api/client";
 import type { Invite, ManagedUser, OrganizationSummary, ProjectDetail, Role } from "@core/types";
 import { useAppUi } from "@core/ui/AppUiContext";
@@ -38,6 +39,7 @@ export function OrganizationPage() {
 
   const [addMemberUserId, setAddMemberUserId] = useState("");
   const [addMemberRole, setAddMemberRole] = useState<Role>("member");
+  const [memberRoleDrafts, setMemberRoleDrafts] = useState<Record<string, Role>>({});
 
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -120,6 +122,16 @@ export function OrganizationPage() {
   useEffect(() => {
     void loadSelectedOrganizationContext(selectedProjectSlug);
   }, [loadSelectedOrganizationContext, selectedProjectSlug]);
+
+  useEffect(() => {
+    if (!managedProject) {
+      setMemberRoleDrafts({});
+      return;
+    }
+    setMemberRoleDrafts(
+      Object.fromEntries(managedProject.members.map((member) => [member.userId, member.role])) as Record<string, Role>,
+    );
+  }, [managedProject]);
 
   const refreshAll = async () => {
     await loadOrganizations();
@@ -220,6 +232,27 @@ export function OrganizationPage() {
     }
   };
 
+  const handleUpdateMemberRole = async (userId: string) => {
+    if (!managedProject) {
+      return;
+    }
+
+    setErrorMessage("");
+    try {
+      await updateProjectMemberRole({
+        projectId: managedProject.id,
+        userId,
+        role: memberRoleDrafts[userId] ?? "member",
+      });
+      showToast("Üye rolü güncellendi", "success");
+      await refreshAll();
+    } catch (error) {
+      if (error instanceof Error) {
+        setErrorMessage(parseErrorMessage(error.message));
+      }
+    }
+  };
+
   const handleRemoveMember = async (userId: string) => {
     if (!managedProject) {
       return;
@@ -258,6 +291,20 @@ export function OrganizationPage() {
       showToast("Davet anahtarı panoya kopyalandı", "success");
     } catch {
       showToast("Kopyalama başarısız oldu", "error");
+    }
+  };
+
+  const copyInviteLink = async () => {
+    if (!latestCode) {
+      return;
+    }
+
+    const inviteLink = `${window.location.origin}/register?inviteCode=${encodeURIComponent(latestCode)}`;
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      showToast("Davet bağlantısı panoya kopyalandı", "success");
+    } catch {
+      showToast("Bağlantı kopyalanamadı", "error");
     }
   };
 
@@ -344,6 +391,7 @@ export function OrganizationPage() {
                 <code>{latestCode}</code>
                 <div className="action-row">
                   <button type="button" onClick={() => void copyLatestCode()}>Kopyala</button>
+                  <button type="button" onClick={() => void copyInviteLink()}>Davet Linki Kopyala</button>
                 </div>
               </div>
             )}
@@ -355,7 +403,17 @@ export function OrganizationPage() {
                 <div key={member.userId} className="member-row organization-member-row">
                   <span>{member.displayName}</span>
                   <span>{member.email}</span>
-                  <span>{roleLabels[member.role]}</span>
+                  <select
+                    value={memberRoleDrafts[member.userId] ?? member.role}
+                    onChange={(event) => setMemberRoleDrafts((prev) => ({ ...prev, [member.userId]: event.target.value as Role }))}
+                  >
+                    {roleOptions.map((role) => (
+                      <option key={role} value={role}>{roleLabels[role]}</option>
+                    ))}
+                  </select>
+                  <button type="button" onClick={() => void handleUpdateMemberRole(member.userId)}>
+                    Rolü Kaydet
+                  </button>
                   <button type="button" onClick={() => void handleRemoveMember(member.userId)}>
                     Çıkar
                   </button>

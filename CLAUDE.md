@@ -16,7 +16,7 @@ Takimlar icin API key, token ve ortam degiskenlerini guvenli sekilde yonetmek uz
 | Katman | Teknoloji |
 |--------|-----------|
 | Framework (Web) | React 19 + Vite 7 |
-| Framework (API) | FastAPI (Python 3.11+) |
+| Framework (API) | FastAPI (Python 3.9+) |
 | Framework (Desktop) | Tauri 2 (Rust) |
 | Dil | TypeScript 5.9, Python, Rust |
 | UI | Custom CSS (framework yok) |
@@ -129,11 +129,17 @@ npm run db:seed:api           # Test seed verileri yukle
 | VITE_SUPABASE_ANON_KEY | Supabase anonim anahtar |
 
 ## Veritabani Modelleri
-- **User** — Kullanici (email, password_hash, role, is_active, preferences)
-- **Secret** — Sifrelenmis secret (name, provider, type, environment, encrypted_value, key_name, tags, notes)
-- **RefreshToken** — JWT refresh token (token_hash, user_id, expires_at)
-- **AuditLog** — Denetim kaydi (action, actor, project_id, secret_name)
-- **Enums** — Role (admin/member/viewer), Environment (local/dev/prod), SecretType (key/token/endpoint)
+- **User** — Kullanici (email, password_hash, role, is_active, preferences JSONB)
+- **Project** — Proje (name, slug, description, tags, created_by)
+- **ProjectMember** — Proje uyeligi (project_id, user_id, role)
+- **Environment** — Ortam (project_id, name: local/dev/prod)
+- **Secret** — Sifrelenmis secret (environment_id, name, provider, type, key_name, value_encrypted). Unique: (environment_id, key_name)
+- **SecretVersion** — Versiyon gecmisi (secret_id, version, encrypted_value, created_by)
+- **SecretTag** — Etiketler (secret_id, tag). Unique: (secret_id, tag)
+- **SecretNote** — Notlar (secret_id, content, updated_by)
+- **RefreshToken** — JWT refresh token (token_hash SHA256, user_id, expires_at, revoked_at)
+- **AuditEvent** — Denetim kaydi (action, actor_user_id, project_id, target_type, target_id, metadata JSONB)
+- **Enums** — RoleEnum (admin/member/viewer), EnvironmentEnum (local/dev/prod), SecretTypeEnum (key/token/endpoint)
 
 ## Kod Standartlari
 
@@ -154,12 +160,36 @@ npm run db:seed:api           # Test seed verileri yukle
 - Her route'un RequireAuth ve/veya RequireRole guard'i olmali
 - Yeni endpoint eklendiginde hem route hem schema hem client.ts guncellenmelidir
 
+## API Endpoint'leri
+| Grup | Endpoint | Yetki |
+|------|----------|-------|
+| Auth | `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me` | Public (login), Auth (digerleri) |
+| Users | `GET /users`, `POST /users`, `PATCH /users/{id}` | Admin |
+| Projects | `GET /projects`, `POST /projects`, `PATCH /projects/{id}`, `DELETE /projects/{id}` | Auth, Admin/Member (mutasyon) |
+| Secrets | `GET /projects/{id}/secrets`, `POST /projects/{id}/secrets`, `PATCH /secrets/{id}`, `DELETE /secrets/{id}`, `GET /secrets/{id}/reveal` | Role-based |
+| Search | `GET /search` | Auth |
+| Import | `POST /imports/preview`, `POST /imports/commit` | Admin/Member |
+| Export | `GET /exports/{id}`, `GET /exports/{id}/all` | Admin/Member |
+| Audit | `POST /audit/copy`, `GET /audit` | Auth (copy), Admin (list) |
+
+## Rol Tabanlı Erisim
+| Islem | Admin | Member | Viewer |
+|-------|-------|--------|--------|
+| Secret olusturma/guncelleme | ✅ | ✅ | ❌ |
+| Secret silme | ✅ | ❌ | ❌ |
+| Secret reveal/kopyalama | ✅ | ✅ | ✅ |
+| Import/Export | ✅ | ✅ | ❌ |
+| Kullanici yonetimi | ✅ | ❌ | ❌ |
+| Audit log goruntuleme | ✅ | ❌ | ❌ |
+| Proje/Org yonetimi | ✅ | ✅ | ❌ |
+
 ## Bagimsiz Moduller
 - **Auth modulu**: `core/auth/` + `features/auth/` + `api/routes/users.py` + `services/auth_service.py`
 - **Secret yonetimi**: `features/projects/` + `api/routes/secrets.py` + `core/crypto.py`
 - **Import/Export**: `features/import/` + `api/routes/imports.py` + `api/routes/exports.py`
 - **Audit**: `features/audit/` + `api/routes/audit.py`
 - **Organization**: `features/organization/` + `api/routes/project_manage.py`
+- **Desktop token storage**: `src-tauri/src/lib.rs` — OS keyring ile guvenli token saklama (keyring crate, service: "com.bedou.secretdashboard.auth")
 
 ## Test Altyapisi
 - **Web**: Vitest + @testing-library/react + jsdom + user-event

@@ -1,4 +1,5 @@
 import secrets
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 import httpx
@@ -12,6 +13,29 @@ from app.db.models.enums import RoleEnum
 from app.db.repositories.users_repo import get_user_by_email, get_user_by_supabase_user_id
 
 
+def _extract_error_message(response: httpx.Response) -> str:
+    try:
+        payload = response.json()
+    except ValueError:
+        return response.text.strip()
+
+    for key in ("error_description", "msg", "message", "error"):
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return response.text.strip()
+
+
+def _supabase_auth_headers(api_key: str, *, access_token: Optional[str] = None):
+    headers = {
+        "apikey": api_key,
+        "Content-Type": "application/json",
+    }
+    if access_token:
+        headers["Authorization"] = f"Bearer {access_token}"
+    return headers
+
+
 def _fetch_supabase_user_profile(access_token: str) -> Optional[Dict[str, Any]]:
     settings = get_settings()
     if not settings.SUPABASE_URL or not settings.SUPABASE_ANON_KEY:
@@ -21,10 +45,9 @@ def _fetch_supabase_user_profile(access_token: str) -> Optional[Dict[str, Any]]:
         )
 
     url = f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1/user"
-    headers = {
-        "apikey": settings.SUPABASE_ANON_KEY,
-        "Authorization": f"Bearer {access_token}",
-    }
+    headers = _supabase_auth_headers(
+        settings.SUPABASE_ANON_KEY, access_token=access_token
+    )
 
     try:
         response = httpx.get(url, headers=headers, timeout=8.0)
@@ -94,6 +117,162 @@ def create_supabase_user(*, email: str, password: str, display_name: str) -> Dic
             detail="Supabase response did not include user id",
         )
     return body
+
+
+def login_with_supabase_password(*, email: str, password: str) -> Dict[str, Any]:
+    settings = get_settings()
+    if not settings.SUPABASE_URL or not settings.SUPABASE_ANON_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Supabase auth is enabled but credentials are missing",
+        )
+
+    url = f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1/token?grant_type=password"
+    payload = {"email": email, "password": password}
+
+    try:
+        response = httpx.post(
+            url,
+            headers=_supabase_auth_headers(settings.SUPABASE_ANON_KEY),
+            json=payload,
+            timeout=10.0,
+        )
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Supabase auth service is unreachable",
+        ) from exc
+
+    if response.status_code >= 400:
+        detail = _extract_error_message(response)
+        if response.status_code in {
+            status.HTTP_400_BAD_REQUEST,
+            status.HTTP_401_UNAUTHORIZED,
+        } and "invalid login credentials" in detail.lower():
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail or "Supabase login failed",
+        )
+
+    body = response.json()
+    access_token = str(body.get("access_token") or "").strip()
+    refresh_token = str(body.get("refresh_token") or "").strip()
+    if not access_token or not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Supabase response did not include session tokens",
+        )
+
+    expires_at_raw = body.get("expires_at")
+    expires_at = datetime.now(timezone.utc)
+    if isinstance(expires_at_raw, (int, float)):
+        expires_at = datetime.fromtimestamp(expires_at_raw, tz=timezone.utc)
+
+    return {
+        "accessToken": access_token,
+        "refreshToken": refresh_token,
+        "tokenType": str(body.get("token_type") or "bearer"),
+        "expiresAt": expires_at,
+    }
+
+
+def refresh_supabase_session(*, refresh_token: str) -> Dict[str, Any]:
+    settings = get_settings()
+    if not settings.SUPABASE_URL or not settings.SUPABASE_ANON_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Supabase auth is enabled but credentials are missing",
+        )
+
+    url = (
+        f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1/token"
+        "?grant_type=refresh_token"
+    )
+
+    try:
+        response = httpx.post(
+            url,
+            headers=_supabase_auth_headers(settings.SUPABASE_ANON_KEY),
+            json={"refresh_token": refresh_token},
+            timeout=10.0,
+        )
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Supabase auth service is unreachable",
+        ) from exc
+
+    if response.status_code >= 400:
+        detail = _extract_error_message(response)
+        if response.status_code in {
+            status.HTTP_400_BAD_REQUEST,
+            status.HTTP_401_UNAUTHORIZED,
+        }:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=detail or "Refresh token expired or revoked",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail or "Supabase refresh failed",
+        )
+
+    body = response.json()
+    access_token = str(body.get("access_token") or "").strip()
+    next_refresh_token = str(body.get("refresh_token") or "").strip()
+    if not access_token or not next_refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Supabase response did not include session tokens",
+        )
+
+    expires_at_raw = body.get("expires_at")
+    expires_at = datetime.now(timezone.utc)
+    if isinstance(expires_at_raw, (int, float)):
+        expires_at = datetime.fromtimestamp(expires_at_raw, tz=timezone.utc)
+
+    return {
+        "accessToken": access_token,
+        "refreshToken": next_refresh_token,
+        "tokenType": str(body.get("token_type") or "bearer"),
+        "expiresAt": expires_at,
+    }
+
+
+def logout_supabase_session(*, access_token: str) -> None:
+    settings = get_settings()
+    if not settings.SUPABASE_URL or not settings.SUPABASE_ANON_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Supabase auth is enabled but credentials are missing",
+        )
+
+    url = f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1/logout"
+
+    try:
+        response = httpx.post(
+            url,
+            headers=_supabase_auth_headers(
+                settings.SUPABASE_ANON_KEY, access_token=access_token
+            ),
+            timeout=10.0,
+        )
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Supabase auth service is unreachable",
+        ) from exc
+
+    if response.status_code >= 400:
+        detail = _extract_error_message(response)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail or "Supabase logout failed",
+        )
 
 
 def resolve_user_from_supabase_token(db: Session, access_token: str):

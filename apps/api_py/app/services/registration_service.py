@@ -226,9 +226,16 @@ def register_with_profile(db: Session, payload: RegisterRequest) -> RegisterOut:
 
     existing = get_user_by_email(db, email)
     if existing:
+        settings = get_settings()
+        detail = "Email already registered"
+        if settings.SUPABASE_AUTH_ENABLED and not existing.supabase_user_id:
+            detail = (
+                "Email already registered in the application database. "
+                "Try logging in to sync the account with Supabase."
+            )
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered",
+            detail=detail,
         )
 
     settings = get_settings()

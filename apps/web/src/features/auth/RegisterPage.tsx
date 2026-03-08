@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { registerWithProfile, type RegisterOrganizationMode, type RegisterPurpose } from "@core/api/client";
 import { useAuth } from "@core/auth/AuthContext";
 
@@ -17,6 +17,9 @@ function mapRegisterErrorMessage(rawMessage: string): string {
   const message = rawMessage.trim();
   const normalized = message.toLowerCase();
 
+  if (normalized.includes("sync the account with supabase") || normalized.includes("application database")) {
+    return "Bu e-posta uygulamada zaten kayıtlı. Giriş yapmayı deneyin; hesap Supabase ile eşitlenecektir.";
+  }
   if (normalized.includes("already") || normalized.includes("email already registered") || normalized.includes("409")) {
     return "Bu e-posta ile kayıt zaten mevcut.";
   }
@@ -60,15 +63,17 @@ function mapRegisterErrorMessage(rawMessage: string): string {
 
 export function RegisterPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login } = useAuth();
+  const inviteFromQuery = searchParams.get("inviteCode")?.trim() ?? "";
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [purpose, setPurpose] = useState<RegisterPurpose>("personal");
-  const [organizationMode, setOrganizationMode] = useState<RegisterOrganizationMode>("create");
+  const [purpose, setPurpose] = useState<RegisterPurpose>(inviteFromQuery ? "organization" : "personal");
+  const [organizationMode, setOrganizationMode] = useState<RegisterOrganizationMode>(inviteFromQuery ? "join" : "create");
   const [organizationName, setOrganizationName] = useState("");
-  const [inviteCode, setInviteCode] = useState("");
+  const [inviteCode, setInviteCode] = useState(inviteFromQuery);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [issuedInviteCode, setIssuedInviteCode] = useState<string | null>(null);
@@ -136,6 +141,12 @@ export function RegisterPage() {
       <section className="login-card">
         <h1>Kayıt Ol</h1>
         <p>Hesap oluşturun ve çalışma alanına erişin.</p>
+
+        {inviteFromQuery && !issuedInviteCode && (
+          <div className="auth-info-box">
+            Davet bağlantısı ile geldiniz. Hesabınızı oluşturduğunuzda organizasyona otomatik katılım akışı tamamlanacaktır.
+          </div>
+        )}
 
         {issuedInviteCode && (
           <div className="auth-info-box">

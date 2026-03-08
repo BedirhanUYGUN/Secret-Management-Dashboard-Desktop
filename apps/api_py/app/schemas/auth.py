@@ -43,6 +43,20 @@ class PreferencesUpdateRequest(BaseModel):
     clipboardSeconds: Optional[int] = None
 
 
+class ProfileUpdateRequest(BaseModel):
+    displayName: str
+
+
+class SessionOut(BaseModel):
+    id: str
+    sessionLabel: str
+    userAgent: Optional[str] = None
+    ipAddress: Optional[str] = None
+    createdAt: datetime
+    lastUsedAt: Optional[datetime] = None
+    expiresAt: datetime
+
+
 class RegisterPurposeEnum(str, Enum):
     personal = "personal"
     organization = "organization"

@@ -14,7 +14,7 @@ vi.mock("@core/api/client", () => ({
 
 vi.mock("@core/auth/AuthContext", () => ({
   useAuth: () => ({
-    user: { id: "u1", name: "Admin", role: "admin", assignments: [], preferences: {} },
+    user: { id: "u1", email: "admin@test.com", name: "Admin", role: "admin", assignments: [], preferences: {} },
   }),
 }));
 
@@ -31,6 +31,7 @@ describe("SearchPage", () => {
         type: "key",
         environment: "dev",
         keyName: "STRIPE_KEY",
+        version: 1,
         valueMasked: "sk_***",
         updatedAt: "2026-01-01T00:00:00Z",
         tags: ["payment"],

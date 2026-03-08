@@ -4,18 +4,27 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SettingsPage } from "@features/settings/SettingsPage";
 
 const mockUpdatePreferences = vi.fn();
+const mockUpdateProfile = vi.fn();
+const mockFetchSessions = vi.fn();
+const mockRevokeSession = vi.fn();
+const mockRevokeAllSessions = vi.fn();
 const mockRefreshUser = vi.fn();
 const mockSetClipboardSeconds = vi.fn();
 const mockShowToast = vi.fn();
 
 vi.mock("@core/api/client", () => ({
   updatePreferences: (...args: unknown[]) => mockUpdatePreferences(...args),
+  updateProfile: (...args: unknown[]) => mockUpdateProfile(...args),
+  fetchSessions: (...args: unknown[]) => mockFetchSessions(...args),
+  revokeSession: (...args: unknown[]) => mockRevokeSession(...args),
+  revokeAllSessions: (...args: unknown[]) => mockRevokeAllSessions(...args),
 }));
 
 vi.mock("@core/auth/AuthContext", () => ({
   useAuth: () => ({
     user: {
       id: "u1",
+      email: "admin@test.com",
       name: "Admin",
       role: "admin",
       assignments: [],
@@ -30,6 +39,7 @@ vi.mock("@core/ui/AppUiContext", () => ({
     clipboardSeconds: 30,
     setClipboardSeconds: (...args: unknown[]) => mockSetClipboardSeconds(...args),
     showToast: (...args: unknown[]) => mockShowToast(...args),
+    confirm: () => Promise.resolve(true),
   }),
 }));
 
@@ -37,6 +47,8 @@ describe("SettingsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUpdatePreferences.mockResolvedValue({});
+    mockUpdateProfile.mockResolvedValue({});
+    mockFetchSessions.mockResolvedValue([]);
     mockRefreshUser.mockResolvedValue(undefined);
   });
 

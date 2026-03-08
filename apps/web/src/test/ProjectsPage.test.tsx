@@ -20,6 +20,7 @@ const mockSecrets: Secret[] = [
     type: "key",
     environment: "dev",
     keyName: "STRIPE_KEY",
+    version: 1,
     valueMasked: "sk_***xxx",
     updatedAt: "2025-06-01T12:00:00Z",
     tags: ["payment"],
@@ -35,6 +36,7 @@ const mockSecrets: Secret[] = [
     type: "endpoint",
     environment: "dev",
     keyName: "DATABASE_URL",
+    version: 2,
     valueMasked: "postgres://***",
     updatedAt: "2025-06-02T12:00:00Z",
     tags: ["infra"],
@@ -49,8 +51,10 @@ const mockFetchProjects = vi.fn();
 const mockFetchProjectSecrets = vi.fn();
 const mockCreateProjectSecret = vi.fn();
 const mockDeleteProjectSecret = vi.fn();
+const mockFetchSecretVersions = vi.fn();
 const mockUpdateProjectSecret = vi.fn();
 const mockRevealSecretValue = vi.fn();
+const mockRestoreSecretVersion = vi.fn();
 const mockTrackCopyEvent = vi.fn();
 const mockShowToast = vi.fn();
 const mockCopyWithTimer = vi.fn();
@@ -60,14 +64,16 @@ vi.mock("@core/api/client", () => ({
   fetchProjectSecrets: (...args: unknown[]) => mockFetchProjectSecrets(...args),
   createProjectSecret: (...args: unknown[]) => mockCreateProjectSecret(...args),
   deleteProjectSecret: (...args: unknown[]) => mockDeleteProjectSecret(...args),
+  fetchSecretVersions: (...args: unknown[]) => mockFetchSecretVersions(...args),
   updateProjectSecret: (...args: unknown[]) => mockUpdateProjectSecret(...args),
   revealSecretValue: (...args: unknown[]) => mockRevealSecretValue(...args),
+  restoreSecretVersion: (...args: unknown[]) => mockRestoreSecretVersion(...args),
   trackCopyEvent: (...args: unknown[]) => mockTrackCopyEvent(...args),
 }));
 
 vi.mock("@core/auth/AuthContext", () => ({
   useAuth: () => ({
-    user: { id: "u1", name: "Admin", role: "admin", assignments: [], preferences: {} },
+    user: { id: "u1", email: "admin@test.com", name: "Admin", role: "admin", assignments: [], preferences: {} },
     loading: false,
   }),
 }));
@@ -98,6 +104,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockFetchProjects.mockResolvedValue(mockProjectList);
   mockFetchProjectSecrets.mockResolvedValue(mockSecrets);
+  mockFetchSecretVersions.mockResolvedValue([]);
 });
 
 describe("ProjectsPage", () => {

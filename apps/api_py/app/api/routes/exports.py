@@ -23,9 +23,17 @@ def export_project(
     env: EnvironmentEnum = Query(...),
     format: str = Query(...),
     tag: Optional[str] = Query(None),
+    reason: Optional[str] = Query(None),
     user=Depends(get_current_user),
     db: Session = Depends(get_db_session),
 ):
+    normalized_reason = (reason or "").strip()
+    if len(normalized_reason) < 3:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Export reason is required",
+        )
+
     if user.role == RoleEnum.viewer:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -48,6 +56,7 @@ def export_project(
             "format": format,
             "count": len(rows),
             "tag": tag,
+            "reason": normalized_reason,
         },
     )
 
@@ -73,10 +82,18 @@ def export_project_all_envs(
     project_id: str,
     format: str = Query(...),
     tag: Optional[str] = Query(None),
+    reason: Optional[str] = Query(None),
     user=Depends(get_current_user),
     db: Session = Depends(get_db_session),
 ):
     """Tum ortamlar icin secret'lari export eder."""
+    normalized_reason = (reason or "").strip()
+    if len(normalized_reason) < 3:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Export reason is required",
+        )
+
     if user.role == RoleEnum.viewer:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -99,6 +116,7 @@ def export_project_all_envs(
             "count": total_count,
             "tag": tag,
             "environments": list(env_data.keys()),
+            "reason": normalized_reason,
         },
     )
 

@@ -28,7 +28,11 @@ const mockCreateProject = vi.fn();
 const mockUpdateProject = vi.fn();
 const mockDeleteProject = vi.fn();
 const mockAddProjectMember = vi.fn();
+const mockFetchServiceTokens = vi.fn();
+const mockCreateServiceToken = vi.fn();
+const mockUpdateProjectMemberRole = vi.fn();
 const mockRemoveProjectMember = vi.fn();
+const mockRevokeServiceToken = vi.fn();
 const mockUpdateEnvironmentAccess = vi.fn();
 const mockShowToast = vi.fn();
 
@@ -39,13 +43,17 @@ vi.mock("@core/api/client", () => ({
   updateProject: (...args: unknown[]) => mockUpdateProject(...args),
   deleteProject: (...args: unknown[]) => mockDeleteProject(...args),
   addProjectMember: (...args: unknown[]) => mockAddProjectMember(...args),
+  fetchServiceTokens: (...args: unknown[]) => mockFetchServiceTokens(...args),
+  createServiceToken: (...args: unknown[]) => mockCreateServiceToken(...args),
+  updateProjectMemberRole: (...args: unknown[]) => mockUpdateProjectMemberRole(...args),
   removeProjectMember: (...args: unknown[]) => mockRemoveProjectMember(...args),
+  revokeServiceToken: (...args: unknown[]) => mockRevokeServiceToken(...args),
   updateEnvironmentAccess: (...args: unknown[]) => mockUpdateEnvironmentAccess(...args),
 }));
 
 vi.mock("@core/auth/AuthContext", () => ({
   useAuth: () => ({
-    user: { id: "u1", name: "Admin", role: "admin", assignments: [], preferences: {} },
+    user: { id: "u1", email: "admin@test.com", name: "Admin", role: "admin", assignments: [], preferences: {} },
     loading: false,
   }),
 }));
@@ -58,6 +66,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockFetchProjectDetails.mockResolvedValue(mockProjects);
   mockFetchUsers.mockResolvedValue(mockAllUsers);
+  mockFetchServiceTokens.mockResolvedValue([]);
 });
 
 describe("ProjectManagePage", () => {

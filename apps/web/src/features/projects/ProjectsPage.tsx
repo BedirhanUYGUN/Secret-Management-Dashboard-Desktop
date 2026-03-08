@@ -3,15 +3,17 @@ import { useSearchParams } from "react-router-dom";
 import {
   createProjectSecret,
   deleteProjectSecret,
+  fetchSecretVersions,
   fetchProjectSecrets,
   fetchProjects,
   revealSecretValue,
+  restoreSecretVersion,
   trackCopyEvent,
   type ProjectSummary,
   updateProjectSecret,
 } from "@core/api/client";
 import { useAuth } from "@core/auth/AuthContext";
-import type { Environment, Secret, SecretType } from "@core/types";
+import type { Environment, Secret, SecretType, SecretVersion } from "@core/types";
 import { ExportModal } from "@core/ui/ExportModal";
 import { useAppUi } from "@core/ui/AppUiContext";
 import { Modal } from "@core/ui/Modal";
@@ -88,6 +90,9 @@ export function ProjectsPage() {
   const [revealedValue, setRevealedValue] = useState<string | null>(null);
   const [isRevealing, setIsRevealing] = useState(false);
   const [showPlainValue, setShowPlainValue] = useState(false);
+  const [revealReason, setRevealReason] = useState("");
+  const [secretVersions, setSecretVersions] = useState<SecretVersion[]>([]);
+  const [loadingVersions, setLoadingVersions] = useState(false);
 
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -184,6 +189,7 @@ export function ProjectsPage() {
 
   useEffect(() => {
     if (!selectedSecret) {
+      setSecretVersions([]);
       return;
     }
 
@@ -198,7 +204,29 @@ export function ProjectsPage() {
     });
     setRevealedValue(null);
     setShowPlainValue(false);
+    setRevealReason("");
   }, [selectedSecret]);
+
+  useEffect(() => {
+    if (!selectedSecret || !showSecretModal) {
+      return;
+    }
+
+    void (async () => {
+      try {
+        setLoadingVersions(true);
+        const versions = await fetchSecretVersions(selectedSecret.id);
+        setSecretVersions(versions);
+      } catch (error) {
+        if (error instanceof Error) {
+          setErrorMessage(error.message);
+        }
+        setSecretVersions([]);
+      } finally {
+        setLoadingVersions(false);
+      }
+    })();
+  }, [selectedSecret, showSecretModal]);
 
   const sortedSecrets = useMemo(() => {
     const sorted = [...visibleSecrets].sort((a, b) => {
@@ -217,8 +245,8 @@ export function ProjectsPage() {
   const providers = useMemo(() => Array.from(new Set(visibleSecrets.map((item) => item.provider))), [visibleSecrets]);
   const tags = useMemo(() => Array.from(new Set(visibleSecrets.flatMap((item) => item.tags))), [visibleSecrets]);
 
-  const readSecretValue = async (secretId: string) => {
-    const revealed = await revealSecretValue({ secretId });
+  const readSecretValue = async (secretId: string, reason: string) => {
+    const revealed = await revealSecretValue({ secretId, reason });
     return revealed.value;
   };
 
@@ -228,7 +256,12 @@ export function ProjectsPage() {
     }
 
     try {
-      const value = await readSecretValue(secret.id);
+      const reason = window.prompt("Bu anahtarı neden görüntülemek/kopyalamak istediğinizi kısaca yazın:", "Lokal geliştirme doğrulaması");
+      if (!reason || reason.trim().length < 3) {
+        return;
+      }
+
+      const value = await readSecretValue(secret.id, reason.trim());
       let payload = value;
 
       if (mode === "env") {
@@ -268,9 +301,13 @@ export function ProjectsPage() {
       return;
     }
 
-    setIsRevealing(true);
+      setIsRevealing(true);
     try {
-      const value = await readSecretValue(selectedSecret.id);
+      if (revealReason.trim().length < 3) {
+        setErrorMessage("Anahtarı görüntülemek için neden alanını doldurun.");
+        return;
+      }
+      const value = await readSecretValue(selectedSecret.id, revealReason.trim());
       setRevealedValue(value);
       setShowPlainValue(true);
     } catch (error) {
@@ -365,6 +402,39 @@ export function ProjectsPage() {
       setSelectedSecretId("");
       updateQuery({ secret: null });
       await reloadSecrets();
+    } catch (error) {
+      if (error instanceof Error) {
+        setErrorMessage(error.message);
+      }
+    }
+  };
+
+  const handleRestoreVersion = async (version: number) => {
+    if (!selectedSecret) {
+      return;
+    }
+
+    const approved = await confirm({
+      title: "Sürümü Geri Yükle",
+      message: `v${version} sürümüne geri dönülsün mü? Mevcut değer yeni bir sürüm olarak saklanacaktır.`,
+      confirmLabel: "Geri Yükle",
+      cancelLabel: "Vazgeç",
+      variant: "danger",
+    });
+    if (!approved) {
+      return;
+    }
+
+    try {
+      const restored = await restoreSecretVersion({ secretId: selectedSecret.id, version });
+      setSelectedSecretId(restored.id);
+      showToast(`v${version} geri yüklendi`, "success");
+      await reloadSecrets();
+      const versions = await fetchSecretVersions(restored.id);
+      setSecretVersions(versions);
+      setSecretModalMode("detail");
+      setShowPlainValue(false);
+      setRevealedValue(null);
     } catch (error) {
       if (error instanceof Error) {
         setErrorMessage(error.message);
@@ -652,6 +722,15 @@ export function ProjectsPage() {
 
                 <div className="detail-box">
                   <strong>Değer</strong>
+                  <label className="form-label" style={{ display: "block", marginTop: 10 }}>
+                    Görüntüleme nedeni
+                    <textarea
+                      rows={2}
+                      value={revealReason}
+                      onChange={(event) => setRevealReason(event.target.value)}
+                      placeholder="Örn: Prod doğrulaması için değeri kontrol ediyorum"
+                    />
+                  </label>
                   <div className="reveal-row">
                     <code>{showPlainValue && revealedValue ? revealedValue : "••••••••••••"}</code>
                     <button type="button" className="reveal-btn" onClick={() => void toggleReveal()}>
@@ -735,6 +814,32 @@ export function ProjectsPage() {
                     <strong>Notlar</strong>
                     <p>{selectedSecret.notes || "-"}</p>
                   </div>
+                </div>
+
+                <div className="detail-box">
+                  <div className="detail-inline-head">
+                    <strong>Sürüm Geçmişi</strong>
+                    <span className="inline-muted">Mevcut sürüm: v{selectedSecret.version}</span>
+                  </div>
+                  {loadingVersions && <p className="inline-muted">Sürüm geçmişi yükleniyor...</p>}
+                  {!loadingVersions && secretVersions.length === 0 && (
+                    <p className="inline-muted">Henüz geçmiş sürüm bulunmuyor.</p>
+                  )}
+                  {secretVersions.map((version) => (
+                    <div key={version.version} className="member-row" style={{ alignItems: "flex-start" }}>
+                      <div>
+                        <strong>v{version.version}{version.isCurrent ? " (aktif)" : ""}</strong>
+                        <div className="inline-muted">{version.maskedValue}</div>
+                        <div className="inline-muted">{new Date(version.createdAt).toLocaleString()}</div>
+                        <div className="inline-muted">{version.createdByName || "Bilinmiyor"}</div>
+                      </div>
+                      {!version.isCurrent && user.role !== "viewer" && (
+                        <button type="button" onClick={() => void handleRestoreVersion(version.version)}>
+                          Geri Yükle
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </>
             ) : (

@@ -80,6 +80,7 @@ def create_invite(
         action="invite_created",
         target_type="project_invite",
         metadata={
+            "secretName": "Invite",
             "maxUses": payload.maxUses,
             "expiresInHours": payload.expiresInHours,
         },
@@ -123,6 +124,7 @@ def rotate_invite(
         action="invite_rotated",
         target_type="project_invite",
         metadata={
+            "secretName": "Invite",
             "maxUses": payload.maxUses,
             "expiresInHours": payload.expiresInHours,
         },
@@ -150,4 +152,5 @@ def revoke_invite(
         action="invite_revoked",
         target_type="project_invite",
         target_id=invite_id,
+        metadata={"secretName": "Invite"},
     )

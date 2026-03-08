@@ -1,6 +1,9 @@
+from types import SimpleNamespace
+
 from sqlalchemy import select
 
 from app.db.models import ProjectInvite, ProjectMember, RoleEnum, User
+from tests.conftest import _make_user
 
 
 class TestRegister:
@@ -117,6 +120,30 @@ class TestRegister:
             },
         )
         assert resp.status_code == 422
+
+    def test_register_local_kayit_var_ve_supabase_id_yoksa_aciklayici_hata_doner(
+        self, client, db, monkeypatch
+    ):
+        _make_user(db, email="legacy@test.com", password="StrongPass1!")
+        monkeypatch.setattr(
+            "app.services.registration_service.get_settings",
+            lambda: SimpleNamespace(SUPABASE_AUTH_ENABLED=True),
+        )
+
+        resp = client.post(
+            "/auth/register",
+            json={
+                "firstName": "Legacy",
+                "lastName": "User",
+                "email": "legacy@test.com",
+                "password": "StrongPass1!",
+                "purpose": "personal",
+                "organizationMode": "create",
+            },
+        )
+
+        assert resp.status_code == 409
+        assert "sync the account with Supabase" in resp.json()["detail"]
 
     def test_register_rate_limit_asilirsa_429_doner(self, client, monkeypatch):
         monkeypatch.setattr(

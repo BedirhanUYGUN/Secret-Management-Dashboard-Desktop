@@ -1,4 +1,24 @@
-import type { Assignment, AuditEvent, Environment, Invite, InviteCreateResult, ManagedUser, OrganizationSummary, Project, ProjectDetail, ProjectMemberOut, Role, Secret, SecretType, User, UserPreferences } from "../types";
+import type {
+  Assignment,
+  AuditEvent,
+  Environment,
+  Invite,
+  InviteCreateResult,
+  ManagedUser,
+  OrganizationSummary,
+  Project,
+  ProjectDetail,
+  ProjectMemberOut,
+  Role,
+  Secret,
+  SecretType,
+  SecretVersion,
+  ServiceTokenCreateResult,
+  ServiceTokenInfo,
+  SessionInfo,
+  User,
+  UserPreferences,
+} from "../types";
 import { isTauriRuntime } from "../platform/runtime";
 import {
   clearStoredTokens,
@@ -100,13 +120,6 @@ type AuthTokensResponse = {
   expiresAt: string;
 };
 
-type SupabaseTokenResponse = {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  expires_at?: number;
-};
-
 function assertDesktopApiUrlAllowed() {
   if (!isTauriRuntime()) {
     return;
@@ -124,20 +137,18 @@ function setTokens(payload: AuthTokensResponse) {
   return setStoredTokens({ accessToken: payload.accessToken, refreshToken: payload.refreshToken });
 }
 
-function ensureSupabaseConfig() {
-  if (!SUPABASE_AUTH_ENABLED) {
-    return;
-  }
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    throw new Error("Supabase auth aktif ama VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY eksik");
+function ensureSupabaseAuthConfig() {
+  if (!SUPABASE_AUTH_ENABLED || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error("Şifre sıfırlama için Supabase auth yapılandırması eksik.");
   }
 }
 
 async function supabaseAuthRequest<T>(
   path: string,
-  options: { method: "GET" | "POST"; body?: unknown; accessToken?: string },
+  options: { method: "POST" | "PUT"; body?: unknown; accessToken?: string },
 ) {
-  ensureSupabaseConfig();
+  ensureSupabaseAuthConfig();
+
   const response = await fetch(`${SUPABASE_URL.replace(/\/$/, "")}/auth/v1${path}`, {
     method: options.method,
     headers: {
@@ -158,15 +169,6 @@ async function supabaseAuthRequest<T>(
   }
 
   return (await response.json()) as T;
-}
-
-function mapSupabaseTokens(payload: SupabaseTokenResponse): AuthTokensResponse {
-  return {
-    accessToken: payload.access_token,
-    refreshToken: payload.refresh_token,
-    tokenType: payload.token_type,
-    expiresAt: payload.expires_at ? new Date(payload.expires_at * 1000).toISOString() : new Date().toISOString(),
-  };
 }
 
 export function clearTokens() {
@@ -231,15 +233,6 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 }
 
 export async function loginWithCredentials(email: string, password: string) {
-  if (SUPABASE_AUTH_ENABLED) {
-    const response = await supabaseAuthRequest<SupabaseTokenResponse>("/token?grant_type=password", {
-      method: "POST",
-      body: { email, password },
-    });
-    await setTokens(mapSupabaseTokens(response));
-    return;
-  }
-
   const response = await request<AuthTokensResponse>("/auth/login", {
     method: "POST",
     body: { email, password },
@@ -260,15 +253,6 @@ export async function refreshSession() {
     throw new Error("No refresh token");
   }
 
-  if (SUPABASE_AUTH_ENABLED) {
-    const response = await supabaseAuthRequest<SupabaseTokenResponse>("/token?grant_type=refresh_token", {
-      method: "POST",
-      body: { refresh_token: refreshToken },
-    });
-    await setTokens(mapSupabaseTokens(response));
-    return;
-  }
-
   const response = await request<AuthTokensResponse>("/auth/refresh", {
     method: "POST",
     body: { refreshToken },
@@ -278,18 +262,6 @@ export async function refreshSession() {
 
 export async function logoutSession() {
   const refreshToken = await getStoredRefreshToken();
-  const accessToken = await getStoredAccessToken();
-
-  if (SUPABASE_AUTH_ENABLED) {
-    if (accessToken) {
-      await supabaseAuthRequest<void>("/logout", {
-        method: "POST",
-        accessToken,
-      });
-    }
-    await clearTokens();
-    return;
-  }
 
   if (refreshToken) {
     await request<{ message: string }>("/auth/logout", {
@@ -304,6 +276,7 @@ export async function fetchMe(): Promise<User> {
   const response = await request<MeResponse>("/me");
   return {
     id: response.id,
+    email: response.email,
     name: response.name,
     role: response.role,
     assignments: response.assignments,
@@ -318,11 +291,39 @@ export async function updatePreferences(params: UserPreferences): Promise<User> 
   });
   return {
     id: response.id,
+    email: response.email,
     name: response.name,
     role: response.role,
     assignments: response.assignments,
     preferences: response.preferences ?? {},
   };
+}
+
+export async function updateProfile(params: { displayName: string }): Promise<User> {
+  const response = await request<MeResponse>("/me/profile", {
+    method: "PATCH",
+    body: params,
+  });
+  return {
+    id: response.id,
+    email: response.email,
+    name: response.name,
+    role: response.role,
+    assignments: response.assignments,
+    preferences: response.preferences ?? {},
+  };
+}
+
+export function fetchSessions() {
+  return request<SessionInfo[]>("/me/sessions");
+}
+
+export function revokeSession(sessionId: string) {
+  return request<{ ok: boolean }>(`/me/sessions/${sessionId}`, { method: "DELETE" });
+}
+
+export function revokeAllSessions() {
+  return request<{ revokedCount: number }>("/me/sessions", { method: "DELETE" });
 }
 
 export function fetchProjects() {
@@ -369,8 +370,20 @@ export function deleteProjectSecret(params: { secretId: string }) {
   });
 }
 
-export function revealSecretValue(params: { secretId: string }) {
-  return request<{ secretId: string; keyName: string; value: string }>(`/secrets/${params.secretId}/reveal`);
+export function revealSecretValue(params: { secretId: string; reason: string }) {
+  return request<{ secretId: string; projectId: string; keyName: string; value: string }>(`/secrets/${params.secretId}/reveal`, {
+    query: { reason: params.reason },
+  });
+}
+
+export function fetchSecretVersions(secretId: string) {
+  return request<SecretVersion[]>(`/secrets/${secretId}/versions`);
+}
+
+export function restoreSecretVersion(params: { secretId: string; version: number }) {
+  return request<Secret>(`/secrets/${params.secretId}/versions/${params.version}/restore`, {
+    method: "POST",
+  });
 }
 
 export function searchSecrets(params: {
@@ -449,23 +462,25 @@ export function commitImport(params: {
   });
 }
 
-export function exportProject(params: { projectId: string; env: Environment; format: "env" | "json"; tag?: string }) {
+export function exportProject(params: { projectId: string; env: Environment; format: "env" | "json"; tag?: string; reason: string }) {
   return request<string>(`/exports/${params.projectId}`, {
     responseType: "text",
     query: {
       env: params.env,
       format: params.format,
       tag: params.tag,
+      reason: params.reason,
     },
   });
 }
 
-export function exportProjectAllEnvs(params: { projectId: string; format: "env" | "json"; tag?: string }) {
+export function exportProjectAllEnvs(params: { projectId: string; format: "env" | "json"; tag?: string; reason: string }) {
   return request<string>(`/exports/${params.projectId}/all`, {
     responseType: "text",
     query: {
       format: params.format,
       tag: params.tag,
+      reason: params.reason,
     },
   });
 }
@@ -551,6 +566,30 @@ export function updateEnvironmentAccess(params: {
   });
 }
 
+export function fetchServiceTokens(projectId: string) {
+  return request<ServiceTokenInfo[]>(`/projects/manage/${projectId}/service-tokens`);
+}
+
+export function createServiceToken(params: { projectId: string; name: string }) {
+  return request<ServiceTokenCreateResult>(`/projects/manage/${params.projectId}/service-tokens`, {
+    method: "POST",
+    body: { name: params.name },
+  });
+}
+
+export function revokeServiceToken(params: { projectId: string; tokenId: string }) {
+  return request<void>(`/projects/manage/${params.projectId}/service-tokens/${params.tokenId}`, {
+    method: "DELETE",
+  });
+}
+
+export function updateProjectMemberRole(params: { projectId: string; userId: string; role: Role }) {
+  return request<ProjectMemberOut>(`/projects/manage/${params.projectId}/members/${params.userId}`, {
+    method: "PATCH",
+    body: { role: params.role },
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Organization (project-admin scoped)
 // ---------------------------------------------------------------------------
@@ -594,5 +633,23 @@ export function rotateOrganizationInvite(params: {
 export function revokeOrganizationInvite(params: { projectId: string; inviteId: string }) {
   return request<void>(`/organizations/${params.projectId}/invites/${params.inviteId}`, {
     method: "DELETE",
+  });
+}
+
+export function requestPasswordReset(params: { email: string; redirectTo: string }) {
+  return supabaseAuthRequest<{ message?: string }>("/recover", {
+    method: "POST",
+    body: {
+      email: params.email,
+      redirect_to: params.redirectTo,
+    },
+  });
+}
+
+export function updatePasswordFromRecovery(params: { accessToken: string; password: string }) {
+  return supabaseAuthRequest<{ id: string }>("/user", {
+    method: "PUT",
+    accessToken: params.accessToken,
+    body: { password: params.password },
   });
 }

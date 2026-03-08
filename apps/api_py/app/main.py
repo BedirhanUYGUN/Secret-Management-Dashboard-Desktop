@@ -1,12 +1,19 @@
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db_session, user_profile_response
 from app.api.router import api_router
 from app.core.config import get_settings
-from app.schemas.auth import PreferencesUpdateRequest
+from app.db.repositories.users_repo import (
+    get_active_session_by_id,
+    list_active_sessions_for_user,
+    revoke_all_refresh_tokens_for_user,
+    revoke_refresh_token,
+)
+from app.schemas.auth import PreferencesUpdateRequest, ProfileUpdateRequest, SessionOut
 
 
 settings = get_settings()
@@ -78,3 +85,69 @@ def update_preferences(
     db.commit()
     db.refresh(user)
     return user_profile_response(user, db)
+
+
+@app.patch("/me/profile")
+def update_profile(
+    payload: ProfileUpdateRequest,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db_session),
+):
+    display_name = payload.displayName.strip()
+    if not display_name:
+        return JSONResponse(
+            status_code=400,
+            content={"detail": "displayName is required"},
+        )
+
+    user.display_name = display_name
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user_profile_response(user, db)
+
+
+def _session_to_out(session_row) -> SessionOut:
+    return SessionOut(
+        id=str(session_row.id),
+        sessionLabel=session_row.session_label or "Unknown device",
+        userAgent=session_row.user_agent,
+        ipAddress=session_row.ip_address,
+        createdAt=session_row.created_at,
+        lastUsedAt=session_row.last_used_at,
+        expiresAt=session_row.expires_at,
+    )
+
+
+@app.get("/me/sessions", response_model=list[SessionOut])
+def list_my_sessions(
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db_session),
+):
+    rows = list_active_sessions_for_user(db, str(user.id))
+    return [_session_to_out(item) for item in rows]
+
+
+@app.delete("/me/sessions")
+def revoke_my_sessions(
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db_session),
+):
+    revoked_count = revoke_all_refresh_tokens_for_user(db, str(user.id))
+    db.commit()
+    return {"revokedCount": revoked_count}
+
+
+@app.delete("/me/sessions/{session_id}")
+def revoke_my_session(
+    session_id: str,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db_session),
+):
+    token_row = get_active_session_by_id(db, str(user.id), session_id)
+    if not token_row:
+        return JSONResponse(status_code=404, content={"detail": "Session not found"})
+
+    revoke_refresh_token(db, token_row)
+    db.commit()
+    return {"ok": True}

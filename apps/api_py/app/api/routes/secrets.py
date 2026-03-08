@@ -11,13 +11,16 @@ from app.db.repositories.domain_repo import (
     delete_secret,
     get_secret_value,
     has_project_access,
+    list_secret_versions,
     list_secrets,
+    restore_secret_version,
     update_secret,
 )
 from app.schemas.secrets import (
     SecretCreateRequest,
     SecretOut,
     SecretRevealOut,
+    SecretVersionOut,
     SecretUpdateRequest,
 )
 
@@ -125,12 +128,73 @@ def remove_secret(
 @router.get("/secrets/{secret_id}/reveal", response_model=SecretRevealOut)
 def reveal_secret(
     secret_id: str,
+    reason: Optional[str] = Query(default=None),
     user=Depends(get_current_user),
     db: Session = Depends(get_db_session),
-):
+): 
+    normalized_reason = (reason or "").strip()
+    if len(normalized_reason) < 3:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Reveal reason is required",
+        )
+
     value = get_secret_value(db, str(user.id), secret_id)
     if not value:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Secret not found"
         )
+
+    add_audit_event(
+        db,
+        actor_user_id=str(user.id),
+        project_slug=value["projectId"],
+        action="secret_revealed",
+        target_type="secret",
+        target_id=secret_id,
+        metadata={"secretName": value["keyName"], "reason": normalized_reason},
+    )
     return value
+
+
+@router.get("/secrets/{secret_id}/versions", response_model=List[SecretVersionOut])
+def get_versions(
+    secret_id: str,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db_session),
+):
+    versions = list_secret_versions(db, str(user.id), secret_id)
+    if versions is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Secret not found"
+        )
+    return versions
+
+
+@router.post("/secrets/{secret_id}/versions/{version}/restore", response_model=SecretOut)
+def restore_version(
+    secret_id: str,
+    version: int,
+    user=Depends(require_roles(["admin", "member"])),
+    db: Session = Depends(get_db_session),
+):
+    try:
+        restored = restore_secret_version(db, str(user.id), secret_id, version)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    if not restored:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Secret not found"
+        )
+
+    add_audit_event(
+        db,
+        actor_user_id=str(user.id),
+        project_slug=restored["projectId"],
+        action="secret_restored",
+        target_type="secret",
+        target_id=restored["id"],
+        metadata={"secretName": restored["name"], "restoredVersion": version},
+    )
+    return restored

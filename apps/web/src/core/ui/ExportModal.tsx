@@ -41,6 +41,7 @@ export function ExportModal({ open, onClose, projectId, projectName, activeEnv, 
   const [scope, setScope] = useState<ExportScope>("current");
   const [format, setFormat] = useState<ExportFormat>("env");
   const [selectedTag, setSelectedTag] = useState("all");
+  const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [prodConfirmed, setProdConfirmed] = useState(false);
@@ -51,6 +52,7 @@ export function ExportModal({ open, onClose, projectId, projectName, activeEnv, 
     setScope("current");
     setFormat("env");
     setSelectedTag("all");
+    setReason("");
     setErrorMessage("");
     setProdConfirmed(false);
     setLoading(false);
@@ -64,9 +66,9 @@ export function ExportModal({ open, onClose, projectId, projectName, activeEnv, 
   const fetchExport = async (): Promise<string> => {
     const tag = selectedTag === "all" ? undefined : selectedTag;
     if (scope === "all") {
-      return exportProjectAllEnvs({ projectId, format, tag });
+      return exportProjectAllEnvs({ projectId, format, tag, reason: reason.trim() });
     }
-    return exportProject({ projectId, env: activeEnv, format, tag });
+    return exportProject({ projectId, env: activeEnv, format, tag, reason: reason.trim() });
   };
 
   const handleCopyToClipboard = async () => {
@@ -153,6 +155,16 @@ export function ExportModal({ open, onClose, projectId, projectName, activeEnv, 
           </label>
         )}
 
+        <label className="export-modal-label">
+          Dışarı aktarma nedeni
+          <textarea
+            rows={3}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Örn: CI pipeline env dosyası güncellemesi"
+          />
+        </label>
+
         {needsProdConfirm && (
           <div className="export-prod-warning">
             <label className="export-prod-confirm">
@@ -172,14 +184,14 @@ export function ExportModal({ open, onClose, projectId, projectName, activeEnv, 
           <button
             type="button"
             onClick={() => void handleCopyToClipboard()}
-            disabled={loading || (needsProdConfirm && !prodConfirmed)}
+            disabled={loading || (needsProdConfirm && !prodConfirmed) || reason.trim().length < 3}
           >
             {loading ? "Yükleniyor..." : "Panoya Kopyala"}
           </button>
           <button
             type="button"
             onClick={() => void handleDownloadFile()}
-            disabled={loading || (needsProdConfirm && !prodConfirmed)}
+            disabled={loading || (needsProdConfirm && !prodConfirmed) || reason.trim().length < 3}
           >
             {loading ? "Yükleniyor..." : "Dosya İndir"}
           </button>

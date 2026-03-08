@@ -53,6 +53,10 @@ class ProjectMemberAddRequest(BaseModel):
     role: RoleEnum = RoleEnum.member
 
 
+class ProjectMemberRoleUpdateRequest(BaseModel):
+    role: RoleEnum
+
+
 class EnvironmentAccessRequest(BaseModel):
     userId: str
     environment: EnvironmentEnum
@@ -85,3 +89,20 @@ class InviteOut(BaseModel):
 
 class InviteCreateOut(InviteOut):
     code: str
+
+
+class ServiceTokenOut(BaseModel):
+    id: str
+    name: str
+    createdAt: datetime
+    lastUsedAt: Optional[datetime] = None
+    revokedAt: Optional[datetime] = None
+    tokenPreview: str
+
+
+class ServiceTokenCreateRequest(BaseModel):
+    name: str = Field(min_length=2, max_length=120)
+
+
+class ServiceTokenCreateOut(ServiceTokenOut):
+    token: str

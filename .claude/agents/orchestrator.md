@@ -1,16 +1,23 @@
+---
+name: orchestrator
+description: Coordinates multiple agents for complex multi-step tasks across the full stack
+tools: Read, Grep, Glob, Agent(frontend-ui, api-backend, database, test-runner, desktop)
+model: sonnet
+---
+
 # Subagent Orchestration Guide
 
-This file defines how to coordinate agents for Secret Management Dashboard using Claude Code's Task tool.
+This file defines how to coordinate agents for Secret Management Dashboard using Claude Code's Agent tool.
 
 ## Agent Registry
 
 | Agent | File | Default Model | Escalation Trigger |
 |-------|------|--------------|-------------------|
-| frontend-ui | `.claude/agents/frontend-ui.md` | sonnet | Multi-page refactor (4+ pages), routing redesign |
+| frontend-ui | `.claude/agents/frontend-ui.md` | sonnet | Multi-page refactor (4+ pages), new UI subsystem |
 | api-backend | `.claude/agents/api-backend.md` | opus | Already opus — downgrade to sonnet for simple CRUD |
 | database | `.claude/agents/database.md` | sonnet | Complex migration with data transformation |
-| test-runner | `.claude/agents/test-runner.md` | sonnet | New test architecture design |
-| desktop | `.claude/agents/desktop.md` | haiku | Tauri command/plugin changes -> sonnet |
+| test-runner | `.claude/agents/test-runner.md` | sonnet | New test architecture, security-critical test design |
+| desktop | `.claude/agents/desktop.md` | haiku | New Tauri command -> sonnet, architecture change -> opus |
 
 ## Model Selection Guide
 
@@ -28,6 +35,7 @@ This file defines how to coordinate agents for Secret Management Dashboard using
 - Writing or updating tests
 - Standard CRUD operations
 - Bug fixes with known root cause
+- Database migrations and model changes
 - Most day-to-day development work
 
 ### Use `haiku` when:
@@ -42,31 +50,29 @@ This file defines how to coordinate agents for Secret Management Dashboard using
 
 ### Single Agent Task
 ```
-Task(subagent_type="general-purpose", model="sonnet", prompt="
-You are the [Agent Name] agent for Secret Management Dashboard.
-Read .claude/agents/[agent-file].md for your full instructions.
-Task: [describe the specific task]
-")
+Agent(subagent_type="frontend-ui", prompt="[describe the specific task]")
 ```
+Agent .md dosyasindaki model, tools ve instructions otomatik yuklenir.
+Model override gerektiginde: `Agent(subagent_type="api-backend", model="opus", prompt="...")`
 
 ### Parallel Agents (Independent Tasks)
-Launch multiple Task calls in a SINGLE message when tasks are independent:
+Launch multiple Agent calls in a SINGLE message when tasks are independent:
 ```
-// Message with multiple Task calls:
-Task(model="sonnet", prompt="[Frontend UI task]")   // runs in parallel
-Task(model="opus", prompt="[API Backend task]")      // runs in parallel
-Task(model="sonnet", prompt="[Test Runner task]")    // runs in parallel
+Agent(subagent_type="frontend-ui", prompt="[task]")   // runs in parallel
+Agent(subagent_type="api-backend", prompt="[task]")    // runs in parallel
+Agent(subagent_type="test-runner", prompt="[task]")    // runs in parallel
 ```
 
 ### Sequential Agents (Dependent Tasks)
 When one agent's output feeds into another:
 ```
-// Step 1: Create API endpoint first
-Task(model="sonnet", prompt="[API Backend: create endpoint]")
-// Step 2: After completion, create frontend page
-Task(model="sonnet", prompt="[Frontend UI: create page using new endpoint]")
-// Step 3: Write tests for both
-Task(model="sonnet", prompt="[Test Runner: write tests]")
+// Step 1: Schema first
+Agent(subagent_type="database", prompt="[create model + migration]")
+// Step 2: After completion, API route
+Agent(subagent_type="api-backend", prompt="[create endpoint using new model]")
+// Step 3: Frontend + Tests in parallel
+Agent(subagent_type="frontend-ui", prompt="[create page]")
+Agent(subagent_type="test-runner", prompt="[write tests]")
 ```
 
 ## Workflow Templates

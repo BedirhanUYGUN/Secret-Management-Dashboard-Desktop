@@ -32,6 +32,10 @@ def _resolve_client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
+def _resolve_session_context(request: Request) -> tuple[str, str]:
+    return _resolve_client_ip(request), request.headers.get("user-agent", "").strip()
+
+
 @router.post("/login", response_model=TokenPairOut)
 def login(
     payload: LoginRequest,
@@ -57,7 +61,14 @@ def login(
             detail="Too many login attempts. Please try again later.",
         )
 
-    return login_with_password(db, email=payload.email, password=payload.password)
+    ip_address, user_agent = _resolve_session_context(request)
+    return login_with_password(
+        db,
+        email=payload.email,
+        password=payload.password,
+        user_agent=user_agent,
+        ip_address=ip_address,
+    )
 
 
 @router.post("/refresh", response_model=TokenPairOut)
@@ -78,7 +89,13 @@ def refresh(
             detail="Too many refresh attempts. Please try again later.",
         )
 
-    return refresh_access_token(db, refresh_token=payload.refreshToken)
+    ip_address, user_agent = _resolve_session_context(request)
+    return refresh_access_token(
+        db,
+        refresh_token=payload.refreshToken,
+        user_agent=user_agent,
+        ip_address=ip_address,
+    )
 
 
 @router.post("/logout")

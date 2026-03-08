@@ -22,6 +22,7 @@ export type UserPreferences = {
 
 export type User = {
   id: string;
+  email: string;
   name: string;
   role: Role;
   assignments: Assignment[];
@@ -36,12 +37,44 @@ export type Secret = {
   type: SecretType;
   environment: Environment;
   keyName: string;
+  version: number;
   valueMasked: string;
   updatedAt: string;
   tags: string[];
   notes: string;
   updatedByName: string | null;
   lastCopiedAt: string | null;
+};
+
+export type SecretVersion = {
+  version: number;
+  maskedValue: string;
+  createdAt: string;
+  createdByName: string | null;
+  isCurrent: boolean;
+};
+
+export type SessionInfo = {
+  id: string;
+  sessionLabel: string;
+  userAgent: string | null;
+  ipAddress: string | null;
+  createdAt: string;
+  lastUsedAt: string | null;
+  expiresAt: string;
+};
+
+export type ServiceTokenInfo = {
+  id: string;
+  name: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+  revokedAt: string | null;
+  tokenPreview: string;
+};
+
+export type ServiceTokenCreateResult = ServiceTokenInfo & {
+  token: string;
 };
 
 export type ManagedUser = {
@@ -89,7 +122,19 @@ export type Invite = {
 
 export type InviteCreateResult = Invite & { code: string };
 
-export type AuditAction = "secret_created" | "secret_updated" | "secret_deleted" | "secret_copied" | "secret_exported";
+export type AuditAction =
+  | "secret_created"
+  | "secret_updated"
+  | "secret_deleted"
+  | "secret_copied"
+  | "secret_exported"
+  | "secret_revealed"
+  | "secret_restored"
+  | "invite_created"
+  | "invite_rotated"
+  | "invite_revoked"
+  | "member_joined"
+  | "service_exported";
 
 export type AuditEvent = {
   id: string;

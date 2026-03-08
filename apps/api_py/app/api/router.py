@@ -9,6 +9,7 @@ from app.api.routes import (
     project_manage,
     projects,
     search,
+    service_access,
     secrets,
     users,
 )
@@ -22,6 +23,7 @@ api_router.include_router(organizations.router)
 api_router.include_router(projects.router)
 api_router.include_router(secrets.router)
 api_router.include_router(search.router)
+api_router.include_router(service_access.router)
 api_router.include_router(imports.router)
 api_router.include_router(exports.router)
 api_router.include_router(audit.router)

@@ -187,3 +187,64 @@ class TestProjectMembers:
             headers=_auth_header(token),
         )
         assert resp2.status_code == 204
+
+
+class TestServiceTokens:
+    def test_admin_servis_token_olusturur_ve_listeler(self, client, db):
+        admin = _make_user(db, email="admin@test.com", role=RoleEnum.admin)
+        project = _make_project(db, slug="proj", name="Proje", created_by=str(admin.id))
+        _assign_member(db, project_id=project.id, user_id=admin.id, role=RoleEnum.admin)
+        token = _login(client, "admin@test.com")
+
+        create_resp = client.post(
+            f"/projects/manage/{project.id}/service-tokens",
+            json={"name": "GitHub Actions"},
+            headers=_auth_header(token),
+        )
+        assert create_resp.status_code == 201
+        created = create_resp.json()
+        assert created["token"].startswith("srv_")
+
+        list_resp = client.get(
+            f"/projects/manage/{project.id}/service-tokens",
+            headers=_auth_header(token),
+        )
+        assert list_resp.status_code == 200
+        assert len(list_resp.json()) == 1
+        assert list_resp.json()[0]["name"] == "GitHub Actions"
+
+    def test_servis_token_ile_export_yapilabilir(self, client, db):
+        admin = _make_user(db, email="admin@test.com", role=RoleEnum.admin)
+        project = _make_project(db, slug="proj", name="Proje", created_by=str(admin.id))
+        _assign_member(db, project_id=project.id, user_id=admin.id, role=RoleEnum.admin)
+        token = _login(client, "admin@test.com")
+
+        secret_resp = client.post(
+            "/projects/proj/secrets",
+            json={
+                "name": "Stripe Key",
+                "provider": "Stripe",
+                "type": "key",
+                "environment": "dev",
+                "keyName": "STRIPE_KEY",
+                "value": "sk_test_123",
+                "tags": ["api"],
+                "notes": "test",
+            },
+            headers=_auth_header(token),
+        )
+        assert secret_resp.status_code == 200
+
+        create_resp = client.post(
+            f"/projects/manage/{project.id}/service-tokens",
+            json={"name": "CI Export"},
+            headers=_auth_header(token),
+        )
+        service_token = create_resp.json()["token"]
+
+        export_resp = client.get(
+            "/service-access/projects/proj/exports?env=dev&format=env",
+            headers={"X-Service-Token": service_token},
+        )
+        assert export_resp.status_code == 200
+        assert "STRIPE_KEY=sk_test_123" in export_resp.text
