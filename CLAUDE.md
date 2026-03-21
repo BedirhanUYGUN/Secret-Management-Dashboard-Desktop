@@ -200,3 +200,43 @@ npm run db:seed:api           # Test seed verileri yukle
   - Test dosyalari: `apps/api_py/tests/`
   - Komut: `python -m pytest`
   - Test kullanicilari: admin@company.local, member@company.local, viewer@company.local
+
+## Muhendislik Kalite Kurallari
+- Degisiklik yapmadan once sorunun tipini belirle: **local** (tek dosya), **cross-cutting** (paylasilan dosya), **systemic** (pattern/mimari), **architectural** (sistem tasarimi)
+- Sistemik sorunlarda kok nedeni hedefle, sadece belirtiyi duzeltme
+- Lokal sorunlarda en kucuk guvenli degisikligi uygula
+- Paylasilan davranis dosyasi degisiyorsa (`client.ts`, `types.ts`, `deps.py`, `domain_repo.py`, `config.py`) TUM bagimli dosyalari kontrol et
+- Ayni mantigi birden fazla yere ekleme (duplicate logic yasagi) — mevcut soyutlamayi genislet
+- Mevcut pattern'lere uyum sagla, gereksiz yeni pattern olusturma
+- Overengineering yasagi: Mevcut gorev icin gereken minimum karmasiklikta cozum uret
+- Spekulatif refactor yapma — sadece istenen degisikligi uygula
+
+## Dokumantasyon ve Mimari Hafiza
+- Bilgi arama oncelik sirasi: `CLAUDE.md` → `docs/project-map.md` → `docs/module-map.md` → `docs/adr/` → kod taramasi
+- **Proje Haritasi**: `docs/project-map.md` — katman haritasi, paylasilan dosyalar, route-feature eslestirme
+- **Modul Haritasi**: `docs/module-map.md` — modul bagimliliklari, degisiklik yayilim matrisi
+- **Degisiklik Kontrol Listesi**: `docs/change-impact-checklist.md` — degisiklik oncesi/sonrasi kontroller
+- **Mimari Karar Kayitlari**: `docs/adr/` — onemli mimari kararlar (sablon: `docs/adr/000-sablon.md`)
+- Guncelleme tetikleme: Yeni feature sayfa, yeni API route, yeni DB model, paylasilan dosya degisikligi, guvenlik degisikligi
+
+## Degisiklik Siniflandirma ve Etki Kurallari
+- **DUSUK** (1-3 dosya, tek modul, paylasilan dosya yok): Dogrudan ilerle
+- **ORTA** (4-8 dosya, paylasilan dosya degisiyor): `module-map.md` kontrol et, ilgili testleri calistir
+- **YUKSEK** (9+ dosya, katmanlar arasi degisiklik): Orchestrator koordinasyonu, tum etkilenen testleri calistir
+- **KRITIK** (guvenlik modulleri: `crypto.py`, `security.py`, `deps.py` / DB schema degisikligi): Opus model kullan, ADR yaz, tam test suite calistir
+- Siniflandirma icin `docs/change-impact-checklist.md` referans alinmalidir
+
+## Teslimat / Muhendislik Kurallari
+- Mevcut testler gecmeden merge yapilmaz
+- Mevcut pattern'lere uyum zorunludur (yeni pattern icin ADR gerekir)
+- Paylasilan interface'ler degistiginde tum tuketiciler koordineli guncellenir
+- Conventional Commits formati: `feat(scope):`, `fix(scope):`, `refactor(scope):`, `docs(scope):`, `test(scope):`
+- Her PR tek bir sorumluluk alanina odaklanmali (Single Responsibility)
+
+## Otomatik Agent Orkestrasyon
+- 7 agent rolu: `frontend-ui`, `api-backend`, `database`, `test-runner`, `desktop`, `documentation`, `orchestrator`
+- Agent tanimlari: `.claude/agents/` dizininde
+- Model secimi: `opus` (guvenlik, mimari karar), `sonnet` (standart gelistirme), `haiku` (dokumantasyon, basit degisiklik)
+- Katmanlar arasi veya 4+ dosya degisikliginde `orchestrator` agent koordinasyonu zorunlu
+- Guvenlik modulleri (`crypto.py`, `security.py`, auth route'lari) icin `opus` model zorunlu
+- Yeni feature/route/model sonrasinda `documentation` agent ile harita guncelleme

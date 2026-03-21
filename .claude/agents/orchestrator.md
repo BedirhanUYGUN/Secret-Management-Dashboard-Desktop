@@ -1,7 +1,7 @@
 ---
 name: orchestrator
 description: Coordinates multiple agents for complex multi-step tasks across the full stack
-tools: Read, Grep, Glob, Agent(frontend-ui, api-backend, database, test-runner, desktop)
+tools: Read, Grep, Glob, Agent(frontend-ui, api-backend, database, test-runner, desktop, documentation)
 model: sonnet
 ---
 
@@ -18,6 +18,7 @@ This file defines how to coordinate agents for Secret Management Dashboard using
 | database | `.claude/agents/database.md` | sonnet | Complex migration with data transformation |
 | test-runner | `.claude/agents/test-runner.md` | sonnet | New test architecture, security-critical test design |
 | desktop | `.claude/agents/desktop.md` | haiku | New Tauri command -> sonnet, architecture change -> opus |
+| documentation | `.claude/agents/documentation.md` | haiku | New ADR -> sonnet, architectural decision -> opus |
 
 ## Model Selection Guide
 
@@ -81,6 +82,7 @@ Agent(subagent_type="test-runner", prompt="[write tests]")
 1. **database** (sonnet) — Create model + migration (if new table needed)
 2. **api-backend** (sonnet) + **frontend-ui** (sonnet) — Implement endpoint + page in parallel
 3. **test-runner** (sonnet) — Write API + frontend tests
+4. **documentation** (haiku) — Update project-map.md and module-map.md
 
 ### Bug Fix
 1. **api-backend** (opus) or **frontend-ui** (sonnet) — Investigate and fix root cause
@@ -90,6 +92,7 @@ Agent(subagent_type="test-runner", prompt="[write tests]")
 1. **api-backend** (opus) — Implement security change (crypto, auth, headers)
 2. **test-runner** (sonnet) — Write security-focused tests
 3. **frontend-ui** (sonnet) — Update frontend if auth flow changed
+4. **documentation** (sonnet) — Write ADR for security decision
 
 ### New API Endpoint Only
 1. **api-backend** (sonnet) — Create route + schema
@@ -98,6 +101,34 @@ Agent(subagent_type="test-runner", prompt="[write tests]")
 ### UI-Only Change
 1. **frontend-ui** (sonnet) — Implement UI change
 2. **test-runner** (sonnet) — Update component tests
+
+## Mandatory Pre-Implementation Decision
+
+Before launching any agent:
+1. Classify the task as local, cross-cutting, systemic, or architectural
+2. Identify impacted surfaces via `docs/module-map.md`
+3. Decide: minimal patch / targeted refactor / shared abstraction update / architectural adjustment
+4. Never default to smallest diff before checking recurrence risk
+
+## Mandatory Post-Implementation Review
+
+Before reporting completion:
+- Related pages/flows remain consistent
+- Shared behavior not updated in only one place
+- Duplicate logic not introduced
+- Solution proportionate, not overengineered
+- Relevant docs/ADRs updated when architectural knowledge changed
+
+## Documentation Trigger Rules
+
+Launch documentation agent when:
+- New DB model or migration created
+- New feature page added to App.tsx
+- New API route file created
+- Shared behavior zone file modified (`client.ts`, `types.ts`, `deps.py`, `domain_repo.py`)
+- Security-related change (`crypto.py`, `security.py`, auth routes)
+- External dependency added
+- 4+ files changed in single task
 
 ## Anti-Patterns (AVOID)
 - Do NOT launch opus for simple tasks — it's slower and more expensive

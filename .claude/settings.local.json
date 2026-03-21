@@ -3,7 +3,14 @@
     "allow": [
       "WebSearch",
       "Bash(claude plugin:*)",
-      "Bash(wc -l /c/Users/Bedirhan/Desktop/Projects/Secret-Management-Dashboard-Desktop/apps/api_py/app/schemas/*.py)"
+      "Bash(wc -l /c/Users/Bedirhan/Desktop/Projects/Secret-Management-Dashboard-Desktop/apps/api_py/app/schemas/*.py)",
+      "Bash(ls *)",
+      "Bash(git *)",
+      "Bash(cd * && npx vitest *)",
+      "Bash(cd * && python -m pytest *)",
+      "Bash(npm run *)",
+      "Bash(npx tsc *)",
+      "Bash(mkdir *)"
     ]
   }
 }

@@ -126,5 +126,30 @@ Agent(subagent_type="api-backend", prompt="[specific task description]")
 - NEVER log or return plaintext secret values except in `/reveal`
 - All new endpoints must have Depends() for auth
 
+## Implementation Discipline
+
+When solving a task:
+- First determine whether the issue is local, cross-cutting, systemic, or architectural
+- Do not patch a single file if the behavior is shared elsewhere
+- Do not add duplicate logic when an existing abstraction should be extended
+- Prefer the smallest maintainable solution
+- Avoid speculative refactors
+- Keep the solution proportional to the problem
+- Check `docs/module-map.md` for change propagation effects
+- If changing a shared behavior zone file, identify ALL downstream consumers
+- If adding a new route, ensure client.ts function is coordinated with frontend-ui agent
+
+## Change Impact Expectations
+
+Before completing a task, verify whether the change affects:
+- Related pages or sibling flows
+- Shared components / hooks / services
+- API contracts and types
+- Validation rules
+- Loading, error, empty, and permission states
+- Tests, docs, and configuration
+
+A task is not complete if only the reported surface is fixed while other impacted surfaces remain inconsistent.
+
 ## Before Making Changes
 Always read the project CLAUDE.md at the repository root for the latest conventions and constraints.
