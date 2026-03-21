@@ -1,21 +1,23 @@
+import { Loader2 } from "lucide-react";
+
 type SpinnerProps = {
   text?: string;
   variant?: "spinner" | "skeleton-table";
 };
 
-export function Spinner({ text = "Yükleniyor...", variant = "spinner" }: SpinnerProps) {
+export function Spinner({ text = "Yukleniyor...", variant = "spinner" }: SpinnerProps) {
   if (variant === "skeleton-table") {
     return (
-      <div className="skeleton-table" aria-busy="true" aria-label={text}>
+      <div className="space-y-3 p-4" aria-busy="true" aria-label={text}>
         {Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className="skeleton-row">
-            <div className="skeleton-cell" style={{ height: 18 }} />
-            <div className="skeleton-cell" style={{ height: 18 }} />
-            <div className="skeleton-cell" style={{ height: 18 }} />
-            <div className="skeleton-cell" style={{ height: 18 }} />
-            <div className="skeleton-cell" style={{ height: 18 }} />
-            <div className="skeleton-cell" style={{ height: 18 }} />
-            <div className="skeleton-cell" style={{ height: 18, maxWidth: 60 }} />
+          <div key={i} className="flex gap-4">
+            {Array.from({ length: 5 }, (_, j) => (
+              <div
+                key={j}
+                className="h-4 flex-1 animate-pulse rounded bg-[var(--muted)]"
+                style={{ animationDelay: `${(i * 5 + j) * 50}ms` }}
+              />
+            ))}
           </div>
         ))}
       </div>
@@ -23,9 +25,9 @@ export function Spinner({ text = "Yükleniyor...", variant = "spinner" }: Spinne
   }
 
   return (
-    <div className="spinner-container">
-      <div className="spinner" />
-      {text && <span className="spinner-text">{text}</span>}
+    <div className="flex flex-col items-center justify-center gap-3 py-12">
+      <Loader2 className="h-6 w-6 animate-spin text-[var(--primary)]" />
+      {text && <span className="text-sm text-[var(--muted-foreground)]">{text}</span>}
     </div>
   );
 }

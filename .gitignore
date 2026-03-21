@@ -15,3 +15,5 @@ coverage/
 apps/api_py/*.egg-info/
 apps/api_py/**/__pycache__/
 apps/api_py/.pytest_cache/
+
+project-agent-setup-rewritten.skill

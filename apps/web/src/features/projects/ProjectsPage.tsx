@@ -1,6 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
+  Copy,
+  Download,
+  Edit2,
+  Eye,
+  EyeOff,
+  FileText,
+  Filter,
+  History,
+  Key,
+  MoreVertical,
+  Plus,
+  RotateCcw,
+  Tag,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  FolderOpen,
+  Braces,
+  Terminal,
+} from "lucide-react";
+import {
   createProjectSecret,
   deleteProjectSecret,
   fetchSecretVersions,
@@ -18,6 +39,16 @@ import { ExportModal } from "@core/ui/ExportModal";
 import { useAppUi } from "@core/ui/AppUiContext";
 import { Modal } from "@core/ui/Modal";
 import { Spinner } from "@core/ui/Spinner";
+import { Button } from "@core/ui/Button";
+import { Input } from "@core/ui/Input";
+import { Label } from "@core/ui/Label";
+import { Textarea } from "@core/ui/Textarea";
+import { Select } from "@core/ui/Select";
+import { Badge } from "@core/ui/Badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@core/ui/Card";
+import { Tabs, TabsList, TabsTrigger } from "@core/ui/Tabs";
+import { DropdownMenu, DropdownMenuItem, DropdownMenuSeparator } from "@core/ui/DropdownMenu";
+import { cn } from "@core/ui/cn";
 
 const envTabs: Environment[] = ["local", "dev", "prod"];
 const typeOptions: SecretType[] = ["key", "token", "endpoint"];
@@ -39,6 +70,216 @@ function parseTags(raw: string) {
     .map((item) => item.trim())
     .filter((item) => item !== "");
 }
+
+function envBadgeVariant(env: Environment): "default" | "warning" | "destructive" | "secondary" {
+  if (env === "prod") return "destructive";
+  if (env === "dev") return "warning";
+  return "secondary";
+}
+
+function typeBadgeVariant(type: SecretType): "default" | "secondary" | "outline" {
+  if (type === "token") return "default";
+  if (type === "endpoint") return "outline";
+  return "secondary";
+}
+
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
+  if (!active) {
+    return <ChevronDown className="ml-1 h-3 w-3 opacity-30" />;
+  }
+  return dir === "asc" ? (
+    <ChevronUp className="ml-1 h-3 w-3 text-[var(--primary)]" />
+  ) : (
+    <ChevronDown className="ml-1 h-3 w-3 text-[var(--primary)]" />
+  );
+}
+
+function SortableHeader({
+  label,
+  sortKey,
+  activeSortKey,
+  sortDir,
+  onToggle,
+}: {
+  label: string;
+  sortKey: SortKey;
+  activeSortKey: SortKey;
+  sortDir: SortDir;
+  onToggle: (key: SortKey) => void;
+}) {
+  const isActive = activeSortKey === sortKey;
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(sortKey)}
+      className={cn(
+        "flex items-center text-xs font-semibold uppercase tracking-wider cursor-pointer select-none transition-colors",
+        isActive
+          ? "text-[var(--primary)]"
+          : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]",
+      )}
+    >
+      {label}
+      <SortIcon active={isActive} dir={sortDir} />
+    </button>
+  );
+}
+
+type SecretFormState = {
+  name: string;
+  provider: string;
+  type: SecretType;
+  keyName: string;
+  value: string;
+  tags: string;
+  notes: string;
+};
+
+const emptyForm: SecretFormState = {
+  name: "",
+  provider: "",
+  type: "key",
+  keyName: "",
+  value: "",
+  tags: "",
+  notes: "",
+};
+
+function SecretFormFields({
+  form,
+  onChange,
+  isEdit,
+}: {
+  form: SecretFormState;
+  onChange: (updates: Partial<SecretFormState>) => void;
+  isEdit?: boolean;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="field-name">Anahtar Adı</Label>
+          <Input
+            id="field-name"
+            placeholder="Örn: Stripe API Key"
+            value={form.name}
+            onChange={(e) => onChange({ name: e.target.value })}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="field-provider">Servis Sağlayıcı</Label>
+          <Input
+            id="field-provider"
+            placeholder="Örn: AWS, Stripe"
+            value={form.provider}
+            onChange={(e) => onChange({ provider: e.target.value })}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="field-type">Tip</Label>
+        <Select
+          id="field-type"
+          value={form.type}
+          onChange={(e) => onChange({ type: e.target.value as SecretType })}
+        >
+          {typeOptions.map((t) => (
+            <option key={t} value={t}>
+              {t.toUpperCase()}
+            </option>
+          ))}
+        </Select>
+      </div>
+
+      <div className="border-t border-[var(--border)] pt-4 grid grid-cols-2 gap-4">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="field-keyname">Ortam Değişken Adı</Label>
+          <Input
+            id="field-keyname"
+            placeholder="Örn: STRIPE_SECRET_KEY"
+            value={form.keyName}
+            onChange={(e) => onChange({ keyName: e.target.value })}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="field-value">
+            {isEdit ? "Yeni Gizli Değer" : "Gizli Anahtar Değeri"}
+          </Label>
+          <Input
+            id="field-value"
+            type="password"
+            placeholder={isEdit ? "Boş bırakırsanız mevcut değer korunur" : "Gizli anahtar değeri"}
+            value={form.value}
+            onChange={(e) => onChange({ value: e.target.value })}
+          />
+        </div>
+      </div>
+
+      <div className="border-t border-[var(--border)] pt-4 grid grid-cols-1 gap-4">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="field-tags">
+            <span className="flex items-center gap-1.5">
+              <Tag className="h-3.5 w-3.5" />
+              Etiketler
+            </span>
+          </Label>
+          <Input
+            id="field-tags"
+            placeholder="Virgülle ayırın: backend, production"
+            value={form.tags}
+            onChange={(e) => onChange({ tags: e.target.value })}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="field-notes">
+            <span className="flex items-center gap-1.5">
+              <FileText className="h-3.5 w-3.5" />
+              Notlar
+            </span>
+          </Label>
+          <Textarea
+            id="field-notes"
+            placeholder="Ek notlar (isteğe bağlı)"
+            rows={3}
+            value={form.notes}
+            onChange={(e) => onChange({ notes: e.target.value })}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Copy format card ─────────────────────────────────────────────────────────
+
+function CopyFormatCard({
+  icon,
+  title,
+  subtitle,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex flex-col items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--muted)] p-3 text-center transition-colors hover:border-[var(--primary)] hover:bg-[var(--accent)] cursor-pointer"
+    >
+      <span className="text-lg">{icon}</span>
+      <span className="text-xs font-semibold text-[var(--foreground)]">{title}</span>
+      <span className="text-[10px] text-[var(--muted-foreground)]">{subtitle}</span>
+    </button>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 
 export function ProjectsPage() {
   const { user } = useAuth();
@@ -63,29 +304,13 @@ export function ProjectsPage() {
   const [typeFilter, setTypeFilter] = useState<SecretType | "all">("all");
 
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [createForm, setCreateForm] = useState({
-    name: "",
-    provider: "",
-    type: "key" as SecretType,
-    keyName: "",
-    value: "",
-    tags: "",
-    notes: "",
-  });
+  const [createForm, setCreateForm] = useState<SecretFormState>(emptyForm);
 
   const [showExportModal, setShowExportModal] = useState(false);
   const [showSecretModal, setShowSecretModal] = useState(false);
   const [secretModalMode, setSecretModalMode] = useState<SecretModalMode>("detail");
 
-  const [editForm, setEditForm] = useState({
-    name: "",
-    provider: "",
-    type: "key" as SecretType,
-    keyName: "",
-    value: "",
-    tags: "",
-    notes: "",
-  });
+  const [editForm, setEditForm] = useState<SecretFormState>(emptyForm);
 
   const [revealedValue, setRevealedValue] = useState<string | null>(null);
   const [isRevealing, setIsRevealing] = useState(false);
@@ -119,10 +344,7 @@ export function ProjectsPage() {
   };
 
   useEffect(() => {
-    if (!user) {
-      return;
-    }
-
+    if (!user) return;
     void fetchProjects()
       .then((rows) => setProjects(rows))
       .catch((error: Error) => {
@@ -131,12 +353,10 @@ export function ProjectsPage() {
   }, [user]);
 
   useEffect(() => {
-    if (queryEnv) {
-      setActiveEnv(queryEnv);
-    }
+    if (queryEnv) setActiveEnv(queryEnv);
   }, [queryEnv]);
 
-  const activeProject = projects.find((project) => project.id === queryProject) ?? projects[0] ?? null;
+  const activeProject = projects.find((p) => p.id === queryProject) ?? projects[0] ?? null;
   const canAccessProd = activeProject?.prodAccess ?? false;
 
   useEffect(() => {
@@ -147,10 +367,7 @@ export function ProjectsPage() {
   }, [activeEnv, canAccessProd]);
 
   const reloadSecrets = async () => {
-    if (!user || !activeProject) {
-      return;
-    }
-
+    if (!user || !activeProject) return;
     setLoading(true);
     setErrorMessage("");
     try {
@@ -163,9 +380,7 @@ export function ProjectsPage() {
       });
       setVisibleSecrets(rows);
     } catch (error) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message || "Anahtarlar yüklenemedi.");
-      }
+      if (error instanceof Error) setErrorMessage(error.message || "Anahtarlar yüklenemedi.");
       setVisibleSecrets([]);
     } finally {
       setLoading(false);
@@ -177,22 +392,20 @@ export function ProjectsPage() {
   }, [activeEnv, activeProject, providerFilter, tagFilter, typeFilter, user]);
 
   useEffect(() => {
-    if (!querySecret) {
-      return;
-    }
+    if (!querySecret) return;
     setSelectedSecretId(querySecret);
   }, [querySecret]);
 
-  const selectedSecret = useMemo(() => {
-    return visibleSecrets.find((item) => item.id === selectedSecretId) ?? null;
-  }, [selectedSecretId, visibleSecrets]);
+  const selectedSecret = useMemo(
+    () => visibleSecrets.find((item) => item.id === selectedSecretId) ?? null,
+    [selectedSecretId, visibleSecrets],
+  );
 
   useEffect(() => {
     if (!selectedSecret) {
       setSecretVersions([]);
       return;
     }
-
     setEditForm({
       name: selectedSecret.name,
       provider: selectedSecret.provider,
@@ -208,19 +421,14 @@ export function ProjectsPage() {
   }, [selectedSecret]);
 
   useEffect(() => {
-    if (!selectedSecret || !showSecretModal) {
-      return;
-    }
-
+    if (!selectedSecret || !showSecretModal) return;
     void (async () => {
       try {
         setLoadingVersions(true);
         const versions = await fetchSecretVersions(selectedSecret.id);
         setSecretVersions(versions);
       } catch (error) {
-        if (error instanceof Error) {
-          setErrorMessage(error.message);
-        }
+        if (error instanceof Error) setErrorMessage(error.message);
         setSecretVersions([]);
       } finally {
         setLoadingVersions(false);
@@ -229,21 +437,24 @@ export function ProjectsPage() {
   }, [selectedSecret, showSecretModal]);
 
   const sortedSecrets = useMemo(() => {
-    const sorted = [...visibleSecrets].sort((a, b) => {
+    return [...visibleSecrets].sort((a, b) => {
       if (sortKey === "updatedAt") {
         const result = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
         return sortDir === "asc" ? result : -result;
       }
-
       const result = a[sortKey].localeCompare(b[sortKey], "tr");
       return sortDir === "asc" ? result : -result;
     });
-
-    return sorted;
   }, [visibleSecrets, sortDir, sortKey]);
 
-  const providers = useMemo(() => Array.from(new Set(visibleSecrets.map((item) => item.provider))), [visibleSecrets]);
-  const tags = useMemo(() => Array.from(new Set(visibleSecrets.flatMap((item) => item.tags))), [visibleSecrets]);
+  const providers = useMemo(
+    () => Array.from(new Set(visibleSecrets.map((item) => item.provider))),
+    [visibleSecrets],
+  );
+  const tags = useMemo(
+    () => Array.from(new Set(visibleSecrets.flatMap((item) => item.tags))),
+    [visibleSecrets],
+  );
 
   const readSecretValue = async (secretId: string, reason: string) => {
     const revealed = await revealSecretValue({ secretId, reason });
@@ -251,31 +462,20 @@ export function ProjectsPage() {
   };
 
   const copySecret = async (secret: Secret, mode: "value" | "env" | "json" | "python" | "node") => {
-    if (!user) {
-      return;
-    }
-
+    if (!user) return;
     try {
-      const reason = window.prompt("Bu anahtarı neden görüntülemek/kopyalamak istediğinizi kısaca yazın:", "Lokal geliştirme doğrulaması");
-      if (!reason || reason.trim().length < 3) {
-        return;
-      }
+      const reason = window.prompt(
+        "Bu anahtarı neden görüntülemek/kopyalamak istediğinizi kısaca yazın:",
+        "Lokal geliştirme doğrulaması",
+      );
+      if (!reason || reason.trim().length < 3) return;
 
       const value = await readSecretValue(secret.id, reason.trim());
       let payload = value;
-
-      if (mode === "env") {
-        payload = `${secret.keyName}=${value}`;
-      }
-      if (mode === "json") {
-        payload = JSON.stringify({ [secret.keyName]: value }, null, 2);
-      }
-      if (mode === "python") {
-        payload = `${secret.keyName} = "${value}"`;
-      }
-      if (mode === "node") {
-        payload = `process.env.${secret.keyName} = "${value}";`;
-      }
+      if (mode === "env") payload = `${secret.keyName}=${value}`;
+      if (mode === "json") payload = JSON.stringify({ [secret.keyName]: value }, null, 2);
+      if (mode === "python") payload = `${secret.keyName} = "${value}"`;
+      if (mode === "node") payload = `process.env.${secret.keyName} = "${value}";`;
 
       await copyWithTimer({
         value: payload,
@@ -285,23 +485,17 @@ export function ProjectsPage() {
         },
       });
     } catch (error) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
-      }
+      if (error instanceof Error) setErrorMessage(error.message);
     }
   };
 
   const toggleReveal = async () => {
-    if (!selectedSecret) {
-      return;
-    }
-
+    if (!selectedSecret) return;
     if (showPlainValue) {
       setShowPlainValue(false);
       return;
     }
-
-      setIsRevealing(true);
+    setIsRevealing(true);
     try {
       if (revealReason.trim().length < 3) {
         setErrorMessage("Anahtarı görüntülemek için neden alanını doldurun.");
@@ -311,19 +505,14 @@ export function ProjectsPage() {
       setRevealedValue(value);
       setShowPlainValue(true);
     } catch (error) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
-      }
+      if (error instanceof Error) setErrorMessage(error.message);
     } finally {
       setIsRevealing(false);
     }
   };
 
   const submitCreate = async () => {
-    if (!user || !activeProject) {
-      return;
-    }
-
+    if (!user || !activeProject) return;
     try {
       await createProjectSecret({
         projectId: activeProject.id,
@@ -338,23 +527,17 @@ export function ProjectsPage() {
           notes: createForm.notes,
         },
       });
-
       setShowCreateForm(false);
-      setCreateForm({ name: "", provider: "", type: "key", keyName: "", value: "", tags: "", notes: "" });
+      setCreateForm(emptyForm);
       showToast("Anahtar oluşturuldu", "success");
       await reloadSecrets();
     } catch (error) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
-      }
+      if (error instanceof Error) setErrorMessage(error.message);
     }
   };
 
   const submitEdit = async () => {
-    if (!user || !selectedSecret) {
-      return;
-    }
-
+    if (!user || !selectedSecret) return;
     try {
       await updateProjectSecret({
         secretId: selectedSecret.id,
@@ -368,22 +551,16 @@ export function ProjectsPage() {
           notes: editForm.notes,
         },
       });
-
       setSecretModalMode("detail");
       showToast("Anahtar güncellendi", "success");
       await reloadSecrets();
     } catch (error) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
-      }
+      if (error instanceof Error) setErrorMessage(error.message);
     }
   };
 
   const removeSecret = async () => {
-    if (!user || !selectedSecret) {
-      return;
-    }
-
+    if (!user || !selectedSecret) return;
     const approved = await confirm({
       title: "Anahtarı Sil",
       message: "Bu anahtar silinsin mi? Bu işlem geri alınamaz.",
@@ -391,10 +568,7 @@ export function ProjectsPage() {
       cancelLabel: "Vazgeç",
       variant: "danger",
     });
-    if (!approved) {
-      return;
-    }
-
+    if (!approved) return;
     try {
       await deleteProjectSecret({ secretId: selectedSecret.id });
       showToast("Anahtar silindi", "success");
@@ -403,17 +577,12 @@ export function ProjectsPage() {
       updateQuery({ secret: null });
       await reloadSecrets();
     } catch (error) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
-      }
+      if (error instanceof Error) setErrorMessage(error.message);
     }
   };
 
   const handleRestoreVersion = async (version: number) => {
-    if (!selectedSecret) {
-      return;
-    }
-
+    if (!selectedSecret) return;
     const approved = await confirm({
       title: "Sürümü Geri Yükle",
       message: `v${version} sürümüne geri dönülsün mü? Mevcut değer yeni bir sürüm olarak saklanacaktır.`,
@@ -421,10 +590,7 @@ export function ProjectsPage() {
       cancelLabel: "Vazgeç",
       variant: "danger",
     });
-    if (!approved) {
-      return;
-    }
-
+    if (!approved) return;
     try {
       const restored = await restoreSecretVersion({ secretId: selectedSecret.id, version });
       setSelectedSecretId(restored.id);
@@ -436,17 +602,12 @@ export function ProjectsPage() {
       setShowPlainValue(false);
       setRevealedValue(null);
     } catch (error) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
-      }
+      if (error instanceof Error) setErrorMessage(error.message);
     }
   };
 
   const handleRowSelect = (secret: Secret) => {
-    if (!activeProject) {
-      return;
-    }
-
+    if (!activeProject) return;
     setSelectedSecretId(secret.id);
     updateQuery({ project: activeProject.id, env: activeEnv, secret: secret.id });
   };
@@ -463,469 +624,646 @@ export function ProjectsPage() {
     setShowPlainValue(false);
   };
 
-  const sortIndicator = (key: SortKey) =>
-    sortKey === key ? <span className="sort-indicator">{sortDir === "asc" ? "▲" : "▼"}</span> : null;
+  if (!user) return null;
 
-  if (!user) {
-    return null;
-  }
-
+  // ─── Empty state (no project) ───────────────────────────────────────────────
   if (!activeProject) {
     return (
-      <div className="page-panel">
-        <div className="empty-state">
-          <span className="empty-state-icon">📂</span>
-          <h3 className="empty-state-title">Atanmış proje bulunmuyor</h3>
-          <p className="empty-state-description">Henüz size atanmış bir proje yok. Yöneticinizden proje ataması talep edin.</p>
+      <div className="flex h-full items-center justify-center p-8">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--muted)]">
+            <FolderOpen className="h-8 w-8 text-[var(--muted-foreground)]" />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-[var(--foreground)]">
+              Atanmış proje bulunmuyor
+            </h3>
+            <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+              Henüz size atanmış bir proje yok. Yöneticinizden proje ataması talep edin.
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
+  const isViewer = user.role === "viewer";
+
+  // ─── Snippet preview text ───────────────────────────────────────────────────
+  const snippetText = selectedSecret
+    ? snippetFormat === "json"
+      ? `{"${selectedSecret.keyName}": "${selectedSecret.valueMasked}"}`
+      : snippetFormat === "python"
+        ? `${selectedSecret.keyName} = "${selectedSecret.valueMasked}"`
+        : `process.env.${selectedSecret.keyName} = "${selectedSecret.valueMasked}";`
+    : "";
+
+  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="projects-layout">
-      <section className="table-section">
-        <div className="table-toolbar">
-          <h2>{activeProject.name}</h2>
-          <div className="tab-row">
-            {envTabs.map((env) => {
-              const restricted = env === "prod" && !canAccessProd;
-              return (
-                <button
-                  key={env}
-                  className={env === activeEnv ? "tab active" : "tab"}
-                  disabled={restricted}
-                  onClick={() => {
-                    setActiveEnv(env);
-                    updateQuery({ env, secret: null });
-                  }}
-                  type="button"
-                >
-                  {env.toUpperCase()}
-                  {restricted ? " (kısıtlı)" : ""}
-                </button>
-              );
-            })}
-          </div>
-          <div className="action-row">
-            <button type="button" disabled={user.role === "viewer"} onClick={() => setShowCreateForm(true)}>
-              Anahtar Ekle
-            </button>
-            <button type="button" onClick={() => setShowExportModal(true)} disabled={user.role === "viewer"}>
-              Dışarı Aktar
-            </button>
-          </div>
+    <div className="flex flex-col gap-6 p-6">
+
+      {/* Page header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-semibold text-[var(--foreground)]">{activeProject.name}</h1>
+          <p className="mt-0.5 text-sm text-[var(--muted-foreground)]">
+            {visibleSecrets.length} anahtar
+          </p>
         </div>
-
-        {showCreateForm && (
-          <div className="detail-box form-box" style={{ animation: "fadeIn 0.3s ease" }}>
-            <strong className="section-header">Yeni Anahtar Oluştur</strong>
-            <p className="section-subtitle">Projeye yeni bir API anahtarı, token veya endpoint ekleyin.</p>
-            <div className="form-grid">
-              <div>
-                <label className="form-label">Anahtar Adı</label>
-                <input
-                  placeholder="Örn: Stripe API Key"
-                  value={createForm.name}
-                  onChange={(event) => setCreateForm((prev) => ({ ...prev, name: event.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="form-label">Servis Sağlayıcı</label>
-                <input
-                  placeholder="Örn: AWS, Stripe"
-                  value={createForm.provider}
-                  onChange={(event) => setCreateForm((prev) => ({ ...prev, provider: event.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="form-label">Tip</label>
-                <select
-                  value={createForm.type}
-                  onChange={(event) => setCreateForm((prev) => ({ ...prev, type: event.target.value as SecretType }))}
-                >
-                  {typeOptions.map((type) => (
-                    <option key={type} value={type}>
-                      {type.toUpperCase()}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <hr className="form-divider" />
-
-              <div>
-                <label className="form-label">Ortam Değişken Adı</label>
-                <input
-                  placeholder="Örn: STRIPE_SECRET_KEY"
-                  value={createForm.keyName}
-                  onChange={(event) => setCreateForm((prev) => ({ ...prev, keyName: event.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="form-label">Gizli Anahtar Değeri</label>
-                <input
-                  placeholder="Gizli anahtar değeri"
-                  value={createForm.value}
-                  onChange={(event) => setCreateForm((prev) => ({ ...prev, value: event.target.value }))}
-                />
-              </div>
-
-              <hr className="form-divider" />
-
-              <div>
-                <label className="form-label">Etiketler</label>
-                <input
-                  placeholder="Etiketler (virgülle ayırın, örn: backend, production)"
-                  value={createForm.tags}
-                  onChange={(event) => setCreateForm((prev) => ({ ...prev, tags: event.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="form-label">Notlar</label>
-                <textarea
-                  placeholder="Ek notlar (isteğe bağlı)"
-                  rows={3}
-                  value={createForm.notes}
-                  onChange={(event) => setCreateForm((prev) => ({ ...prev, notes: event.target.value }))}
-                />
-              </div>
-            </div>
-            <div className="action-row" style={{ marginTop: 10 }}>
-              <button type="button" className="btn-primary" onClick={() => void submitCreate()}>
-                Oluştur
-              </button>
-              <button type="button" onClick={() => setShowCreateForm(false)}>
-                İptal
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className="filter-row">
-          <select value={providerFilter} onChange={(event) => setProviderFilter(event.target.value)}>
-            <option value="all">Tüm sağlayıcılar</option>
-            {providers.map((provider) => (
-              <option key={provider} value={provider}>
-                {provider}
-              </option>
-            ))}
-          </select>
-          <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}>
-            <option value="all">Tüm etiketler</option>
-            {tags.map((tag) => (
-              <option key={tag} value={tag}>
-                {tag}
-              </option>
-            ))}
-          </select>
-          <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as SecretType | "all")}>
-            <option value="all">Tüm tipler</option>
-            {typeOptions.map((type) => (
-              <option key={type} value={type}>
-                {type.toUpperCase()}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {errorMessage && <p className="inline-error">{errorMessage}</p>}
-        {loading && <Spinner text="Anahtarlar yükleniyor..." variant="skeleton-table" />}
-
-        <div className="table-head secret-table-head">
-          <span className="table-head-sortable" onClick={() => toggleSort("name")}>Ad {sortIndicator("name")}</span>
-          <span className="table-head-sortable" onClick={() => toggleSort("provider")}>Sağlayıcı {sortIndicator("provider")}</span>
-          <span className="table-head-sortable" onClick={() => toggleSort("type")}>Tip {sortIndicator("type")}</span>
-          <span className="table-head-sortable" onClick={() => toggleSort("environment")}>Ortam {sortIndicator("environment")}</span>
-          <span>Maskeli Değer</span>
-          <span className="table-head-sortable" onClick={() => toggleSort("updatedAt")}>Güncelleme {sortIndicator("updatedAt")}</span>
-          <span>Düzenle</span>
-          <span>Kopyala</span>
-        </div>
-
-        {sortedSecrets.map((secret) => (
-          <div
-            key={secret.id}
-            className={secret.id === selectedSecret?.id ? "table-row secret-table-row selected" : "table-row secret-table-row"}
-            role="button"
-            tabIndex={0}
-            onClick={() => handleRowSelect(secret)}
-            onDoubleClick={() => openSecretModal(secret, "detail")}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                openSecretModal(secret, "detail");
-              }
-            }}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowExportModal(true)}
+            disabled={isViewer}
           >
-            <span>{secret.name}</span>
-            <span>{secret.provider}</span>
-            <span><span className="type-badge">{secret.type.toUpperCase()}</span></span>
-            <span><span className={`env-badge env-badge-${secret.environment}`}>{secret.environment.toUpperCase()}</span></span>
-            <code>{secret.valueMasked}</code>
-            <span>{new Date(secret.updatedAt).toLocaleString()}</span>
-            <button
-              type="button"
-              className="secret-action-btn secret-action-btn-edit"
-              aria-label={`${secret.name} düzenle`}
-              onClick={(event) => {
-                event.stopPropagation();
-                openSecretModal(secret, "edit");
-              }}
-            >
-              <span aria-hidden="true">✎</span>
-            </button>
-            <button
-              type="button"
-              className="secret-action-btn secret-action-btn-copy"
-              onClick={(event) => {
-                event.stopPropagation();
-                void copySecret(secret, "value");
-              }}
-            >
-              Kopyala
-            </button>
-          </div>
-        ))}
+            <Download className="h-4 w-4" />
+            Dışarı Aktar
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => setShowCreateForm((prev) => !prev)}
+            disabled={isViewer}
+          >
+            <Plus className="h-4 w-4" />
+            Anahtar Ekle
+          </Button>
+        </div>
+      </div>
 
-        {!loading && sortedSecrets.length === 0 && (
-          <div className="empty-state">
-            <span className="empty-state-icon">🔑</span>
-            <h3 className="empty-state-title">Bu ortamda anahtar bulunmuyor</h3>
-            <p className="empty-state-description">Yeni bir anahtar ekleyerek başlayabilirsiniz.</p>
-          </div>
-        )}
-      </section>
+      {/* Environment tabs */}
+      <Tabs value={activeEnv} onValueChange={(v) => {
+        const env = v as Environment;
+        setActiveEnv(env);
+        updateQuery({ env, secret: null });
+      }}>
+        <TabsList className="gap-1">
+          {envTabs.map((env) => {
+            const restricted = env === "prod" && !canAccessProd;
+            return (
+              <TabsTrigger
+                key={env}
+                value={env}
+                className={cn(restricted && "pointer-events-none opacity-40")}
+              >
+                {env.toUpperCase()}
+                {restricted && (
+                  <span className="ml-1.5 text-[10px] text-[var(--muted-foreground)]">(kısıtlı)</span>
+                )}
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
+      </Tabs>
 
+      {/* Create form */}
+      {showCreateForm && (
+        <Card className="animate-in fade-in-0 slide-in-from-top-2 duration-200">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base">Yeni Anahtar Oluştur</CardTitle>
+            <CardDescription>
+              Projeye yeni bir API anahtarı, token veya endpoint ekleyin.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <SecretFormFields
+              form={createForm}
+              onChange={(updates) => setCreateForm((prev) => ({ ...prev, ...updates }))}
+            />
+            <div className="mt-6 flex items-center gap-2">
+              <Button onClick={() => void submitCreate()}>Oluştur</Button>
+              <Button variant="outline" onClick={() => setShowCreateForm(false)}>
+                İptal
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Filter className="h-4 w-4 flex-shrink-0 text-[var(--muted-foreground)]" />
+        <Select
+          className="w-44"
+          value={providerFilter}
+          onChange={(e) => setProviderFilter(e.target.value)}
+        >
+          <option value="all">Tüm sağlayıcılar</option>
+          {providers.map((p) => (
+            <option key={p} value={p}>{p}</option>
+          ))}
+        </Select>
+        <Select
+          className="w-40"
+          value={tagFilter}
+          onChange={(e) => setTagFilter(e.target.value)}
+        >
+          <option value="all">Tüm etiketler</option>
+          {tags.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </Select>
+        <Select
+          className="w-36"
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value as SecretType | "all")}
+        >
+          <option value="all">Tüm tipler</option>
+          {typeOptions.map((t) => (
+            <option key={t} value={t}>{t.toUpperCase()}</option>
+          ))}
+        </Select>
+      </div>
+
+      {/* Error */}
+      {errorMessage && (
+        <div className="rounded-md border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 px-4 py-3 text-sm text-[var(--destructive)]">
+          {errorMessage}
+        </div>
+      )}
+
+      {/* Loading skeleton */}
+      {loading && <Spinner text="Anahtarlar yükleniyor..." variant="skeleton-table" />}
+
+      {/* Secrets table */}
+      {!loading && (
+        <div className="rounded-lg border border-[var(--border)] overflow-hidden">
+          {/* Table header */}
+          <div className="grid grid-cols-[2fr_1.2fr_0.8fr_0.8fr_1.4fr_1.2fr_auto_auto] gap-4 border-b border-[var(--border)] bg-[var(--muted)] px-4 py-2.5">
+            <SortableHeader label="Ad" sortKey="name" activeSortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
+            <SortableHeader label="Sağlayıcı" sortKey="provider" activeSortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
+            <SortableHeader label="Tip" sortKey="type" activeSortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
+            <SortableHeader label="Ortam" sortKey="environment" activeSortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
+            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+              Maskeli Değer
+            </span>
+            <SortableHeader label="Güncelleme" sortKey="updatedAt" activeSortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
+            <span className="sr-only">Düzenle</span>
+            <span className="sr-only">İşlemler</span>
+          </div>
+
+          {/* Rows */}
+          {sortedSecrets.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-16 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--muted)]">
+                <Key className="h-6 w-6 text-[var(--muted-foreground)]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[var(--foreground)]">
+                  Bu ortamda anahtar bulunmuyor
+                </p>
+                <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+                  Yeni bir anahtar ekleyerek başlayabilirsiniz.
+                </p>
+              </div>
+            </div>
+          ) : (
+            sortedSecrets.map((secret, idx) => {
+              const isSelected = secret.id === selectedSecret?.id;
+              return (
+                <div
+                  key={secret.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleRowSelect(secret)}
+                  onDoubleClick={() => openSecretModal(secret, "detail")}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") openSecretModal(secret, "detail");
+                  }}
+                  className={cn(
+                    "grid grid-cols-[2fr_1.2fr_0.8fr_0.8fr_1.4fr_1.2fr_auto_auto] items-center gap-4 px-4 py-3 text-sm transition-colors cursor-pointer outline-none",
+                    idx !== sortedSecrets.length - 1 && "border-b border-[var(--border)]",
+                    isSelected
+                      ? "bg-[var(--primary)]/8 ring-inset ring-1 ring-[var(--primary)]/30"
+                      : "hover:bg-[var(--accent)]",
+                    "focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-inset",
+                  )}
+                >
+                  {/* Name */}
+                  <span className="truncate font-medium text-[var(--foreground)]">
+                    {secret.name}
+                  </span>
+
+                  {/* Provider */}
+                  <span className="truncate text-[var(--muted-foreground)]">
+                    {secret.provider}
+                  </span>
+
+                  {/* Type */}
+                  <Badge variant={typeBadgeVariant(secret.type)} className="w-fit text-[10px]">
+                    {secret.type.toUpperCase()}
+                  </Badge>
+
+                  {/* Environment */}
+                  <Badge variant={envBadgeVariant(secret.environment)} className="w-fit text-[10px]">
+                    {secret.environment.toUpperCase()}
+                  </Badge>
+
+                  {/* Masked value */}
+                  <code className="truncate rounded bg-[var(--muted)] px-2 py-0.5 font-mono text-xs text-[var(--muted-foreground)]">
+                    {secret.valueMasked}
+                  </code>
+
+                  {/* Updated at */}
+                  <span className="text-xs text-[var(--muted-foreground)]">
+                    {new Date(secret.updatedAt).toLocaleString("tr-TR", {
+                      day: "2-digit",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+
+                  {/* Edit button */}
+                  {!isViewer && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`${secret.name} düzenle`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openSecretModal(secret, "edit");
+                      }}
+                      className="h-8 w-8"
+                    >
+                      <Edit2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+
+                  {/* Actions dropdown */}
+                  <DropdownMenu
+                    trigger={
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Daha fazla işlem"
+                        className="h-8 w-8"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreVertical className="h-3.5 w-3.5" />
+                      </Button>
+                    }
+                    align="end"
+                  >
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openSecretModal(secret, "detail");
+                      }}
+                    >
+                      <Eye className="mr-2 h-3.5 w-3.5" />
+                      Detayları Görüntüle
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void copySecret(secret, "value");
+                      }}
+                    >
+                      <Copy className="mr-2 h-3.5 w-3.5" />
+                      Değeri Kopyala
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void copySecret(secret, "env");
+                      }}
+                    >
+                      <Terminal className="mr-2 h-3.5 w-3.5" />
+                      ENV Formatında Kopyala
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void copySecret(secret, "json");
+                      }}
+                    >
+                      <Braces className="mr-2 h-3.5 w-3.5" />
+                      JSON Olarak Kopyala
+                    </DropdownMenuItem>
+                    {!isViewer && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          destructive
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRowSelect(secret);
+                            void removeSecret();
+                          }}
+                        >
+                          <Trash2 className="mr-2 h-3.5 w-3.5" />
+                          Sil
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenu>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* Secret detail/edit modal */}
       <Modal
         open={showSecretModal && selectedSecret !== null}
         onClose={closeSecretModal}
         title={secretModalMode === "edit" ? "Anahtarı Düzenle" : "Anahtar Detayları"}
-        className="secret-modal-dialog"
+        className="max-w-2xl"
       >
         {selectedSecret && (
-          <div className="secret-modal-content">
+          <div className="flex flex-col gap-5 overflow-y-auto max-h-[calc(85vh-5rem)]">
             {secretModalMode === "detail" ? (
               <>
-                <div className="detail-inline-head">
+                {/* Detail header */}
+                <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h3>{selectedSecret.name}</h3>
-                    <p className="inline-muted" style={{ margin: "4px 0 0" }}>
-                      {selectedSecret.provider} • {selectedSecret.type.toUpperCase()} • {selectedSecret.environment.toUpperCase()}
-                    </p>
+                    <h3 className="text-base font-semibold text-[var(--foreground)]">
+                      {selectedSecret.name}
+                    </h3>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      <Badge variant="outline" className="text-[10px]">
+                        {selectedSecret.provider}
+                      </Badge>
+                      <Badge variant={typeBadgeVariant(selectedSecret.type)} className="text-[10px]">
+                        {selectedSecret.type.toUpperCase()}
+                      </Badge>
+                      <Badge variant={envBadgeVariant(selectedSecret.environment)} className="text-[10px]">
+                        {selectedSecret.environment.toUpperCase()}
+                      </Badge>
+                    </div>
                   </div>
-                  {user.role !== "viewer" && (
-                    <button type="button" className="btn-primary" onClick={() => setSecretModalMode("edit")}>
+                  {!isViewer && (
+                    <Button size="sm" variant="outline" onClick={() => setSecretModalMode("edit")}>
+                      <Edit2 className="h-3.5 w-3.5" />
                       Düzenle
-                    </button>
+                    </Button>
                   )}
                 </div>
 
-                <div className="detail-box">
-                  <strong>Değer</strong>
-                  <label className="form-label" style={{ display: "block", marginTop: 10 }}>
-                    Görüntüleme nedeni
-                    <textarea
-                      rows={2}
-                      value={revealReason}
-                      onChange={(event) => setRevealReason(event.target.value)}
-                      placeholder="Örn: Prod doğrulaması için değeri kontrol ediyorum"
-                    />
-                  </label>
-                  <div className="reveal-row">
-                    <code>{showPlainValue && revealedValue ? revealedValue : "••••••••••••"}</code>
-                    <button type="button" className="reveal-btn" onClick={() => void toggleReveal()}>
-                      {isRevealing ? "Yükleniyor..." : showPlainValue ? "Değeri Gizle" : "Değeri Göster"}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="detail-box">
-                  <strong className="section-header">Kopyalama Formatı</strong>
-                  <p className="section-subtitle">Anahtarı farklı formatlarda panoya kopyalayın.</p>
-                  <div className="copy-format-grid">
-                    <button type="button" className="copy-format-btn" onClick={() => void copySecret(selectedSecret, "value")}>
-                      <span className="copy-format-icon">📋</span>
-                      <span className="copy-format-title">Düz Değer</span>
-                      <span className="copy-format-sub">Ham değer</span>
-                    </button>
-                    <button type="button" className="copy-format-btn" onClick={() => void copySecret(selectedSecret, "env")}>
-                      <span className="copy-format-icon">⚙️</span>
-                      <span className="copy-format-title">ENV</span>
-                      <span className="copy-format-sub">KEY=value</span>
-                    </button>
-                    <button type="button" className="copy-format-btn" onClick={() => void copySecret(selectedSecret, "json")}>
-                      <span className="copy-format-icon">{ }</span>
-                      <span className="copy-format-title">JSON</span>
-                      <span className="copy-format-sub">Nesne formatı</span>
-                    </button>
-                    <button type="button" className="copy-format-btn" onClick={() => void copySecret(selectedSecret, "python")}>
-                      <span className="copy-format-icon">🐍</span>
-                      <span className="copy-format-title">Python</span>
-                      <span className="copy-format-sub">Değişken atama</span>
-                    </button>
-                    <button type="button" className="copy-format-btn" onClick={() => void copySecret(selectedSecret, "node")}>
-                      <span className="copy-format-icon">🟢</span>
-                      <span className="copy-format-title">Node.js</span>
-                      <span className="copy-format-sub">process.env</span>
-                    </button>
-                  </div>
-
-                  <div className="snippet-tabs">
-                    <button type="button" onClick={() => setSnippetFormat("json")}>JSON</button>
-                    <button type="button" onClick={() => setSnippetFormat("python")}>Python</button>
-                    <button type="button" onClick={() => setSnippetFormat("node")}>Node</button>
-                  </div>
-
-                  <div className="snippet-preview">
-                    <span className="snippet-lang">{snippetFormat}</span>
-                    <pre>
-                      {snippetFormat === "json" && `{"${selectedSecret.keyName}": "${selectedSecret.valueMasked}"}`}
-                      {snippetFormat === "python" && `${selectedSecret.keyName} = "${selectedSecret.valueMasked}"`}
-                      {snippetFormat === "node" && `process.env.${selectedSecret.keyName} = "${selectedSecret.valueMasked}";`}
-                    </pre>
-                  </div>
-                </div>
-
-                <div className="detail-box">
-                  <strong>Detaylar</strong>
-                  <div className="metadata-grid">
-                    <div className="metadata-item">
-                      <span className="metadata-label">Son Güncelleyen</span>
-                      <span className="metadata-value">{selectedSecret.updatedByName || "-"}</span>
+                {/* Reveal section */}
+                <Card>
+                  <CardHeader className="py-4 pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Key className="h-4 w-4 text-[var(--primary)]" />
+                      Değer
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 flex flex-col gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="reveal-reason">Görüntüleme nedeni</Label>
+                      <Textarea
+                        id="reveal-reason"
+                        rows={2}
+                        value={revealReason}
+                        onChange={(e) => setRevealReason(e.target.value)}
+                        placeholder="Örn: Prod doğrulaması için değeri kontrol ediyorum"
+                      />
                     </div>
-                    <div className="metadata-item">
-                      <span className="metadata-label">Son Kopyalanma</span>
-                      <span className="metadata-value">{selectedSecret.lastCopiedAt ? new Date(selectedSecret.lastCopiedAt).toLocaleString() : "-"}</span>
+                    <div className="flex items-center gap-3 rounded-md border border-[var(--border)] bg-[var(--muted)] px-4 py-3">
+                      <code className="flex-1 font-mono text-sm text-[var(--foreground)] break-all">
+                        {showPlainValue && revealedValue ? revealedValue : "••••••••••••••••"}
+                      </code>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void toggleReveal()}
+                        disabled={isRevealing}
+                      >
+                        {isRevealing ? (
+                          "Yükleniyor..."
+                        ) : showPlainValue ? (
+                          <>
+                            <EyeOff className="h-3.5 w-3.5" />
+                            Gizle
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="h-3.5 w-3.5" />
+                            Göster
+                          </>
+                        )}
+                      </Button>
                     </div>
-                  </div>
+                  </CardContent>
+                </Card>
 
-                  <div style={{ marginTop: 10 }}>
-                    <strong>Etiketler</strong>
-                    <div style={{ marginTop: 6 }}>
-                      {selectedSecret.tags.length > 0
-                        ? selectedSecret.tags.map((tag) => (
-                            <span key={tag} className="tag-badge" style={{ marginRight: 6, marginBottom: 4 }}>{tag}</span>
-                          ))
-                        : <span style={{ color: "#8ca8d9" }}>-</span>}
+                {/* Copy formats */}
+                <Card>
+                  <CardHeader className="py-4 pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Copy className="h-4 w-4 text-[var(--primary)]" />
+                      Kopyalama Formatı
+                    </CardTitle>
+                    <CardDescription>
+                      Anahtarı farklı formatlarda panoya kopyalayın.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0 flex flex-col gap-4">
+                    <div className="grid grid-cols-5 gap-2">
+                      <CopyFormatCard
+                        icon={<Copy className="h-4 w-4" />}
+                        title="Düz Değer"
+                        subtitle="Ham değer"
+                        onClick={() => void copySecret(selectedSecret, "value")}
+                      />
+                      <CopyFormatCard
+                        icon={<Terminal className="h-4 w-4" />}
+                        title="ENV"
+                        subtitle="KEY=value"
+                        onClick={() => void copySecret(selectedSecret, "env")}
+                      />
+                      <CopyFormatCard
+                        icon={<Braces className="h-4 w-4" />}
+                        title="JSON"
+                        subtitle="Nesne"
+                        onClick={() => void copySecret(selectedSecret, "json")}
+                      />
+                      <CopyFormatCard
+                        icon={<span className="text-sm">🐍</span>}
+                        title="Python"
+                        subtitle="Değişken"
+                        onClick={() => void copySecret(selectedSecret, "python")}
+                      />
+                      <CopyFormatCard
+                        icon={<span className="text-sm">🟢</span>}
+                        title="Node.js"
+                        subtitle="process.env"
+                        onClick={() => void copySecret(selectedSecret, "node")}
+                      />
                     </div>
-                  </div>
 
-                  <div style={{ marginTop: 10 }}>
-                    <strong>Notlar</strong>
-                    <p>{selectedSecret.notes || "-"}</p>
-                  </div>
-                </div>
-
-                <div className="detail-box">
-                  <div className="detail-inline-head">
-                    <strong>Sürüm Geçmişi</strong>
-                    <span className="inline-muted">Mevcut sürüm: v{selectedSecret.version}</span>
-                  </div>
-                  {loadingVersions && <p className="inline-muted">Sürüm geçmişi yükleniyor...</p>}
-                  {!loadingVersions && secretVersions.length === 0 && (
-                    <p className="inline-muted">Henüz geçmiş sürüm bulunmuyor.</p>
-                  )}
-                  {secretVersions.map((version) => (
-                    <div key={version.version} className="member-row" style={{ alignItems: "flex-start" }}>
-                      <div>
-                        <strong>v{version.version}{version.isCurrent ? " (aktif)" : ""}</strong>
-                        <div className="inline-muted">{version.maskedValue}</div>
-                        <div className="inline-muted">{new Date(version.createdAt).toLocaleString()}</div>
-                        <div className="inline-muted">{version.createdByName || "Bilinmiyor"}</div>
+                    {/* Snippet preview */}
+                    <div className="rounded-md border border-[var(--border)] overflow-hidden">
+                      <div className="flex items-center justify-between border-b border-[var(--border)] bg-[var(--muted)] px-3 py-1.5">
+                        <div className="flex gap-1">
+                          {(["json", "python", "node"] as const).map((fmt) => (
+                            <button
+                              key={fmt}
+                              type="button"
+                              onClick={() => setSnippetFormat(fmt)}
+                              className={cn(
+                                "rounded px-2 py-0.5 text-xs font-medium transition-colors cursor-pointer",
+                                snippetFormat === fmt
+                                  ? "bg-[var(--primary)] text-white"
+                                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]",
+                              )}
+                            >
+                              {fmt === "node" ? "Node.js" : fmt.charAt(0).toUpperCase() + fmt.slice(1)}
+                            </button>
+                          ))}
+                        </div>
+                        <span className="text-[10px] text-[var(--muted-foreground)]">önizleme</span>
                       </div>
-                      {!version.isCurrent && user.role !== "viewer" && (
-                        <button type="button" onClick={() => void handleRestoreVersion(version.version)}>
-                          Geri Yükle
-                        </button>
-                      )}
+                      <pre className="overflow-x-auto px-3 py-3 font-mono text-xs text-[var(--foreground)] bg-[var(--background)]">
+                        {snippetText}
+                      </pre>
                     </div>
-                  ))}
-                </div>
+                  </CardContent>
+                </Card>
+
+                {/* Metadata */}
+                <Card>
+                  <CardHeader className="py-4 pb-3">
+                    <CardTitle className="text-sm">Detaylar</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 flex flex-col gap-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs text-[var(--muted-foreground)]">Son Güncelleyen</span>
+                        <span className="text-sm font-medium">
+                          {selectedSecret.updatedByName || "-"}
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs text-[var(--muted-foreground)]">Son Kopyalanma</span>
+                        <span className="text-sm font-medium">
+                          {selectedSecret.lastCopiedAt
+                            ? new Date(selectedSecret.lastCopiedAt).toLocaleString("tr-TR")
+                            : "-"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Tags */}
+                    <div className="flex flex-col gap-2">
+                      <span className="text-xs font-medium text-[var(--muted-foreground)] flex items-center gap-1.5">
+                        <Tag className="h-3.5 w-3.5" />
+                        Etiketler
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedSecret.tags.length > 0 ? (
+                          selectedSecret.tags.map((tag) => (
+                            <Badge key={tag} variant="secondary" className="text-[10px]">
+                              {tag}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-xs text-[var(--muted-foreground)]">—</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Notes */}
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-xs font-medium text-[var(--muted-foreground)] flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5" />
+                        Notlar
+                      </span>
+                      <p className="text-sm text-[var(--foreground)]">
+                        {selectedSecret.notes || "—"}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Version history */}
+                <Card>
+                  <CardHeader className="py-4 pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <History className="h-4 w-4 text-[var(--primary)]" />
+                        Sürüm Geçmişi
+                      </CardTitle>
+                      <Badge variant="outline" className="text-[10px]">
+                        Mevcut: v{selectedSecret.version}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    {loadingVersions && (
+                      <p className="text-sm text-[var(--muted-foreground)]">
+                        Sürüm geçmişi yükleniyor...
+                      </p>
+                    )}
+                    {!loadingVersions && secretVersions.length === 0 && (
+                      <p className="text-sm text-[var(--muted-foreground)]">
+                        Henüz geçmiş sürüm bulunmuyor.
+                      </p>
+                    )}
+                    <div className="flex flex-col divide-y divide-[var(--border)]">
+                      {secretVersions.map((ver) => (
+                        <div
+                          key={ver.version}
+                          className="flex items-start justify-between gap-4 py-3"
+                        >
+                          <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold text-[var(--foreground)]">
+                                v{ver.version}
+                              </span>
+                              {ver.isCurrent && (
+                                <Badge variant="success" className="text-[10px]">aktif</Badge>
+                              )}
+                            </div>
+                            <code className="font-mono text-xs text-[var(--muted-foreground)]">
+                              {ver.maskedValue}
+                            </code>
+                            <div className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
+                              <span>{new Date(ver.createdAt).toLocaleString("tr-TR")}</span>
+                              <span>•</span>
+                              <span>{ver.createdByName || "Bilinmiyor"}</span>
+                            </div>
+                          </div>
+                          {!ver.isCurrent && !isViewer && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => void handleRestoreVersion(ver.version)}
+                            >
+                              <RotateCcw className="h-3.5 w-3.5" />
+                              Geri Yükle
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               </>
             ) : (
-              <div className="detail-box form-box" style={{ marginTop: 0 }}>
-                <strong className="section-header">Anahtar Bilgilerini Düzenle</strong>
-                <div className="form-grid" style={{ marginTop: 12 }}>
-                  <div>
-                    <label className="form-label">Anahtar Adı</label>
-                    <input
-                      value={editForm.name}
-                      onChange={(event) => setEditForm((prev) => ({ ...prev, name: event.target.value }))}
-                      placeholder="Örn: Stripe API Key"
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Servis Sağlayıcı</label>
-                    <input
-                      value={editForm.provider}
-                      onChange={(event) => setEditForm((prev) => ({ ...prev, provider: event.target.value }))}
-                      placeholder="Örn: AWS, Stripe"
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Tip</label>
-                    <select
-                      value={editForm.type}
-                      onChange={(event) => setEditForm((prev) => ({ ...prev, type: event.target.value as SecretType }))}
-                    >
-                      {typeOptions.map((type) => (
-                        <option key={type} value={type}>
-                          {type.toUpperCase()}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <hr className="form-divider" />
-
-                  <div>
-                    <label className="form-label">Ortam Değişken Adı</label>
-                    <input
-                      value={editForm.keyName}
-                      onChange={(event) => setEditForm((prev) => ({ ...prev, keyName: event.target.value }))}
-                      placeholder="Örn: STRIPE_SECRET_KEY"
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Yeni Gizli Değer</label>
-                    <input
-                      value={editForm.value}
-                      onChange={(event) => setEditForm((prev) => ({ ...prev, value: event.target.value }))}
-                      placeholder="Boş bırakırsanız mevcut değer korunur"
-                    />
-                  </div>
-
-                  <hr className="form-divider" />
-
-                  <div>
-                    <label className="form-label">Etiketler</label>
-                    <input
-                      value={editForm.tags}
-                      onChange={(event) => setEditForm((prev) => ({ ...prev, tags: event.target.value }))}
-                      placeholder="Etiketler (virgülle ayırın, örn: backend, production)"
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Notlar</label>
-                    <textarea
-                      rows={3}
-                      value={editForm.notes}
-                      onChange={(event) => setEditForm((prev) => ({ ...prev, notes: event.target.value }))}
-                      placeholder="Ek notlar (isteğe bağlı)"
-                    />
-                  </div>
-                </div>
-                <div className="action-row" style={{ marginTop: 12 }}>
-                  <button type="button" className="btn-primary" onClick={() => void submitEdit()}>
-                    Kaydet
-                  </button>
-                  <button type="button" onClick={() => setSecretModalMode("detail")}>
+              /* Edit mode */
+              <div className="flex flex-col gap-5">
+                <SecretFormFields
+                  form={editForm}
+                  onChange={(updates) => setEditForm((prev) => ({ ...prev, ...updates }))}
+                  isEdit
+                />
+                <div className="flex items-center gap-2 border-t border-[var(--border)] pt-4">
+                  <Button onClick={() => void submitEdit()}>Kaydet</Button>
+                  <Button variant="outline" onClick={() => setSecretModalMode("detail")}>
                     Vazgeç
-                  </button>
+                  </Button>
                   {user.role === "admin" && (
-                    <button type="button" className="btn-danger" onClick={() => void removeSecret()}>
+                    <Button
+                      variant="destructive"
+                      className="ml-auto"
+                      onClick={() => void removeSecret()}
+                    >
+                      <Trash2 className="h-4 w-4" />
                       Sil
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -934,6 +1272,7 @@ export function ProjectsPage() {
         )}
       </Modal>
 
+      {/* Export modal */}
       <ExportModal
         open={showExportModal}
         onClose={() => setShowExportModal(false)}

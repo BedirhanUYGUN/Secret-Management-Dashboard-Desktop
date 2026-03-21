@@ -3,6 +3,11 @@ import { exportProject, exportProjectAllEnvs } from "../api/client";
 import type { Environment } from "../types";
 import { useAppUi } from "./AppUiContext";
 import { Modal } from "./Modal";
+import { Button } from "./Button";
+import { Label } from "./Label";
+import { Select } from "./Select";
+import { Textarea } from "./Textarea";
+import { Download, Copy, AlertTriangle } from "lucide-react";
 
 type ExportModalProps = {
   open: boolean;
@@ -73,24 +78,20 @@ export function ExportModal({ open, onClose, projectId, projectName, activeEnv, 
 
   const handleCopyToClipboard = async () => {
     if (needsProdConfirm && !prodConfirmed) {
-      setErrorMessage("Prod ortamını içeren aktarım için onay gereklidir.");
+      setErrorMessage("Prod ortamini iceren aktarim icin onay gereklidir.");
       return;
     }
-
     try {
       setLoading(true);
       setErrorMessage("");
       const payload = await fetchExport();
-
       await copyWithTimer({
         value: payload,
-        successMessage: `${format.toUpperCase()} dışarı aktarımı panoya kopyalandı`,
+        successMessage: `${format.toUpperCase()} disari aktarimi panoya kopyalandi`,
       });
       handleClose();
     } catch (error) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
-      }
+      if (error instanceof Error) setErrorMessage(error.message);
     } finally {
       setLoading(false);
     }
@@ -98,106 +99,108 @@ export function ExportModal({ open, onClose, projectId, projectName, activeEnv, 
 
   const handleDownloadFile = async () => {
     if (needsProdConfirm && !prodConfirmed) {
-      setErrorMessage("Prod ortamını içeren aktarım için onay gereklidir.");
+      setErrorMessage("Prod ortamini iceren aktarim icin onay gereklidir.");
       return;
     }
-
     try {
       setLoading(true);
       setErrorMessage("");
       const payload = await fetchExport();
-
       const fileName = buildFileName(projectName, scope, activeEnv, format);
       const mimeType = format === "env" ? "text/plain" : "application/json";
       downloadAsFile(payload, fileName, mimeType);
-
-      showToast(`${fileName} dosyası indirildi`, "success");
+      showToast(`${fileName} dosyasi indirildi`, "success");
       handleClose();
     } catch (error) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
-      }
+      if (error instanceof Error) setErrorMessage(error.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Modal open={open} onClose={handleClose} title="Dışarı Aktar">
-      <div className="export-modal-form">
-        <label className="export-modal-label">
-          Kapsam
-          <select value={scope} onChange={(e) => { setScope(e.target.value as ExportScope); setProdConfirmed(false); }}>
+    <Modal open={open} onClose={handleClose} title="Disari Aktar">
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label>Kapsam</Label>
+          <Select value={scope} onChange={(e) => { setScope(e.target.value as ExportScope); setProdConfirmed(false); }}>
             <option value="current">Mevcut ortam ({activeEnv.toUpperCase()})</option>
-            <option value="all">Tüm ortamlar</option>
-          </select>
-        </label>
+            <option value="all">Tum ortamlar</option>
+          </Select>
+        </div>
 
-        <label className="export-modal-label">
-          Format
-          <select value={format} onChange={(e) => setFormat(e.target.value as ExportFormat)}>
+        <div className="space-y-2">
+          <Label>Format</Label>
+          <Select value={format} onChange={(e) => setFormat(e.target.value as ExportFormat)}>
             <option value="env">.env</option>
             <option value="json">JSON</option>
-          </select>
-        </label>
+          </Select>
+        </div>
 
         {availableTags.length > 0 && (
-          <label className="export-modal-label">
-            Etiket Filtresi
-            <select value={selectedTag} onChange={(e) => setSelectedTag(e.target.value)}>
-              <option value="all">Tüm etiketler</option>
+          <div className="space-y-2">
+            <Label>Etiket Filtresi</Label>
+            <Select value={selectedTag} onChange={(e) => setSelectedTag(e.target.value)}>
+              <option value="all">Tum etiketler</option>
               {availableTags.map((tag) => (
-                <option key={tag} value={tag}>
-                  {tag}
-                </option>
+                <option key={tag} value={tag}>{tag}</option>
               ))}
-            </select>
-          </label>
+            </Select>
+          </div>
         )}
 
-        <label className="export-modal-label">
-          Dışarı aktarma nedeni
-          <textarea
+        <div className="space-y-2">
+          <Label>Disari aktarma nedeni</Label>
+          <Textarea
             rows={3}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Örn: CI pipeline env dosyası güncellemesi"
+            placeholder="Orn: CI pipeline env dosyasi guncellemesi"
           />
-        </label>
+        </div>
 
         {needsProdConfirm && (
-          <div className="export-prod-warning">
-            <label className="export-prod-confirm">
+          <div className="flex items-start gap-2 rounded-md border border-warning-500/30 bg-warning-500/10 p-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning-500" />
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input
                 type="checkbox"
                 checked={prodConfirmed}
                 onChange={(e) => setProdConfirmed(e.target.checked)}
+                className="rounded"
               />
-              Prod ortamı hassas veri içerir. Dışarı aktarımı onaylıyorum.
+              Prod ortami hassas veri icerir. Disari aktarimi onayliyorum.
             </label>
           </div>
         )}
 
-        {errorMessage && <p className="inline-error">{errorMessage}</p>}
+        {errorMessage && (
+          <div className="rounded-md border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 px-3 py-2 text-sm text-[var(--destructive)]">
+            {errorMessage}
+          </div>
+        )}
 
-        <div className="action-row export-modal-actions">
-          <button
-            type="button"
+        <div className="flex gap-2 pt-2">
+          <Button
             onClick={() => void handleCopyToClipboard()}
             disabled={loading || (needsProdConfirm && !prodConfirmed) || reason.trim().length < 3}
+            size="sm"
           >
-            {loading ? "Yükleniyor..." : "Panoya Kopyala"}
-          </button>
-          <button
-            type="button"
+            <Copy className="h-4 w-4" />
+            {loading ? "Yukleniyor..." : "Panoya Kopyala"}
+          </Button>
+          <Button
+            variant="outline"
             onClick={() => void handleDownloadFile()}
             disabled={loading || (needsProdConfirm && !prodConfirmed) || reason.trim().length < 3}
+            size="sm"
           >
-            {loading ? "Yükleniyor..." : "Dosya İndir"}
-          </button>
-          <button type="button" onClick={handleClose}>
-            İptal
-          </button>
+            <Download className="h-4 w-4" />
+            {loading ? "Yukleniyor..." : "Dosya Indir"}
+          </Button>
+          <Button variant="ghost" onClick={handleClose} size="sm">
+            Iptal
+          </Button>
         </div>
       </div>
     </Modal>

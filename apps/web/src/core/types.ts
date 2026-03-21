@@ -144,3 +144,12 @@ export type AuditEvent = {
   secretName: string;
   occurredAt: string;
 };
+
+export type DashboardStats = {
+  totalSecrets: number;
+  totalProjects: number;
+  totalMembers: number;
+  recentActivity: AuditEvent[];
+  secretsByEnvironment: Record<string, number>;
+  secretsByProvider: Record<string, number>;
+};

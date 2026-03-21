@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@core/auth/AuthContext";
 import { RequireAuth, RequireRole } from "@core/auth/RouteGuards";
 import { MainLayout } from "@core/layout/MainLayout";
@@ -7,6 +7,7 @@ import { ToastViewport } from "@core/ui/ToastViewport";
 import { LoginPage } from "@features/auth/LoginPage";
 import { ResetPasswordPage } from "@features/auth/ResetPasswordPage";
 import { RegisterPage } from "@features/auth/RegisterPage";
+import { DashboardPage } from "@features/dashboard/DashboardPage";
 import { AuditPage } from "@features/audit/AuditPage";
 import { ImportPage } from "@features/import/ImportPage";
 import { NotFoundPage } from "@features/not-found/NotFoundPage";
@@ -29,7 +30,7 @@ function App() {
 
             <Route element={<RequireAuth />}>
               <Route element={<MainLayout />}>
-                <Route path="/" element={<Navigate to="/projects" replace />} />
+                <Route path="/" element={<DashboardPage />} />
                 <Route path="/projects" element={<ProjectsPage />} />
                 <Route path="/search" element={<SearchPage />} />
                 <Route path="/settings" element={<SettingsPage />} />

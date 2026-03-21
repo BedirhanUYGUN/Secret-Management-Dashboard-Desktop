@@ -1,6 +1,11 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { updatePasswordFromRecovery } from "@core/api/client";
+import { Button } from "@core/ui/Button";
+import { Input } from "@core/ui/Input";
+import { Label } from "@core/ui/Label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@core/ui/Card";
+import { FolderKey, Loader2 } from "lucide-react";
 
 function readRecoveryToken() {
   const hash = window.location.hash.replace(/^#/, "");
@@ -23,26 +28,26 @@ export function ResetPasswordPage() {
     setSuccessMessage("");
 
     if (!accessToken) {
-      setErrorMessage("Geçerli bir şifre sıfırlama bağlantısı bulunamadı.");
+      setErrorMessage("Gecerli bir sifre sifirlama baglantisi bulunamadi.");
       return;
     }
     if (password.trim().length < 8) {
-      setErrorMessage("Şifre en az 8 karakter olmalıdır.");
+      setErrorMessage("Sifre en az 8 karakter olmalidir.");
       return;
     }
     if (password !== confirmPassword) {
-      setErrorMessage("Şifreler eşleşmiyor.");
+      setErrorMessage("Sifreler eslesmiyor.");
       return;
     }
 
     try {
       setLoading(true);
       await updatePasswordFromRecovery({ accessToken, password });
-      setSuccessMessage("Şifreniz güncellendi. Giriş sayfasına yönlendiriliyorsunuz.");
+      setSuccessMessage("Sifreniz guncellendi. Giris sayfasina yonlendiriliyorsunuz.");
       window.setTimeout(() => navigate("/login", { replace: true }), 1200);
     } catch (error) {
       if (error instanceof Error) {
-        setErrorMessage(error.message || "Şifre güncellenemedi.");
+        setErrorMessage(error.message || "Sifre guncellenemedi.");
       }
     } finally {
       setLoading(false);
@@ -50,45 +55,60 @@ export function ResetPasswordPage() {
   };
 
   return (
-    <div className="login-shell">
-      <section className="login-card">
-        <h1>Şifre Yenile</h1>
-        <p>Yeni bir şifre belirleyin ve hesabınıza tekrar giriş yapın.</p>
+    <div className="flex min-h-screen items-center justify-center bg-[var(--background)] p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="items-center text-center">
+          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)]">
+            <FolderKey className="h-6 w-6" />
+          </div>
+          <CardTitle className="text-2xl">Sifre Yenile</CardTitle>
+          <CardDescription>Yeni bir sifre belirleyin ve hesabiniza tekrar giris yapin.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {errorMessage && (
+            <div className="mb-4 rounded-md border border-danger-500/30 bg-danger-500/10 px-3 py-2 text-sm text-danger-400">
+              {errorMessage}
+            </div>
+          )}
+          {successMessage && (
+            <div className="mb-4 rounded-md border border-brand-500/30 bg-brand-500/10 px-3 py-2 text-sm text-brand-400">
+              {successMessage}
+            </div>
+          )}
 
-        {errorMessage && <p className="inline-error">{errorMessage}</p>}
-        {successMessage && <div className="auth-info-box">{successMessage}</div>}
-
-        <form className="login-form" onSubmit={(event) => void handleSubmit(event)}>
-          <label className="login-label">
-            Yeni Şifre
-            <input
-              type="password"
-              className="login-input"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="new-password"
-              disabled={loading}
-            />
-          </label>
-          <label className="login-label">
-            Yeni Şifre Tekrar
-            <input
-              type="password"
-              className="login-input"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              autoComplete="new-password"
-              disabled={loading}
-            />
-          </label>
-          <button type="submit" className="login-submit" disabled={loading}>
-            {loading ? "Güncelleniyor..." : "Şifreyi Güncelle"}
-          </button>
-          <p className="auth-switch-text">
-            <Link to="/login">Giriş ekranına dön</Link>
-          </p>
-        </form>
-      </section>
+          <form className="space-y-4" onSubmit={(event) => void handleSubmit(event)}>
+            <div className="space-y-2">
+              <Label htmlFor="new-password">Yeni Sifre</Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                autoComplete="new-password"
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Yeni Sifre Tekrar</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                autoComplete="new-password"
+                disabled={loading}
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {loading ? "Guncelleniyor..." : "Sifreyi Guncelle"}
+            </Button>
+            <p className="text-center text-sm text-[var(--muted-foreground)]">
+              <Link to="/login" className="text-[var(--primary)] hover:underline">Giris ekranina don</Link>
+            </p>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

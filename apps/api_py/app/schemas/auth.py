@@ -38,6 +38,11 @@ class RefreshRequest(BaseModel):
     refreshToken: str
 
 
+class PasswordChangeRequest(BaseModel):
+    currentPassword: str
+    newPassword: str
+
+
 class PreferencesUpdateRequest(BaseModel):
     maskValues: Optional[bool] = None
     clipboardSeconds: Optional[int] = None

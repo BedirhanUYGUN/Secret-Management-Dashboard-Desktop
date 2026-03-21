@@ -20,7 +20,7 @@ from app.db.models import (
     RoleEnum,
     User,
 )
-from app.db.repositories.users_repo import get_user_by_email
+from app.db.repositories.users_repo import get_user_by_email, get_user_by_supabase_user_id
 from app.schemas.auth import (
     RegisterOut,
     RegisterPurposeEnum,
@@ -224,29 +224,45 @@ def register_with_profile(db: Session, payload: RegisterRequest) -> RegisterOut:
             detail="firstName and lastName are required",
         )
 
-    existing = get_user_by_email(db, email)
-    if existing:
-        settings = get_settings()
-        detail = "Email already registered"
-        if settings.SUPABASE_AUTH_ENABLED and not existing.supabase_user_id:
-            detail = (
-                "Email already registered in the application database. "
-                "Try logging in to sync the account with Supabase."
-            )
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=detail,
-        )
-
     settings = get_settings()
     supabase_user_id = None
+
     if settings.SUPABASE_AUTH_ENABLED:
+        # Supabase = auth kaynagi: once Supabase'de kullanici olustur
         supabase_user = create_supabase_user(
             email=email,
             password=payload.password,
             display_name=display_name,
         )
         supabase_user_id = str(supabase_user["id"])
+
+        # Lokal DB'de eski kayit kontrolu
+        existing = get_user_by_email(db, email)
+        if existing:
+            if existing.supabase_user_id == supabase_user_id:
+                # Idempotent: ayni Supabase kullanicisi, mevcut kaydi kullan
+                user = existing
+            else:
+                # Eski lokal kayit: Supabase'den silinmis, tekrar kayit oluyor
+                # FK iliskileri korunur, sadece auth bilgileri guncellenir
+                existing.supabase_user_id = supabase_user_id
+                existing.password_hash = get_password_hash(payload.password)
+                existing.display_name = display_name
+                existing.is_active = True
+                db.add(existing)
+                db.flush()
+                user = existing
+        else:
+            user = None  # asagida olusturulacak
+    else:
+        # Supabase kapali: mevcut akis
+        existing = get_user_by_email(db, email)
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email already registered",
+            )
+        user = None
 
     user_role = (
         RoleEnum.viewer
@@ -257,16 +273,17 @@ def register_with_profile(db: Session, payload: RegisterRequest) -> RegisterOut:
         else RoleEnum.member
     )
 
-    user = User(
-        supabase_user_id=supabase_user_id,
-        email=email,
-        display_name=display_name,
-        role=user_role,
-        password_hash=get_password_hash(payload.password),
-        is_active=True,
-    )
-    db.add(user)
-    db.flush()
+    if user is None:
+        user = User(
+            supabase_user_id=supabase_user_id,
+            email=email,
+            display_name=display_name,
+            role=user_role,
+            password_hash=get_password_hash(payload.password),
+            is_active=True,
+        )
+        db.add(user)
+        db.flush()
 
     invite_code = None
     membership_role = RoleEnum.admin

@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "WebSearch",
-      "Bash(claude plugin:*)"
+      "Bash(claude plugin:*)",
+      "Bash(wc -l /c/Users/Bedirhan/Desktop/Projects/Secret-Management-Dashboard-Desktop/apps/api_py/app/schemas/*.py)"
     ]
   }
 }

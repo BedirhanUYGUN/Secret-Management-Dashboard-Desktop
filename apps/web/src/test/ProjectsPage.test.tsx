@@ -114,34 +114,36 @@ describe("ProjectsPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Apollo API")).toBeInTheDocument();
     });
-    expect(screen.getByText("LOCAL")).toBeInTheDocument();
-    // DEV appears in tab + secret rows, use button selector
-    expect(screen.getByRole("button", { name: "DEV" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "PROD" })).toBeInTheDocument();
+    // Environment tabs render as role="tab" (TabsTrigger component)
+    expect(screen.getByRole("tab", { name: "LOCAL" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "DEV" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "PROD" })).toBeInTheDocument();
   });
 
   it("secret listesi gosterilir", async () => {
     renderPage();
 
     await waitFor(() => {
-      // Stripe Key appears in both list and detail panel
+      // Stripe Key appears in the list
       expect(screen.getAllByText("Stripe Key").length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText("DB URL")).toBeInTheDocument();
     });
   });
 
-  it("secret satırına çift tıklayınca detay modalı açılır", async () => {
+  it("secret satırına Enter tusuyla detay modalı açılır", async () => {
     const user = userEvent.setup();
     renderPage();
 
     await waitFor(() => expect(screen.getAllByText("Stripe Key").length).toBeGreaterThanOrEqual(1));
 
-    // Stripe satırına çift tıkla
-    const tableRows = document.querySelectorAll(".table-row");
-    const stripeRow = Array.from(tableRows).find((row) => row.textContent?.includes("Stripe Key"));
-    if (stripeRow) {
-      await user.dblClick(stripeRow as HTMLElement);
-    }
+    // Secret rows have role="button" and respond to keyboard Enter key to open modal
+    const secretRows = screen.getAllByRole("button");
+    const stripeRow = secretRows.find(
+      (el) => el.getAttribute("tabindex") === "0" && el.textContent?.includes("Stripe Key"),
+    );
+    expect(stripeRow).toBeTruthy();
+    (stripeRow as HTMLElement).focus();
+    await user.keyboard("{Enter}");
 
     await waitFor(() => {
       expect(screen.getByText("Anahtar Detayları")).toBeInTheDocument();
@@ -179,6 +181,7 @@ describe("ProjectsPage", () => {
 
     await waitFor(() => expect(screen.getAllByText("Stripe Key").length).toBeGreaterThanOrEqual(1));
 
+    // Edit button has aria-label="${secret.name} düzenle"
     await user.click(screen.getByRole("button", { name: /stripe key düzenle/i }));
 
     await waitFor(() => {

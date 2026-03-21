@@ -8,6 +8,7 @@ const mockUpdateProfile = vi.fn();
 const mockFetchSessions = vi.fn();
 const mockRevokeSession = vi.fn();
 const mockRevokeAllSessions = vi.fn();
+const mockChangePassword = vi.fn();
 const mockRefreshUser = vi.fn();
 const mockSetClipboardSeconds = vi.fn();
 const mockShowToast = vi.fn();
@@ -18,6 +19,7 @@ vi.mock("@core/api/client", () => ({
   fetchSessions: (...args: unknown[]) => mockFetchSessions(...args),
   revokeSession: (...args: unknown[]) => mockRevokeSession(...args),
   revokeAllSessions: (...args: unknown[]) => mockRevokeAllSessions(...args),
+  changePassword: (...args: unknown[]) => mockChangePassword(...args),
 }));
 
 vi.mock("@core/auth/AuthContext", () => ({
@@ -56,10 +58,13 @@ describe("SettingsPage", () => {
     const user = userEvent.setup();
     render(<SettingsPage />);
 
+    // The preferences spinbutton is on the "Tercihler" tab — navigate there first
+    await user.click(screen.getByRole("tab", { name: /Tercihler/i }));
+
     const numberInput = screen.getByRole("spinbutton");
     await user.clear(numberInput);
     await user.type(numberInput, "45");
-    await user.click(screen.getByRole("button", { name: /tercihleri kaydet/i }));
+    await user.click(screen.getByRole("button", { name: /Tercihleri Kaydet/i }));
 
     await waitFor(() => {
       expect(mockUpdatePreferences).toHaveBeenCalledWith({

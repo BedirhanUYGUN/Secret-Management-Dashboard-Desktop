@@ -43,11 +43,12 @@ describe("UsersPage", () => {
     render(<UsersPage />);
 
     await waitFor(() => {
-      // "Uye" appears both as displayName and as role label
       expect(screen.getByText("admin@test.com")).toBeInTheDocument();
       expect(screen.getByText("member@test.com")).toBeInTheDocument();
     });
+    // roleLabels: admin -> "Yönetici", member -> "Üye"
     expect(screen.getByText("Yönetici")).toBeInTheDocument();
+    // "Uye" appears as displayName; role badge for member is "Üye"
     expect(screen.getAllByText("Uye").length).toBeGreaterThanOrEqual(1);
   });
 
@@ -57,13 +58,15 @@ describe("UsersPage", () => {
 
     await waitFor(() => expect(screen.getByText("Admin")).toBeInTheDocument());
 
-    const btn = screen.getByText("Yeni Kullanıcı");
+    const btn = screen.getByRole("button", { name: /Yeni Kullanıcı/i });
     await user.click(btn);
-    expect(screen.getByPlaceholderText("E-posta")).toBeInTheDocument();
+    // Placeholders in the create form
+    expect(screen.getByPlaceholderText("ornek@sirket.com")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Ad Soyad")).toBeInTheDocument();
 
-    await user.click(screen.getByText("İptal"));
-    expect(screen.queryByPlaceholderText("E-posta")).not.toBeInTheDocument();
+    // Clicking the same toggle button again (now labeled "İptal") closes the form
+    await user.click(screen.getByRole("button", { name: /İptal/i }));
+    expect(screen.queryByPlaceholderText("ornek@sirket.com")).not.toBeInTheDocument();
   });
 
   it("yeni kullanıcı olusturulur", async () => {
@@ -79,12 +82,12 @@ describe("UsersPage", () => {
     render(<UsersPage />);
 
     await waitFor(() => expect(screen.getByText("Admin")).toBeInTheDocument());
-    await user.click(screen.getByText("Yeni Kullanıcı"));
+    await user.click(screen.getByRole("button", { name: /Yeni Kullanıcı/i }));
 
-    await user.type(screen.getByPlaceholderText("E-posta"), "new@test.com");
+    await user.type(screen.getByPlaceholderText("ornek@sirket.com"), "new@test.com");
     await user.type(screen.getByPlaceholderText("Ad Soyad"), "Yeni");
     await user.type(screen.getByPlaceholderText("Şifre"), "sifre123");
-    await user.click(screen.getByText("Oluştur"));
+    await user.click(screen.getByRole("button", { name: /Oluştur/i }));
 
     await waitFor(() => {
       expect(mockCreateUser).toHaveBeenCalledWith({

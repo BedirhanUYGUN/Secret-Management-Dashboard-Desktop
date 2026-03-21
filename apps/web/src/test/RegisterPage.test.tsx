@@ -41,11 +41,12 @@ describe("RegisterPage", () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.type(screen.getByLabelText(/^İsim$/i), "Ali");
-    await user.type(screen.getByLabelText(/^soyisim$/i), "Yilmaz");
-    await user.type(screen.getByLabelText(/e-posta/i), "ali@test.com");
-    await user.type(screen.getByLabelText(/şifre/i), "StrongPass1!");
-    await user.click(screen.getByRole("button", { name: /kayıt ol/i }));
+    // Labels use ASCII text (no Turkish special chars) in the component source
+    await user.type(screen.getByLabelText(/^Isim$/i), "Ali");
+    await user.type(screen.getByLabelText(/^Soyisim$/i), "Yilmaz");
+    await user.type(screen.getByLabelText(/E-posta/i), "ali@test.com");
+    await user.type(screen.getByLabelText(/Sifre/i), "StrongPass1!");
+    await user.click(screen.getByRole("button", { name: /Kayit Ol/i }));
 
     await waitFor(() => {
       expect(mockRegisterWithProfile).toHaveBeenCalledWith(
@@ -57,7 +58,7 @@ describe("RegisterPage", () => {
         }),
       );
       expect(mockLogin).toHaveBeenCalledWith("ali@test.com", "StrongPass1!");
-      expect(mockNavigate).toHaveBeenCalledWith("/projects", { replace: true });
+      expect(mockNavigate).toHaveBeenCalledWith("/", { replace: true });
     });
   });
 
@@ -66,16 +67,20 @@ describe("RegisterPage", () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.type(screen.getByLabelText(/^İsim$/i), "Ayse");
-    await user.type(screen.getByLabelText(/^soyisim$/i), "Kaya");
-    await user.type(screen.getByLabelText(/e-posta/i), "ayse@test.com");
-    await user.type(screen.getByLabelText(/şifre/i), "StrongPass1!");
-    await user.selectOptions(screen.getByLabelText(/ne için kullanacaksınız/i), "organization");
-    await user.type(screen.getByLabelText(/organizasyon adı/i), "Nova Labs");
-    await user.click(screen.getByRole("button", { name: /kayıt ol/i }));
+    await user.type(screen.getByLabelText(/^Isim$/i), "Ayse");
+    await user.type(screen.getByLabelText(/^Soyisim$/i), "Kaya");
+    await user.type(screen.getByLabelText(/E-posta/i), "ayse@test.com");
+    await user.type(screen.getByLabelText(/Sifre/i), "StrongPass1!");
+    // The purpose Label has no htmlFor — find the select by its "Personel" option
+    const purposeSelect = screen.getByRole("combobox", { name: "" });
+    await user.selectOptions(purposeSelect, "organization");
+    // After selecting "organization", "Organizasyon adi" label appears for "create" mode
+    await user.type(screen.getByLabelText(/Organizasyon adi/i), "Nova Labs");
+    await user.click(screen.getByRole("button", { name: /Kayit Ol/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/organizasyon davet key oluşturuldu/i)).toBeInTheDocument();
+      // The issued invite key display text (ASCII in source)
+      expect(screen.getByText(/Organizasyon davet key olusturuldu/i)).toBeInTheDocument();
       expect(screen.getByText("Ab1!Cd2@Ef3#")).toBeInTheDocument();
     });
     expect(mockLogin).not.toHaveBeenCalled();

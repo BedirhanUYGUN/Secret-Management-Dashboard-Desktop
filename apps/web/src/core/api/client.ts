@@ -1,6 +1,7 @@
 import type {
   Assignment,
   AuditEvent,
+  DashboardStats,
   Environment,
   Invite,
   InviteCreateResult,
@@ -633,6 +634,25 @@ export function rotateOrganizationInvite(params: {
 export function revokeOrganizationInvite(params: { projectId: string; inviteId: string }) {
   return request<void>(`/organizations/${params.projectId}/invites/${params.inviteId}`, {
     method: "DELETE",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard
+// ---------------------------------------------------------------------------
+
+export function fetchDashboardStats() {
+  return request<DashboardStats>("/dashboard/stats");
+}
+
+// ---------------------------------------------------------------------------
+// Password Change (self-service)
+// ---------------------------------------------------------------------------
+
+export function changePassword(params: { currentPassword: string; newPassword: string }) {
+  return request<{ ok: boolean }>("/me/password", {
+    method: "PATCH",
+    body: params,
   });
 }
 

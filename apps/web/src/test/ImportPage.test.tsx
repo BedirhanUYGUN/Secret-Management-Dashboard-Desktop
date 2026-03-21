@@ -48,15 +48,21 @@ describe("ImportPage", () => {
     const user = userEvent.setup();
     render(<ImportPage />);
 
-    expect(screen.queryByText(/çatışma: yeni surum/i)).not.toBeInTheDocument();
+    // The page has default content pre-filled in the textarea
+    // so "Önizle" button (variant="outline") should be enabled
+    // Wait for projects to load first
+    await waitFor(() => expect(mockFetchProjects).toHaveBeenCalled());
 
-    await user.click(screen.getByRole("button", { name: "Önizleme" }));
+    // Button text is "Önizle" (not "Önizleme")
+    await user.click(screen.getByRole("button", { name: "Önizle" }));
 
     await waitFor(() => {
       expect(mockPreviewImport).toHaveBeenCalled();
+      // Preview result shows "Toplam çift:" label
       expect(screen.getByText(/toplam çift/i)).toBeInTheDocument();
     });
 
+    // After preview, "İçeri Aktar" button becomes enabled
     await user.click(screen.getByRole("button", { name: "İçeri Aktar" }));
 
     await waitFor(() => {

@@ -2,10 +2,11 @@
 
 SırIKI, takımlar için API key, token ve ortam değişkenlerini güvenli şekilde yönetmek üzere geliştirilmiş web + masaüstü uygulamasıdır.
 
-- Web: React + Vite
-- Masaüstü: Tauri (Windows odaklı)
+- Web: React 19 + Vite 7 + Tailwind CSS v4
+- Masaüstü: Tauri 2 (Windows odaklı)
 - Backend: FastAPI + PostgreSQL
 - Güvenlik: AES-256-GCM şifreleme, Argon2 parola hashleme, JWT access/refresh akışı
+- UI: shadcn/ui pattern bileşenler, dark/light tema desteği
 
 ## Hızlı Erişim
 
@@ -17,12 +18,15 @@ SırIKI masaüstü uygulamasını kurduktan sonra doğrudan açabilirsiniz. Uygu
 
 ## Öne Çıkan Özellikler
 
+- Dashboard istatistik paneli (secret, proje, üye sayıları, ortam/sağlayıcı dağılımı, son aktiviteler)
 - Secret değerleri veritabanında şifreli saklanır (AES-256-GCM)
 - Rol tabanlı yetkilendirme (Admin / Member / Viewer)
 - Çoklu ortam desteği (local / dev / prod)
 - Proje, üye ve ortam erişim yönetimi
 - `.env` ve JSON import / export
 - Audit log, arama ve filtreleme
+- Self-service şifre değiştirme
+- Dark / light tema geçişi
 - Masaüstünde token saklama için OS keyring kullanımı
 
 ## Proje Yapısı
@@ -183,6 +187,13 @@ Backend testleri:
 ```bash
 cd apps/api_py
 python -m pytest
+```
+
+Web testleri:
+
+```bash
+cd apps/web
+npx vitest run
 ```
 
 Web build:

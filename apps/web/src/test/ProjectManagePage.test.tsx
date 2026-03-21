@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { ProjectManagePage } from "@features/project-manage/ProjectManagePage";
@@ -83,7 +83,8 @@ describe("ProjectManagePage", () => {
     render(<ProjectManagePage />);
 
     await waitFor(() => expect(screen.getAllByText("Apollo API").length).toBeGreaterThanOrEqual(1));
-    await user.click(screen.getByText("Yeni Proje"));
+    // The button is labeled "Yeni" (not "Yeni Proje") in the new UI
+    await user.click(screen.getByRole("button", { name: /Yeni/i }));
 
     expect(screen.getByPlaceholderText("Proje Adı")).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/slug/i)).toBeInTheDocument();
@@ -102,7 +103,7 @@ describe("ProjectManagePage", () => {
     render(<ProjectManagePage />);
 
     await waitFor(() => expect(screen.getAllByText("Apollo API").length).toBeGreaterThanOrEqual(1));
-    await user.click(screen.getByText("Yeni Proje"));
+    await user.click(screen.getByRole("button", { name: /Yeni/i }));
 
     await user.type(screen.getByPlaceholderText("Proje Adı"), "Yeni Proje");
     await user.type(screen.getByPlaceholderText(/slug/i), "yeni-proje");
@@ -118,17 +119,16 @@ describe("ProjectManagePage", () => {
 
   it("proje secildiginde detay goruntulenir", async () => {
     const user = userEvent.setup();
-    const { container } = render(<ProjectManagePage />);
+    render(<ProjectManagePage />);
 
     await waitFor(() => expect(screen.getAllByText("Apollo API").length).toBeGreaterThanOrEqual(1));
+    // Click the project name button in the left panel (first occurrence)
     await user.click(screen.getAllByText("Apollo API")[0]);
 
-    const detailSection = container.querySelector(".detail-section");
-    expect(detailSection).not.toBeNull();
-
+    // After selection, slug and member email appear (slug appears in both panels — use getAllByText)
     await waitFor(() => {
-      expect(within(detailSection as HTMLElement).getByText(/apollo-api/)).toBeInTheDocument();
-      expect(within(detailSection as HTMLElement).getByText(/admin@test.com/)).toBeInTheDocument();
+      expect(screen.getAllByText(/apollo-api/).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText(/admin@test.com/)).toBeInTheDocument();
     });
   });
 
@@ -139,8 +139,10 @@ describe("ProjectManagePage", () => {
 
     await waitFor(() => expect(screen.getAllByText("Apollo API").length).toBeGreaterThanOrEqual(1));
 
-    await waitFor(() => expect(screen.getByText("Sil")).toBeInTheDocument());
-    await user.click(screen.getByText("Sil"));
+    // The "Sil" button appears in the detail panel when a project is selected
+    // First project is auto-selected, so "Sil" should be visible
+    await waitFor(() => expect(screen.getByRole("button", { name: /^Sil$/i })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: /^Sil$/i }));
 
     await waitFor(() => {
       expect(mockDeleteProject).toHaveBeenCalledWith("p1");

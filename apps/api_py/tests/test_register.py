@@ -121,13 +121,18 @@ class TestRegister:
         )
         assert resp.status_code == 422
 
-    def test_register_local_kayit_var_ve_supabase_id_yoksa_aciklayici_hata_doner(
+    def test_register_supabase_acik_eski_lokal_kullanici_uzerine_yazilir(
         self, client, db, monkeypatch
     ):
+        """Supabase acikken lokal'de eski kayit varsa, uzerine yazilir (201)."""
         _make_user(db, email="legacy@test.com", password="StrongPass1!")
         monkeypatch.setattr(
             "app.services.registration_service.get_settings",
             lambda: SimpleNamespace(SUPABASE_AUTH_ENABLED=True),
+        )
+        monkeypatch.setattr(
+            "app.services.registration_service.create_supabase_user",
+            lambda **kw: {"id": "sup-new-id-1234"},
         )
 
         resp = client.post(
@@ -142,8 +147,73 @@ class TestRegister:
             },
         )
 
+        assert resp.status_code == 201
+        user = db.scalar(select(User).where(User.email == "legacy@test.com"))
+        assert user is not None
+        assert user.supabase_user_id == "sup-new-id-1234"
+        assert user.is_active is True
+
+    def test_register_supabase_email_mevcut_409_doner(self, client, db, monkeypatch):
+        """Supabase'de email zaten varsa 409 doner."""
+        from fastapi import HTTPException, status
+
+        monkeypatch.setattr(
+            "app.services.registration_service.get_settings",
+            lambda: SimpleNamespace(SUPABASE_AUTH_ENABLED=True),
+        )
+
+        def _raise_409(**kw):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email already registered",
+            )
+
+        monkeypatch.setattr(
+            "app.services.registration_service.create_supabase_user",
+            _raise_409,
+        )
+
+        resp = client.post(
+            "/auth/register",
+            json={
+                "firstName": "Test",
+                "lastName": "User",
+                "email": "exists@test.com",
+                "password": "StrongPass1!",
+                "purpose": "personal",
+                "organizationMode": "create",
+            },
+        )
+
         assert resp.status_code == 409
-        assert "sync the account with Supabase" in resp.json()["detail"]
+
+    def test_register_supabase_yeni_kullanici_201(self, client, db, monkeypatch):
+        """Supabase acik, lokal'de kayit yok: yeni kullanici olusturulur."""
+        monkeypatch.setattr(
+            "app.services.registration_service.get_settings",
+            lambda: SimpleNamespace(SUPABASE_AUTH_ENABLED=True),
+        )
+        monkeypatch.setattr(
+            "app.services.registration_service.create_supabase_user",
+            lambda **kw: {"id": "sup-brand-new-5678"},
+        )
+
+        resp = client.post(
+            "/auth/register",
+            json={
+                "firstName": "Yeni",
+                "lastName": "Kullanici",
+                "email": "yeni@test.com",
+                "password": "StrongPass1!",
+                "purpose": "personal",
+                "organizationMode": "create",
+            },
+        )
+
+        assert resp.status_code == 201
+        user = db.scalar(select(User).where(User.email == "yeni@test.com"))
+        assert user is not None
+        assert user.supabase_user_id == "sup-brand-new-5678"
 
     def test_register_rate_limit_asilirsa_429_doner(self, client, monkeypatch):
         monkeypatch.setattr(

@@ -7,13 +7,19 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user, get_db_session, user_profile_response
 from app.api.router import api_router
 from app.core.config import get_settings
+from app.core.security import get_password_hash, verify_password
 from app.db.repositories.users_repo import (
     get_active_session_by_id,
     list_active_sessions_for_user,
     revoke_all_refresh_tokens_for_user,
     revoke_refresh_token,
 )
-from app.schemas.auth import PreferencesUpdateRequest, ProfileUpdateRequest, SessionOut
+from app.schemas.auth import (
+    PasswordChangeRequest,
+    PreferencesUpdateRequest,
+    ProfileUpdateRequest,
+    SessionOut,
+)
 
 
 settings = get_settings()
@@ -105,6 +111,30 @@ def update_profile(
     db.commit()
     db.refresh(user)
     return user_profile_response(user, db)
+
+
+@app.patch("/me/password")
+def change_password(
+    payload: PasswordChangeRequest,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db_session),
+):
+    if len(payload.newPassword) < 8:
+        return JSONResponse(
+            status_code=400,
+            content={"detail": "New password must be at least 8 characters"},
+        )
+
+    if not verify_password(payload.currentPassword, user.password_hash):
+        return JSONResponse(
+            status_code=400,
+            content={"detail": "Current password is incorrect"},
+        )
+
+    user.password_hash = get_password_hash(payload.newPassword)
+    db.add(user)
+    db.commit()
+    return {"ok": True}
 
 
 def _session_to_out(session_row) -> SessionOut:
