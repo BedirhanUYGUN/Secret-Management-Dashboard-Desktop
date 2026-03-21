@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Eye, EyeOff, KeyRound, Monitor, Save, Settings2, Shield, User } from "lucide-react";
 import { changePassword, fetchSessions, revokeAllSessions, revokeSession, updatePreferences, updateProfile } from "@core/api/client";
 import { useAuth } from "@core/auth/AuthContext";
@@ -36,14 +36,13 @@ export function SettingsPage() {
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState("");
 
-  if (!user) return null;
-
   useEffect(() => {
+    if (!user) return;
     setDisplayName(user.name);
     setMaskValues(user.preferences.maskValues ?? true);
   }, [user]);
 
-  const loadSessions = async () => {
+  const loadSessions = useCallback(async () => {
     try {
       setLoadingSessions(true);
       const rows = await fetchSessions();
@@ -55,11 +54,13 @@ export function SettingsPage() {
     } finally {
       setLoadingSessions(false);
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     void loadSessions();
-  }, []);
+  }, [loadSessions]);
+
+  if (!user) return null;
 
   const handleProfileSave = async () => {
     try {
