@@ -20,6 +20,7 @@ import {
   FolderOpen,
   Braces,
   Terminal,
+  Upload,
 } from "lucide-react";
 import {
   createProjectSecret,
@@ -36,6 +37,7 @@ import {
 import { useAuth } from "@core/auth/AuthContext";
 import type { Environment, Secret, SecretType, SecretVersion } from "@core/types";
 import { ExportModal } from "@core/ui/ExportModal";
+import { ImportModal } from "@core/ui/ImportModal";
 import { useAppUi } from "@core/ui/AppUiContext";
 import { Modal } from "@core/ui/Modal";
 import { Spinner } from "@core/ui/Spinner";
@@ -307,6 +309,7 @@ export function ProjectsPage() {
   const [createForm, setCreateForm] = useState<SecretFormState>(emptyForm);
 
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [showSecretModal, setShowSecretModal] = useState(false);
   const [secretModalMode, setSecretModalMode] = useState<SecretModalMode>("detail");
 
@@ -671,6 +674,15 @@ export function ProjectsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowImportModal(true)}
+            disabled={isViewer}
+          >
+            <Upload className="h-4 w-4" />
+            İçeri Aktar
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -1280,6 +1292,16 @@ export function ProjectsPage() {
         projectName={activeProject.name}
         activeEnv={activeEnv}
         availableTags={tags}
+      />
+
+      {/* Import modal */}
+      <ImportModal
+        open={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        projectId={activeProject.id}
+        projectName={activeProject.name}
+        activeEnv={activeEnv}
+        onImported={() => void reloadSecrets()}
       />
     </div>
   );
