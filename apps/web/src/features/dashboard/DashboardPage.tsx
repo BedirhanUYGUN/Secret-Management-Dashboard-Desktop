@@ -19,29 +19,29 @@ const envLabels: Record<string, string> = {
 };
 
 const actionLabels: Record<string, string> = {
-  secret_created: "Secret olusturuldu",
-  secret_updated: "Secret guncellendi",
+  secret_created: "Secret oluşturuldu",
+  secret_updated: "Secret güncellendi",
   secret_deleted: "Secret silindi",
-  secret_copied: "Secret kopyalandi",
-  secret_exported: "Secret disari aktarildi",
-  secret_revealed: "Secret goruntulendi",
-  secret_restored: "Secret geri yuklendi",
-  invite_created: "Davet olusturuldu",
+  secret_copied: "Secret kopyalandı",
+  secret_exported: "Secret dışarı aktarıldı",
+  secret_revealed: "Secret görüntülendi",
+  secret_restored: "Secret geri yüklendi",
+  invite_created: "Davet oluşturuldu",
   invite_rotated: "Davet yenilendi",
   invite_revoked: "Davet iptal edildi",
-  member_joined: "Uye katildi",
-  service_exported: "Servis aktarimi",
+  member_joined: "Üye katıldı",
+  service_exported: "Servis aktarımı",
 };
 
 function formatRelativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return "Az once";
-  if (minutes < 60) return `${minutes} dk once`;
+  if (minutes < 1) return "Az önce";
+  if (minutes < 60) return `${minutes} dk önce`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} saat once`;
+  if (hours < 24) return `${hours} saat önce`;
   const days = Math.floor(hours / 24);
-  return `${days} gun once`;
+  return `${days} gün önce`;
 }
 
 export function DashboardPage() {
@@ -53,7 +53,7 @@ export function DashboardPage() {
   useEffect(() => {
     void fetchDashboardStats()
       .then(setStats)
-      .catch((e) => setError(e instanceof Error ? e.message : "Veriler yuklenemedi"))
+      .catch((e) => setError(e instanceof Error ? e.message : "Veriler yüklenemedi"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -106,7 +106,7 @@ export function DashboardPage() {
             </div>
             <div>
               <p className="text-2xl font-bold">{stats.totalMembers}</p>
-              <p className="text-sm text-[var(--muted-foreground)]">Toplam Uye</p>
+              <p className="text-sm text-[var(--muted-foreground)]">Toplam Üye</p>
             </div>
           </CardContent>
         </Card>
@@ -118,7 +118,7 @@ export function DashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Server className="h-4 w-4 text-[var(--muted-foreground)]" />
-              Ortam Bazli Dagilim
+              Ortam Bazlı Dağılım
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -137,7 +137,7 @@ export function DashboardPage() {
               </div>
             ))}
             {Object.keys(stats.secretsByEnvironment).length === 0 && (
-              <p className="text-sm text-[var(--muted-foreground)]">Henuz secret eklenmemis.</p>
+              <p className="text-sm text-[var(--muted-foreground)]">Henüz secret eklenmemiş.</p>
             )}
           </CardContent>
         </Card>
@@ -147,7 +147,7 @@ export function DashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Cloud className="h-4 w-4 text-[var(--muted-foreground)]" />
-              Saglayici Bazli Dagilim
+              Sağlayıcı Bazlı Dağılım
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -166,7 +166,7 @@ export function DashboardPage() {
               </div>
             ))}
             {providerEntries.length === 0 && (
-              <p className="text-sm text-[var(--muted-foreground)]">Henuz secret eklenmemis.</p>
+              <p className="text-sm text-[var(--muted-foreground)]">Henüz secret eklenmemiş.</p>
             )}
           </CardContent>
         </Card>
@@ -182,7 +182,7 @@ export function DashboardPage() {
         </CardHeader>
         <CardContent>
           {stats.recentActivity.length === 0 ? (
-            <p className="text-sm text-[var(--muted-foreground)]">Henuz aktivite yok.</p>
+            <p className="text-sm text-[var(--muted-foreground)]">Henüz aktivite yok.</p>
           ) : (
             <div className="space-y-3">
               {stats.recentActivity.map((event) => (

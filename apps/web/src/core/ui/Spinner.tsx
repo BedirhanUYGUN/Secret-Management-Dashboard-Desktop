@@ -5,7 +5,7 @@ type SpinnerProps = {
   variant?: "spinner" | "skeleton-table";
 };
 
-export function Spinner({ text = "Yukleniyor...", variant = "spinner" }: SpinnerProps) {
+export function Spinner({ text = "Yükleniyor...", variant = "spinner" }: SpinnerProps) {
   if (variant === "skeleton-table") {
     return (
       <div className="space-y-3 p-4" aria-busy="true" aria-label={text}>

@@ -31,10 +31,10 @@ const pageTitles: Record<string, string> = {
   "/organizations": "Organizasyonlar",
   "/search": "Arama",
   "/settings": "Ayarlar",
-  "/users": "Kullanicilar",
-  "/project-manage": "Proje Yonetimi",
-  "/import": "Iceri Aktar",
-  "/audit": "Denetim Kaydi",
+  "/users": "Kullanıcılar",
+  "/project-manage": "Proje Yönetimi",
+  "/import": "İçeri Aktar",
+  "/audit": "Denetim Kaydı",
 };
 
 const brandName = "SirIKI";
@@ -51,12 +51,12 @@ const navItems: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/projects", label: "Projeler", icon: FolderKey },
   { to: "/organizations", label: "Organizasyonlar", icon: Building2, roles: ["admin", "member"] },
-  { to: "/project-manage", label: "Proje Yonetimi", icon: FolderCog, roles: ["admin", "member"] },
+  { to: "/project-manage", label: "Proje Yönetimi", icon: FolderCog, roles: ["admin", "member"] },
   { to: "/search", label: "Arama", icon: Search },
   { to: "/settings", label: "Ayarlar", icon: Settings },
-  { to: "/users", label: "Kullanicilar", icon: Users, adminOnly: true },
-  { to: "/import", label: "Iceri Aktar", icon: Upload, adminOnly: true },
-  { to: "/audit", label: "Denetim Kaydi", icon: ClipboardList, adminOnly: true },
+  { to: "/users", label: "Kullanıcılar", icon: Users, adminOnly: true },
+  { to: "/import", label: "İçeri Aktar", icon: Upload, adminOnly: true },
+  { to: "/audit", label: "Denetim Kaydı", icon: ClipboardList, adminOnly: true },
 ];
 
 function useTheme() {
@@ -173,7 +173,7 @@ export function MainLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--background)]">
-      <a href="#main-content" className="skip-to-content">Ana icerige atla</a>
+      <a href="#main-content" className="skip-to-content">Ana içeriğe atla</a>
 
       {/* Mobile menu button */}
       <button
@@ -283,7 +283,7 @@ export function MainLayout() {
                 type="button"
                 onClick={toggleTheme}
                 className="rounded-md p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--foreground)] cursor-pointer"
-                title={theme === "dark" ? "Acik temaya gec" : "Koyu temaya gec"}
+                title={theme === "dark" ? "Açık temaya geç" : "Koyu temaya geç"}
               >
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
@@ -316,14 +316,14 @@ export function MainLayout() {
           <div className="flex items-center gap-2">
             {isTauriRuntime() && (
               <span className="hidden text-xs text-[var(--muted-foreground)] sm:inline">
-                Ctrl+1-4 hizli gecis
+                Ctrl+1-4 hızlı geçiş
               </span>
             )}
             <button
               type="button"
               className="rounded-md p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)] cursor-pointer"
               onClick={() => setShowShortcuts(true)}
-              title="Klavye kisayollari"
+              title="Klavye kısayolları"
             >
               <Keyboard className="h-4 w-4" />
             </button>
@@ -333,7 +333,7 @@ export function MainLayout() {
               </span>
             ) : (
               <span className="rounded-full bg-brand-500/15 px-2.5 py-0.5 text-xs font-medium text-brand-400">
-                Duzenleme aktif
+                Düzenleme aktif
               </span>
             )}
           </div>
@@ -344,15 +344,15 @@ export function MainLayout() {
       </main>
 
       {/* Shortcuts modal */}
-      <Modal open={showShortcuts} onClose={() => setShowShortcuts(false)} title="Klavye Kisayollari">
+      <Modal open={showShortcuts} onClose={() => setShowShortcuts(false)} title="Klavye Kısayolları">
         <div className="space-y-2">
           {[
-            { keys: ["Ctrl", "1"], desc: "Projeler sayfasi" },
-            { keys: ["Ctrl", "2"], desc: "Arama sayfasi" },
-            { keys: ["Ctrl", "3"], desc: "Ayarlar sayfasi" },
-            { keys: ["Ctrl", "4"], desc: "Kullanicilar sayfasi (admin)" },
+            { keys: ["Ctrl", "1"], desc: "Projeler sayfası" },
+            { keys: ["Ctrl", "2"], desc: "Arama sayfası" },
+            { keys: ["Ctrl", "3"], desc: "Ayarlar sayfası" },
+            { keys: ["Ctrl", "4"], desc: "Kullanıcılar sayfası (admin)" },
             { keys: ["Ctrl", "Shift", "L"], desc: "Oturumu kapat" },
-            { keys: ["Shift", "?"], desc: "Bu pencereyi ac/kapat" },
+            { keys: ["Shift", "?"], desc: "Bu pencereyi aç/kapat" },
           ].map((shortcut, i) => (
             <div key={i} className="flex items-center justify-between py-1">
               <div className="flex items-center gap-1">

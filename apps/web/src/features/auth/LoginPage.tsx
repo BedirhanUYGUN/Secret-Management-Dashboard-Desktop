@@ -23,7 +23,7 @@ export function LoginPage() {
     setErrorMessage("");
 
     if (!email.trim() || !password.trim()) {
-      setErrorMessage("E-posta ve sifre alanlari zorunludur.");
+      setErrorMessage("E-posta ve şifre alanları zorunludur.");
       return;
     }
 
@@ -34,11 +34,11 @@ export function LoginPage() {
       if (error instanceof Error) {
         const msg = error.message;
         if (msg.includes("401") || msg.toLowerCase().includes("invalid") || msg.toLowerCase().includes("credentials")) {
-          setErrorMessage("E-posta veya sifre hatali.");
+          setErrorMessage("E-posta veya şifre hatalı.");
         } else if (msg.includes("fetch") || msg.includes("network") || msg.includes("Failed")) {
-          setErrorMessage("Sunucuya baglanilamiyor. Lutfen tekrar deneyin.");
+          setErrorMessage("Sunucuya bağlanılamıyor. Lütfen tekrar deneyin.");
         } else {
-          setErrorMessage(msg || "Giris basarisiz.");
+          setErrorMessage(msg || "Giriş başarısız.");
         }
       }
     }
@@ -51,7 +51,7 @@ export function LoginPage() {
 
     const targetEmail = resetEmail.trim() || email.trim();
     if (!targetEmail) {
-      setErrorMessage("Sifre sifirlama icin e-posta adresi gereklidir.");
+      setErrorMessage("Şifre sıfırlama için e-posta adresi gereklidir.");
       return;
     }
 
@@ -60,10 +60,10 @@ export function LoginPage() {
         email: targetEmail,
         redirectTo: `${window.location.origin}/reset-password`,
       });
-      setResetMessage("Sifre sifirlama baglantisi e-posta adresinize gonderildi.");
+      setResetMessage("Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.");
     } catch (error) {
       if (error instanceof Error) {
-        setErrorMessage(error.message || "Sifre sifirlama baglantisi gonderilemedi.");
+        setErrorMessage(error.message || "Şifre sıfırlama bağlantısı gönderilemedi.");
       }
     }
   };
@@ -75,8 +75,8 @@ export function LoginPage() {
           <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)]">
             <FolderKey className="h-6 w-6" />
           </div>
-          <CardTitle className="text-2xl">Giris Yap</CardTitle>
-          <CardDescription>API anahtarlarinizi yonetmek icin giris yapin.</CardDescription>
+          <CardTitle className="text-2xl">Giriş Yap</CardTitle>
+          <CardDescription>API anahtarlarınızı yönetmek için giriş yapın.</CardDescription>
         </CardHeader>
         <CardContent>
           {errorMessage && (
@@ -101,11 +101,11 @@ export function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Sifre</Label>
+              <Label htmlFor="password">Şifre</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Sifrenizi girin"
+                placeholder="Şifrenizi girin"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
@@ -115,7 +115,7 @@ export function LoginPage() {
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {loading ? "Giris yapiliyor..." : "Giris Yap"}
+              {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
             </Button>
 
             <button
@@ -123,14 +123,14 @@ export function LoginPage() {
               className="w-full text-center text-sm text-[var(--primary)] hover:underline cursor-pointer"
               onClick={() => setShowResetForm((prev) => !prev)}
             >
-              {showResetForm ? "Sifre sifirlama formunu kapat" : "Sifremi unuttum"}
+              {showResetForm ? "Şifre sıfırlama formunu kapat" : "Şifremi unuttum"}
             </button>
 
             {showResetForm && (
               <div className="rounded-md border border-[var(--border)] bg-[var(--muted)] p-4">
                 <form className="space-y-3" onSubmit={(event) => void handlePasswordReset(event)}>
                   <div className="space-y-2">
-                    <Label htmlFor="reset-email">Sifre sifirlama e-postasi</Label>
+                    <Label htmlFor="reset-email">Şifre sıfırlama e-postası</Label>
                     <Input
                       id="reset-email"
                       type="email"
@@ -141,7 +141,7 @@ export function LoginPage() {
                     />
                   </div>
                   <Button type="submit" variant="outline" className="w-full" disabled={loading}>
-                    Sifirlama Baglantisi Gonder
+                    Sıfırlama Bağlantısı Gönder
                   </Button>
                 </form>
                 {resetMessage && (
@@ -151,9 +151,9 @@ export function LoginPage() {
             )}
 
             <p className="text-center text-sm text-[var(--muted-foreground)]">
-              Hesabin yok mu?{" "}
+              Hesabın yok mu?{" "}
               <Link to="/register" className="text-[var(--primary)] hover:underline">
-                Kayit Ol
+                Kayıt Ol
               </Link>
             </p>
           </form>

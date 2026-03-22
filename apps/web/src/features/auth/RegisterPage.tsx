@@ -15,8 +15,8 @@ const purposeOptions: Array<{ label: string; value: RegisterPurpose }> = [
 ];
 
 const organizationModeOptions: Array<{ label: string; value: RegisterOrganizationMode }> = [
-  { label: "Organizasyon olustur", value: "create" },
-  { label: "Key ile organizasyona katil", value: "join" },
+  { label: "Organizasyon oluştur", value: "create" },
+  { label: "Key ile organizasyona katıl", value: "join" },
 ];
 
 function mapRegisterErrorMessage(rawMessage: string): string {
@@ -24,19 +24,19 @@ function mapRegisterErrorMessage(rawMessage: string): string {
   const normalized = message.toLowerCase();
 
   if (normalized.includes("sync the account with supabase") || normalized.includes("application database")) {
-    return "Bu e-posta uygulamada zaten kayitli. Giris yapmayi deneyin.";
+    return "Bu e-posta uygulamada zaten kayıtlı. Giriş yapmayı deneyin.";
   }
   if (normalized.includes("already") || normalized.includes("email already registered") || normalized.includes("409")) {
-    return "Bu e-posta ile kayit zaten mevcut.";
+    return "Bu e-posta ile kayıt zaten mevcut.";
   }
   if (normalized.includes("invite") || normalized.includes("davet") || normalized.includes("400")) {
-    return "Kayit bilgileri gecersiz veya davet key hatali.";
+    return "Kayıt bilgileri geçersiz veya davet key hatalı.";
   }
   if (normalized.includes("fetch") || normalized.includes("network") || normalized.includes("failed")) {
-    return "Sunucuya baglanilamiyor. Lutfen tekrar deneyin.";
+    return "Sunucuya bağlanılamıyor. Lütfen tekrar deneyin.";
   }
   if (normalized.includes("password must include at least one special character")) {
-    return "Sifre en az bir ozel karakter icermelidir.";
+    return "Şifre en az bir özel karakter içermelidir.";
   }
 
   try {
@@ -53,7 +53,7 @@ function mapRegisterErrorMessage(rawMessage: string): string {
     if (typeof parsed.message === "string" && parsed.message.trim()) return mapRegisterErrorMessage(parsed.message);
   } catch { /* not JSON */ }
 
-  return "Kayit islemi basarisiz.";
+  return "Kayıt işlemi başarısız.";
 }
 
 export function RegisterPage() {
@@ -78,19 +78,19 @@ export function RegisterPage() {
     setErrorMessage("");
 
     if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()) {
-      setErrorMessage("Tum alanlar zorunludur.");
+      setErrorMessage("Tüm alanlar zorunludur.");
       return;
     }
     if (password.trim().length < 8) {
-      setErrorMessage("Sifre en az 8 karakter olmalidir.");
+      setErrorMessage("Şifre en az 8 karakter olmalıdır.");
       return;
     }
     if (purpose === "organization" && organizationMode === "create" && !organizationName.trim()) {
-      setErrorMessage("Organizasyon adi zorunludur.");
+      setErrorMessage("Organizasyon adı zorunludur.");
       return;
     }
     if (purpose === "organization" && organizationMode === "join" && !inviteCode.trim()) {
-      setErrorMessage("Davet key alani zorunludur.");
+      setErrorMessage("Davet key alanı zorunludur.");
       return;
     }
 
@@ -118,7 +118,7 @@ export function RegisterPage() {
       if (error instanceof Error) {
         setErrorMessage(mapRegisterErrorMessage(error.message));
       } else {
-        setErrorMessage("Kayit islemi basarisiz.");
+        setErrorMessage("Kayıt işlemi başarısız.");
       }
     } finally {
       setLoading(false);
@@ -132,23 +132,23 @@ export function RegisterPage() {
           <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)]">
             <FolderKey className="h-6 w-6" />
           </div>
-          <CardTitle className="text-2xl">Kayit Ol</CardTitle>
-          <CardDescription>Hesap olusturun ve calisma alanina erisin.</CardDescription>
+          <CardTitle className="text-2xl">Kayıt Ol</CardTitle>
+          <CardDescription>Hesap oluşturun ve çalışma alanına erişin.</CardDescription>
         </CardHeader>
         <CardContent>
           {inviteFromQuery && !issuedInviteCode && (
             <div className="mb-4 rounded-md border border-brand-500/30 bg-brand-500/10 px-3 py-2 text-sm text-brand-400">
-              Davet baglantisi ile geldiniz. Hesabinizi olusturdugunuzda organizasyona otomatik katilim akisi tamamlanacaktir.
+              Davet bağlantısı ile geldiniz. Hesabınızı oluşturduğunuzda organizasyona otomatik katılım akışı tamamlanacaktır.
             </div>
           )}
 
           {issuedInviteCode && (
             <div className="space-y-3 rounded-md border border-brand-500/30 bg-brand-500/10 p-4">
-              <p className="text-sm font-medium text-brand-400">Organizasyon davet key olusturuldu:</p>
+              <p className="text-sm font-medium text-brand-400">Organizasyon davet key oluşturuldu:</p>
               <code className="block rounded bg-[var(--muted)] px-3 py-2 font-mono text-sm">{issuedInviteCode}</code>
-              <p className="text-xs text-[var(--muted-foreground)]">Bu key'i ekibinizle paylasabilirsiniz. Kaydetmeden sayfadan ayrilmayin.</p>
+              <p className="text-xs text-[var(--muted-foreground)]">Bu key'i ekibinizle paylaşabilirsiniz. Kaydetmeden sayfadan ayrılmayın.</p>
               <Button className="w-full" onClick={() => navigate("/login", { replace: true })}>
-                Giris ekranina don
+                Giriş ekranına dön
               </Button>
             </div>
           )}
@@ -163,7 +163,7 @@ export function RegisterPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">Isim</Label>
+                  <Label htmlFor="firstName">İsim</Label>
                   <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} disabled={loading} />
                 </div>
                 <div className="space-y-2">
@@ -178,12 +178,12 @@ export function RegisterPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="reg-password">Sifre</Label>
+                <Label htmlFor="reg-password">Şifre</Label>
                 <Input id="reg-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" disabled={loading} />
               </div>
 
               <div className="space-y-2">
-                <Label>Ne icin kullanacaksiniz?</Label>
+                <Label>Ne için kullanacaksınız?</Label>
                 <Select value={purpose} onChange={(e) => setPurpose(e.target.value as RegisterPurpose)} disabled={loading}>
                   {purposeOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </Select>
@@ -192,7 +192,7 @@ export function RegisterPage() {
               {purpose === "organization" && (
                 <>
                   <div className="space-y-2">
-                    <Label>Organizasyon secimi</Label>
+                    <Label>Organizasyon seçimi</Label>
                     <Select value={organizationMode} onChange={(e) => setOrganizationMode(e.target.value as RegisterOrganizationMode)} disabled={loading}>
                       {organizationModeOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </Select>
@@ -200,7 +200,7 @@ export function RegisterPage() {
 
                   {organizationMode === "create" && (
                     <div className="space-y-2">
-                      <Label htmlFor="orgName">Organizasyon adi</Label>
+                      <Label htmlFor="orgName">Organizasyon adı</Label>
                       <Input id="orgName" value={organizationName} onChange={(e) => setOrganizationName(e.target.value)} disabled={loading} />
                     </div>
                   )}
@@ -216,12 +216,12 @@ export function RegisterPage() {
 
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                {loading ? "Kayit olusturuluyor..." : "Kayit Ol"}
+                {loading ? "Kayıt oluşturuluyor..." : "Kayıt Ol"}
               </Button>
 
               <p className="text-center text-sm text-[var(--muted-foreground)]">
-                Zaten hesabin var mi?{" "}
-                <Link to="/login" className="text-[var(--primary)] hover:underline">Giris Yap</Link>
+                Zaten hesabın var mı?{" "}
+                <Link to="/login" className="text-[var(--primary)] hover:underline">Giriş Yap</Link>
               </p>
             </form>
           )}

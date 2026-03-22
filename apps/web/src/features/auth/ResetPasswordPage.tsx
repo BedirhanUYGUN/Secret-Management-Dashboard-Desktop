@@ -28,26 +28,26 @@ export function ResetPasswordPage() {
     setSuccessMessage("");
 
     if (!accessToken) {
-      setErrorMessage("Gecerli bir sifre sifirlama baglantisi bulunamadi.");
+      setErrorMessage("Geçerli bir şifre sıfırlama bağlantısı bulunamadı.");
       return;
     }
     if (password.trim().length < 8) {
-      setErrorMessage("Sifre en az 8 karakter olmalidir.");
+      setErrorMessage("Şifre en az 8 karakter olmalıdır.");
       return;
     }
     if (password !== confirmPassword) {
-      setErrorMessage("Sifreler eslesmiyor.");
+      setErrorMessage("Şifreler eşleşmiyor.");
       return;
     }
 
     try {
       setLoading(true);
       await updatePasswordFromRecovery({ accessToken, password });
-      setSuccessMessage("Sifreniz guncellendi. Giris sayfasina yonlendiriliyorsunuz.");
+      setSuccessMessage("Şifreniz güncellendi. Giriş sayfasına yönlendiriliyorsunuz.");
       window.setTimeout(() => navigate("/login", { replace: true }), 1200);
     } catch (error) {
       if (error instanceof Error) {
-        setErrorMessage(error.message || "Sifre guncellenemedi.");
+        setErrorMessage(error.message || "Şifre güncellenemedi.");
       }
     } finally {
       setLoading(false);
@@ -61,8 +61,8 @@ export function ResetPasswordPage() {
           <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)]">
             <FolderKey className="h-6 w-6" />
           </div>
-          <CardTitle className="text-2xl">Sifre Yenile</CardTitle>
-          <CardDescription>Yeni bir sifre belirleyin ve hesabiniza tekrar giris yapin.</CardDescription>
+          <CardTitle className="text-2xl">Şifre Yenile</CardTitle>
+          <CardDescription>Yeni bir şifre belirleyin ve hesabınıza tekrar giriş yapın.</CardDescription>
         </CardHeader>
         <CardContent>
           {errorMessage && (
@@ -78,7 +78,7 @@ export function ResetPasswordPage() {
 
           <form className="space-y-4" onSubmit={(event) => void handleSubmit(event)}>
             <div className="space-y-2">
-              <Label htmlFor="new-password">Yeni Sifre</Label>
+              <Label htmlFor="new-password">Yeni Şifre</Label>
               <Input
                 id="new-password"
                 type="password"
@@ -89,7 +89,7 @@ export function ResetPasswordPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirm-password">Yeni Sifre Tekrar</Label>
+              <Label htmlFor="confirm-password">Yeni Şifre Tekrar</Label>
               <Input
                 id="confirm-password"
                 type="password"
@@ -101,10 +101,10 @@ export function ResetPasswordPage() {
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {loading ? "Guncelleniyor..." : "Sifreyi Guncelle"}
+              {loading ? "Güncelleniyor..." : "Şifreyi Güncelle"}
             </Button>
             <p className="text-center text-sm text-[var(--muted-foreground)]">
-              <Link to="/login" className="text-[var(--primary)] hover:underline">Giris ekranina don</Link>
+              <Link to="/login" className="text-[var(--primary)] hover:underline">Giriş ekranına dön</Link>
             </p>
           </form>
         </CardContent>

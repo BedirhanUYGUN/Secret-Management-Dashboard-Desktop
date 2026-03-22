@@ -41,12 +41,11 @@ describe("RegisterPage", () => {
     const user = userEvent.setup();
     renderPage();
 
-    // Labels use ASCII text (no Turkish special chars) in the component source
-    await user.type(screen.getByLabelText(/^Isim$/i), "Ali");
+    await user.type(screen.getByLabelText(/^İsim$/i), "Ali");
     await user.type(screen.getByLabelText(/^Soyisim$/i), "Yilmaz");
     await user.type(screen.getByLabelText(/E-posta/i), "ali@test.com");
-    await user.type(screen.getByLabelText(/Sifre/i), "StrongPass1!");
-    await user.click(screen.getByRole("button", { name: /Kayit Ol/i }));
+    await user.type(screen.getByLabelText(/Şifre/i), "StrongPass1!");
+    await user.click(screen.getByRole("button", { name: /Kayıt Ol/i }));
 
     await waitFor(() => {
       expect(mockRegisterWithProfile).toHaveBeenCalledWith(
@@ -67,20 +66,19 @@ describe("RegisterPage", () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.type(screen.getByLabelText(/^Isim$/i), "Ayse");
+    await user.type(screen.getByLabelText(/^İsim$/i), "Ayse");
     await user.type(screen.getByLabelText(/^Soyisim$/i), "Kaya");
     await user.type(screen.getByLabelText(/E-posta/i), "ayse@test.com");
-    await user.type(screen.getByLabelText(/Sifre/i), "StrongPass1!");
+    await user.type(screen.getByLabelText(/Şifre/i), "StrongPass1!");
     // The purpose Label has no htmlFor — find the select by its "Personel" option
     const purposeSelect = screen.getByRole("combobox", { name: "" });
     await user.selectOptions(purposeSelect, "organization");
-    // After selecting "organization", "Organizasyon adi" label appears for "create" mode
-    await user.type(screen.getByLabelText(/Organizasyon adi/i), "Nova Labs");
-    await user.click(screen.getByRole("button", { name: /Kayit Ol/i }));
+    // After selecting "organization", "Organizasyon adı" label appears for "create" mode
+    await user.type(screen.getByLabelText(/Organizasyon adı/i), "Nova Labs");
+    await user.click(screen.getByRole("button", { name: /Kayıt Ol/i }));
 
     await waitFor(() => {
-      // The issued invite key display text (ASCII in source)
-      expect(screen.getByText(/Organizasyon davet key olusturuldu/i)).toBeInTheDocument();
+      expect(screen.getByText(/Organizasyon davet key oluşturuldu/i)).toBeInTheDocument();
       expect(screen.getByText("Ab1!Cd2@Ef3#")).toBeInTheDocument();
     });
     expect(mockLogin).not.toHaveBeenCalled();
