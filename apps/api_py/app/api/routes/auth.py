@@ -1,7 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from typing import Optional
+
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db_session, user_profile_response
+from app.core.config import get_settings
+from app.core.cookies import clear_auth_cookies, set_auth_cookies
 from app.schemas.auth import (
     AuthUserOut,
     LoginRequest,
@@ -9,7 +14,6 @@ from app.schemas.auth import (
     RegisterPurposeEnum,
     RegisterOut,
     RegisterRequest,
-    TokenPairOut,
 )
 from app.core.rate_limit import check_rate_limit
 from app.services.auth_service import (
@@ -36,7 +40,24 @@ def _resolve_session_context(request: Request) -> tuple[str, str]:
     return _resolve_client_ip(request), request.headers.get("user-agent", "").strip()
 
 
-@router.post("/login", response_model=TokenPairOut)
+def _resolve_refresh_token(
+    payload: Optional[RefreshRequest], request: Request
+) -> str:
+    if payload and payload.refreshToken:
+        return payload.refreshToken
+
+    settings = get_settings()
+    cookie_token = request.cookies.get(settings.REFRESH_TOKEN_COOKIE_NAME)
+    if cookie_token:
+        return cookie_token
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="No refresh token provided",
+    )
+
+
+@router.post("/login")
 def login(
     payload: LoginRequest,
     request: Request,
@@ -62,7 +83,7 @@ def login(
         )
 
     ip_address, user_agent = _resolve_session_context(request)
-    return login_with_password(
+    token_data = login_with_password(
         db,
         email=payload.email,
         password=payload.password,
@@ -70,11 +91,29 @@ def login(
         ip_address=ip_address,
     )
 
+    settings = get_settings()
+    response = JSONResponse(content={
+        "accessToken": token_data["accessToken"],
+        "refreshToken": token_data["refreshToken"],
+        "tokenType": token_data["tokenType"],
+        "expiresAt": token_data["expiresAt"].isoformat(),
+    })
 
-@router.post("/refresh", response_model=TokenPairOut)
+    set_auth_cookies(
+        response,
+        access_token=token_data["accessToken"],
+        refresh_token=token_data["refreshToken"],
+        access_max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        refresh_max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+    )
+
+    return response
+
+
+@router.post("/refresh")
 def refresh(
-    payload: RefreshRequest,
     request: Request,
+    payload: Optional[RefreshRequest] = Body(default=None),
     db: Session = Depends(get_db_session),
 ):
     client_ip = _resolve_client_ip(request)
@@ -89,19 +128,50 @@ def refresh(
             detail="Too many refresh attempts. Please try again later.",
         )
 
+    refresh_token = _resolve_refresh_token(payload, request)
+
     ip_address, user_agent = _resolve_session_context(request)
-    return refresh_access_token(
+    token_data = refresh_access_token(
         db,
-        refresh_token=payload.refreshToken,
+        refresh_token=refresh_token,
         user_agent=user_agent,
         ip_address=ip_address,
     )
 
+    settings = get_settings()
+    response = JSONResponse(content={
+        "accessToken": token_data["accessToken"],
+        "refreshToken": token_data["refreshToken"],
+        "tokenType": token_data["tokenType"],
+        "expiresAt": token_data["expiresAt"].isoformat(),
+    })
+
+    set_auth_cookies(
+        response,
+        access_token=token_data["accessToken"],
+        refresh_token=token_data["refreshToken"],
+        access_max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        refresh_max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+    )
+
+    return response
+
 
 @router.post("/logout")
-def logout(payload: RefreshRequest, db: Session = Depends(get_db_session)):
-    logout_refresh_token(db, refresh_token=payload.refreshToken)
-    return {"message": "logged_out"}
+def logout(
+    request: Request,
+    payload: Optional[RefreshRequest] = Body(default=None),
+    db: Session = Depends(get_db_session),
+):
+    try:
+        refresh_token = _resolve_refresh_token(payload, request)
+        logout_refresh_token(db, refresh_token=refresh_token)
+    except HTTPException:
+        pass
+
+    response = JSONResponse(content={"message": "logged_out"})
+    clear_auth_cookies(response)
+    return response
 
 
 @router.get("/me", response_model=AuthUserOut)

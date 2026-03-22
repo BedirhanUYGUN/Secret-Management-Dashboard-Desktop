@@ -1,26 +1,41 @@
 from datetime import datetime
 from typing import Generator, List, Optional
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.security import decode_token
 from app.db.repositories.domain_repo import get_assignments
 from app.db.repositories.users_repo import get_user_by_id
 from app.db.session import get_db
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-
-
 def get_db_session() -> Generator[Session, None, None]:
     yield from get_db()
 
 
+def _extract_token(request: Request) -> str:
+    auth_header = request.headers.get("authorization", "")
+    if auth_header.startswith("Bearer "):
+        return auth_header[7:]
+
+    settings = get_settings()
+    cookie_token = request.cookies.get(settings.ACCESS_TOKEN_COOKIE_NAME)
+    if cookie_token:
+        return cookie_token
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Not authenticated",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
 def get_current_user(
-    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db_session)
+    request: Request, db: Session = Depends(get_db_session)
 ):
+    token = _extract_token(request)
     payload = decode_token(token)
     if not payload or payload.get("type") != "access":
         raise HTTPException(

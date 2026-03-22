@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { clearTokens, fetchMe, loginWithCredentials, logoutSession } from "../api/client";
 import { hasStoredAccessToken } from "../platform/tokenStorage";
+import { isTauriRuntime } from "../platform/runtime";
 import type { User } from "../types";
 
 type AuthContextValue = {
@@ -25,21 +26,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     void (async () => {
-      const hasToken = await hasStoredAccessToken();
-      if (!hasToken) {
-        if (!cancelled) {
-          setInitializing(false);
+      if (isTauriRuntime()) {
+        const hasToken = await hasStoredAccessToken();
+        if (!hasToken) {
+          if (!cancelled) setInitializing(false);
+          return;
         }
-        return;
       }
-
+      // Web: her zaman /me dene — cookie varsa basarili, yoksa 401
       try {
         const profile = await fetchMe();
         if (!cancelled) {
           setUser(profile);
         }
       } catch {
-        await clearTokens();
+        if (isTauriRuntime()) await clearTokens();
       } finally {
         if (!cancelled) {
           setInitializing(false);

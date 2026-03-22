@@ -2,7 +2,7 @@ import base64
 from functools import lru_cache
 from typing import List
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -28,12 +28,35 @@ class Settings(BaseSettings):
     SECRET_ENCRYPTION_KEY: str = ""
     CORS_ORIGINS: List[str] = ["http://localhost:5173"]
 
+    ACCESS_TOKEN_COOKIE_NAME: str = "access_token"
+    REFRESH_TOKEN_COOKIE_NAME: str = "refresh_token"
+    COOKIE_SECURE: bool = True
+    COOKIE_SAMESITE: str = "lax"
+    COOKIE_PATH: str = "/"
+    COOKIE_DOMAIN: str = ""
+
     SUPABASE_AUTH_ENABLED: bool = False
     SUPABASE_URL: str = ""
     SUPABASE_ANON_KEY: str = ""
     SUPABASE_SERVICE_ROLE_KEY: str = ""
     SUPABASE_AUTO_PROVISION_USERS: bool = False
     SUPABASE_DEFAULT_ROLE: str = "viewer"
+
+    @field_validator("COOKIE_SAMESITE", mode="before")
+    @classmethod
+    def validate_cookie_samesite(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in {"lax", "strict", "none"}:
+            raise ValueError("COOKIE_SAMESITE must be 'lax', 'strict', or 'none'")
+        return normalized
+
+    @model_validator(mode="after")
+    def auto_cookie_secure(self):
+        if self.APP_ENV == "development":
+            self.COOKIE_SECURE = False
+        if "*" in self.CORS_ORIGINS:
+            raise ValueError("CORS_ORIGINS wildcard ('*') is not allowed")
+        return self
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod

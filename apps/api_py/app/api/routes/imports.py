@@ -7,6 +7,7 @@ from app.db.repositories.domain_repo import (
     create_secret,
     find_secret_by_key,
     has_environment_read_access,
+    mask_value,
     update_secret,
 )
 from app.schemas.imports import (
@@ -29,14 +30,29 @@ def _key_to_name(key: str) -> str:
 def preview_import(
     payload: ImportPreviewRequest,
     user=Depends(require_roles(["admin"])),
+    db: Session = Depends(get_db_session),
 ):
     parsed = parse_txt_import(payload.content)
+
+    add_audit_event(
+        db,
+        actor_user_id=str(user.id),
+        project_slug=None,
+        action="import_preview",
+        target_type="import",
+        metadata={
+            "totalPairs": len(parsed.pairs),
+            "skipped": parsed.skipped,
+        },
+    )
+
     return {
         "heading": parsed.project_heading,
         "totalPairs": len(parsed.pairs),
         "skipped": parsed.skipped,
         "preview": [
-            {"key": item.key, "value": item.value} for item in parsed.pairs[:50]
+            {"key": item.key, "value": mask_value(item.value)}
+            for item in parsed.pairs[:50]
         ],
     }
 

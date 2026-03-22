@@ -35,7 +35,10 @@ beforeEach(() => {
 });
 
 describe("AuthContext", () => {
+  // Web modunda (non-Tauri) her zaman /me denenir — cookie yoksa 401 doner
   it("token yoksa giriş yapilmamis durumda baslar", async () => {
+    mockFetchMe.mockRejectedValueOnce(new Error("401"));
+
     render(
       <AuthProvider>
         <TestConsumer />
@@ -50,7 +53,6 @@ describe("AuthContext", () => {
   });
 
   it("token varsa otomatik olarak kullanıcı bilgisini yukler", async () => {
-    localStorage.setItem("api-key-organizer-access-token", "mock-token");
     mockFetchMe.mockResolvedValueOnce({
       id: "1",
       email: "admin@test.com",
@@ -74,7 +76,10 @@ describe("AuthContext", () => {
   });
 
   it("login basarili oldugunda kullanıcı set edilir", async () => {
+    // Ilk /me cagisi (init) basarisiz — henuz cookie yok
+    mockFetchMe.mockRejectedValueOnce(new Error("401"));
     mockLoginWithCredentials.mockResolvedValueOnce(undefined);
+    // Login sonrasi /me cagisi basarili
     mockFetchMe.mockResolvedValueOnce({
       id: "2",
       email: "user@test.com",
@@ -106,7 +111,6 @@ describe("AuthContext", () => {
   });
 
   it("logout yapildiginda kullanıcı temizlenir", async () => {
-    localStorage.setItem("api-key-organizer-access-token", "mock-token");
     mockFetchMe.mockResolvedValueOnce({
       id: "1",
       email: "admin@test.com",
@@ -134,8 +138,7 @@ describe("AuthContext", () => {
     expect(screen.getByTestId("user")).toHaveTextContent("yok");
   });
 
-  it("token gecersiz oldugunda clearTokens cagirilir", async () => {
-    localStorage.setItem("api-key-organizer-access-token", "invalid-token");
+  it("token gecersiz oldugunda kullanıcı set edilmez", async () => {
     mockFetchMe.mockRejectedValueOnce(new Error("401"));
 
     render(
@@ -148,6 +151,6 @@ describe("AuthContext", () => {
       expect(screen.getByTestId("loading")).toHaveTextContent("hazir");
     });
     expect(screen.getByTestId("auth")).toHaveTextContent("giriş-yapilmadı");
-    expect(mockClearTokens).toHaveBeenCalled();
+    // Web modunda clearTokens cagirilmaz — cookie sunucu tarafindan yonetilir
   });
 });

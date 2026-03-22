@@ -190,15 +190,19 @@ function buildUrl(path: string, query?: Record<string, string | undefined>) {
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const accessToken = await getStoredAccessToken();
+  const isDesktop = isTauriRuntime();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+
+  if (isDesktop) {
+    const accessToken = await getStoredAccessToken();
+    if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
+  }
 
   const response = await fetch(buildUrl(path, options.query), {
     method: options.method ?? "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    },
+    headers,
     body: options.body ? JSON.stringify(options.body) : undefined,
+    ...(isDesktop ? {} : { credentials: "include" as RequestCredentials }),
   });
 
   if (!response.ok) {
@@ -238,7 +242,8 @@ export async function loginWithCredentials(email: string, password: string) {
     method: "POST",
     body: { email, password },
   });
-  await setTokens(response);
+  if (isTauriRuntime()) await setTokens(response);
+  // Web: server sets httpOnly cookies — no client-side storage needed
 }
 
 export function registerWithProfile(payload: RegisterRequestPayload) {
@@ -249,28 +254,40 @@ export function registerWithProfile(payload: RegisterRequestPayload) {
 }
 
 export async function refreshSession() {
-  const refreshToken = await getStoredRefreshToken();
-  if (!refreshToken) {
-    throw new Error("No refresh token");
-  }
-
-  const response = await request<AuthTokensResponse>("/auth/refresh", {
-    method: "POST",
-    body: { refreshToken },
-  });
-  await setTokens(response);
-}
-
-export async function logoutSession() {
-  const refreshToken = await getStoredRefreshToken();
-
-  if (refreshToken) {
-    await request<{ message: string }>("/auth/logout", {
+  if (isTauriRuntime()) {
+    const refreshToken = await getStoredRefreshToken();
+    if (!refreshToken) throw new Error("No refresh token");
+    const response = await request<AuthTokensResponse>("/auth/refresh", {
       method: "POST",
       body: { refreshToken },
     });
+    await setTokens(response);
+  } else {
+    // Web: refresh cookie sent automatically
+    await request<AuthTokensResponse>("/auth/refresh", {
+      method: "POST",
+      body: {},
+    });
   }
-  await clearTokens();
+}
+
+export async function logoutSession() {
+  if (isTauriRuntime()) {
+    const refreshToken = await getStoredRefreshToken();
+    if (refreshToken) {
+      await request<{ message: string }>("/auth/logout", {
+        method: "POST",
+        body: { refreshToken },
+      });
+    }
+    await clearTokens();
+  } else {
+    // Web: server clears httpOnly cookies
+    await request<{ message: string }>("/auth/logout", {
+      method: "POST",
+      body: {},
+    });
+  }
 }
 
 export async function fetchMe(): Promise<User> {

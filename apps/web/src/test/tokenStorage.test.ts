@@ -20,20 +20,22 @@ describe("tokenStorage", () => {
     localStorage.clear();
   });
 
-  it("web modunda tokenlari localStorage uzerinden yazar ve okur", async () => {
+  it("web modunda setStoredTokens localStorage'a yazmaz (no-op)", async () => {
     await setStoredTokens({ accessToken: "access-1", refreshToken: "refresh-1" });
 
-    await expect(getStoredAccessToken()).resolves.toBe("access-1");
-    await expect(getStoredRefreshToken()).resolves.toBe("refresh-1");
+    // Web modunda tokenlar httpOnly cookie ile tasinir, JS'den erisilemez
+    await expect(getStoredAccessToken()).resolves.toBeNull();
+    await expect(getStoredRefreshToken()).resolves.toBeNull();
+  });
+
+  it("web modunda hasStoredAccessToken her zaman true doner", async () => {
+    // Cookie JS'den okunamadigindan, her zaman /me denenmeli
     await expect(hasStoredAccessToken()).resolves.toBe(true);
   });
 
-  it("clear islemi tokenlari temizler", async () => {
-    await setStoredTokens({ accessToken: "access-1", refreshToken: "refresh-1" });
+  it("web modunda clearStoredTokens no-op olarak calisir", async () => {
     await clearStoredTokens();
-
-    await expect(getStoredAccessToken()).resolves.toBeNull();
-    await expect(getStoredRefreshToken()).resolves.toBeNull();
-    await expect(hasStoredAccessToken()).resolves.toBe(false);
+    // Cookie sunucu tarafindan temizlenir, client-side islem yok
+    await expect(hasStoredAccessToken()).resolves.toBe(true);
   });
 });
