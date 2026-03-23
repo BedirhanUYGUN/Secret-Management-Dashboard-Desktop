@@ -10,6 +10,8 @@ from app.core.cookies import clear_auth_cookies, set_auth_cookies
 from app.schemas.auth import (
     AuthUserOut,
     LoginRequest,
+    PasswordResetConfirmSchema,
+    PasswordResetRequestSchema,
     RefreshRequest,
     RegisterPurposeEnum,
     RegisterOut,
@@ -20,6 +22,8 @@ from app.services.auth_service import (
     login_with_password,
     logout_refresh_token,
     refresh_access_token,
+    request_password_reset,
+    reset_password_with_token,
 )
 from app.services.registration_service import register_with_profile
 
@@ -203,3 +207,53 @@ def register(
         )
 
     return register_with_profile(db, payload)
+
+
+@router.post("/forgot-password")
+def forgot_password(
+    payload: PasswordResetRequestSchema,
+    request: Request,
+    db: Session = Depends(get_db_session),
+):
+    client_ip = _resolve_client_ip(request)
+    normalized_email = payload.email.strip().lower()
+
+    allowed = check_rate_limit(
+        key=f"forgot_password:email:{normalized_email}",
+        limit=3,
+        window_seconds=900,
+    )
+    if not allowed:
+        return {"message": "ok"}
+
+    check_rate_limit(
+        key=f"forgot_password:ip:{client_ip}",
+        limit=10,
+        window_seconds=900,
+    )
+
+    request_password_reset(db, email=normalized_email)
+    return {"message": "ok"}
+
+
+@router.post("/reset-password")
+def reset_password(
+    payload: PasswordResetConfirmSchema,
+    request: Request,
+    db: Session = Depends(get_db_session),
+):
+    client_ip = _resolve_client_ip(request)
+
+    allowed = check_rate_limit(
+        key=f"reset_password:ip:{client_ip}",
+        limit=10,
+        window_seconds=900,
+    )
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many attempts. Please try again later.",
+        )
+
+    reset_password_with_token(db, token=payload.token, new_password=payload.newPassword)
+    return {"message": "ok"}

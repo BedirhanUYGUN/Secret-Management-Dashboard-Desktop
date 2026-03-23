@@ -43,6 +43,30 @@ class PasswordChangeRequest(BaseModel):
     newPassword: str
 
 
+class PasswordResetRequestSchema(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirmSchema(BaseModel):
+    token: str
+    newPassword: str
+
+    @model_validator(mode="after")
+    def validate_password(self):
+        pw = self.newPassword or ""
+        if len(pw) < 8:
+            raise ValueError("password must be at least 8 characters")
+        if not re.search(r"[a-z]", pw):
+            raise ValueError("password must include at least one lowercase character")
+        if not re.search(r"[A-Z]", pw):
+            raise ValueError("password must include at least one uppercase character")
+        if not re.search(r"\d", pw):
+            raise ValueError("password must include at least one digit")
+        if not re.search(r"[^A-Za-z0-9]", pw):
+            raise ValueError("password must include at least one special character")
+        return self
+
+
 class PreferencesUpdateRequest(BaseModel):
     maskValues: Optional[bool] = None
     clipboardSeconds: Optional[int] = None

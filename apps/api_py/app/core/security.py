@@ -47,6 +47,14 @@ def create_refresh_token(user_id: str, role: str, email: str) -> str:
     )
 
 
+def create_password_reset_token(user_id: str, email: str) -> str:
+    settings = get_settings()
+    return _create_token(
+        payload={"sub": user_id, "email": email, "type": "password_reset"},
+        expires_delta=timedelta(minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES),
+    )
+
+
 def decode_token(token: str) -> Optional[Dict[str, str]]:
     settings = get_settings()
     try:

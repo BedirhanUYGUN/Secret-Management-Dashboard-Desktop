@@ -42,6 +42,15 @@ class Settings(BaseSettings):
     SUPABASE_AUTO_PROVISION_USERS: bool = False
     SUPABASE_DEFAULT_ROLE: str = "viewer"
 
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = ""
+    SMTP_USE_TLS: bool = True
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 15
+    FRONTEND_URL: str = "http://localhost:5173"
+
     @field_validator("COOKIE_SAMESITE", mode="before")
     @classmethod
     def validate_cookie_samesite(cls, value: str) -> str:

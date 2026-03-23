@@ -7,10 +7,16 @@ import { Label } from "@core/ui/Label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@core/ui/Card";
 import { FolderKey, Loader2 } from "lucide-react";
 
+const SUPABASE_AUTH_ENABLED = String(import.meta.env.VITE_SUPABASE_AUTH_ENABLED ?? "false").toLowerCase() === "true";
+
 function readRecoveryToken() {
-  const hash = window.location.hash.replace(/^#/, "");
-  const params = new URLSearchParams(hash);
-  return params.get("access_token") ?? "";
+  if (SUPABASE_AUTH_ENABLED) {
+    const hash = window.location.hash.replace(/^#/, "");
+    const params = new URLSearchParams(hash);
+    return params.get("access_token") ?? "";
+  }
+  const query = new URLSearchParams(window.location.search);
+  return query.get("token") ?? "";
 }
 
 export function ResetPasswordPage() {

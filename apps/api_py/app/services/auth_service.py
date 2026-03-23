@@ -7,7 +7,10 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.security import (
     create_access_token,
+    create_password_reset_token,
     create_refresh_token,
+    decode_token,
+    get_password_hash,
     hash_token,
     verify_password,
 )
@@ -16,6 +19,7 @@ from app.db.repositories.users_repo import (
     get_user_by_email,
     get_user_by_id,
     get_valid_refresh_token,
+    revoke_all_refresh_tokens_for_user,
     revoke_refresh_token,
 )
 from app.services.supabase_auth import (
@@ -223,4 +227,62 @@ def logout_refresh_token(db: Session, *, refresh_token: str):
     if not token_row:
         return
     revoke_refresh_token(db, token_row)
+    db.commit()
+
+
+def request_password_reset(db: Session, *, email: str) -> None:
+    import logging
+
+    from app.services.email_service import send_password_reset_email
+
+    logger = logging.getLogger(__name__)
+
+    normalized_email = email.strip().lower()
+    user = get_user_by_email(db, normalized_email)
+    if not user or not user.is_active:
+        return
+
+    token = create_password_reset_token(str(user.id), user.email)
+    send_password_reset_email(user.email, token)
+
+
+def reset_password_with_token(db: Session, *, token: str, new_password: str) -> None:
+    from app.db.models.audit import AuditEvent
+
+    payload = decode_token(token)
+    if not payload or payload.get("type") != "password_reset":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Gecersiz veya suresi dolmus sifirlama baglantisi.",
+        )
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Gecersiz sifirlama token'i.",
+        )
+
+    user = get_user_by_id(db, user_id)
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Gecersiz veya suresi dolmus sifirlama baglantisi.",
+        )
+
+    user.password_hash = get_password_hash(new_password)
+    db.add(user)
+
+    revoke_all_refresh_tokens_for_user(db, str(user.id))
+
+    db.add(
+        AuditEvent(
+            actor_user_id=user.id,
+            action="password_reset",
+            target_type="user",
+            target_id=user.id,
+            meta={"method": "token"},
+        )
+    )
+
     db.commit()

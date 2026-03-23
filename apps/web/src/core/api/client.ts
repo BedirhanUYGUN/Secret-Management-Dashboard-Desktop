@@ -674,19 +674,31 @@ export function changePassword(params: { currentPassword: string; newPassword: s
 }
 
 export function requestPasswordReset(params: { email: string; redirectTo: string }) {
-  return supabaseAuthRequest<{ message?: string }>("/recover", {
+  if (SUPABASE_AUTH_ENABLED) {
+    return supabaseAuthRequest<{ message?: string }>("/recover", {
+      method: "POST",
+      body: {
+        email: params.email,
+        redirect_to: params.redirectTo,
+      },
+    });
+  }
+  return request<{ message: string }>("/auth/forgot-password", {
     method: "POST",
-    body: {
-      email: params.email,
-      redirect_to: params.redirectTo,
-    },
+    body: { email: params.email },
   });
 }
 
 export function updatePasswordFromRecovery(params: { accessToken: string; password: string }) {
-  return supabaseAuthRequest<{ id: string }>("/user", {
-    method: "PUT",
-    accessToken: params.accessToken,
-    body: { password: params.password },
+  if (SUPABASE_AUTH_ENABLED) {
+    return supabaseAuthRequest<{ id: string }>("/user", {
+      method: "PUT",
+      accessToken: params.accessToken,
+      body: { password: params.password },
+    });
+  }
+  return request<{ message: string }>("/auth/reset-password", {
+    method: "POST",
+    body: { token: params.accessToken, newPassword: params.password },
   });
 }
