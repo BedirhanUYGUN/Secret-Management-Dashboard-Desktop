@@ -255,14 +255,23 @@ def register_with_profile(db: Session, payload: RegisterRequest) -> RegisterOut:
         else:
             user = None  # asagida olusturulacak
     else:
-        # Supabase kapali: mevcut akis
+        # Supabase kapali
         existing = get_user_by_email(db, email)
         if existing:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Email already registered",
-            )
-        user = None
+            if not existing.is_active:
+                existing.password_hash = get_password_hash(payload.password)
+                existing.display_name = display_name
+                existing.is_active = True
+                db.add(existing)
+                db.flush()
+                user = existing
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Bu e-posta adresi zaten kayitli. Sifrenizi hatirlamiyorsaniz, giris sayfasindaki 'Sifremi unuttum' secenegini kullanin.",
+                )
+        else:
+            user = None
 
     user_role = (
         RoleEnum.viewer

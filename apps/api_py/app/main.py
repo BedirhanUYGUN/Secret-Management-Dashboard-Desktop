@@ -22,8 +22,17 @@ from app.schemas.auth import (
 )
 
 
+import logging as _logging
+
 settings = get_settings()
 IS_PRODUCTION = settings.APP_ENV.strip().lower() == "production"
+
+if IS_PRODUCTION and not settings.RESEND_API_KEY and not settings.SMTP_HOST:
+    _logging.getLogger(__name__).warning(
+        "UYARI: E-posta gonderimi yapilandirilmamis. "
+        "Sifre sifirlama e-postalari gonderilemeyecek. "
+        "RESEND_API_KEY veya SMTP_HOST ayarlayin."
+    )
 
 app = FastAPI(
     title=settings.APP_NAME,

@@ -215,6 +215,8 @@ def forgot_password(
     request: Request,
     db: Session = Depends(get_db_session),
 ):
+    from app.services.email_service import EmailSendError
+
     client_ip = _resolve_client_ip(request)
     normalized_email = payload.email.strip().lower()
 
@@ -232,7 +234,14 @@ def forgot_password(
         window_seconds=900,
     )
 
-    request_password_reset(db, email=normalized_email)
+    try:
+        request_password_reset(db, email=normalized_email)
+    except EmailSendError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="E-posta gonderimi yapilandirilmamis. Lutfen yonetici ile iletisime gecin.",
+        )
+
     return {"message": "ok"}
 
 

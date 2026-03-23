@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     SUPABASE_AUTO_PROVISION_USERS: bool = False
     SUPABASE_DEFAULT_ROLE: str = "viewer"
 
+    RESEND_API_KEY: str = ""
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
     SMTP_USER: str = ""

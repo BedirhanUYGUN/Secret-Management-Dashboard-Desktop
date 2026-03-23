@@ -26,8 +26,8 @@ function mapRegisterErrorMessage(rawMessage: string): string {
   if (normalized.includes("sync the account with supabase") || normalized.includes("application database")) {
     return "Bu e-posta uygulamada zaten kayıtlı. Giriş yapmayı deneyin.";
   }
-  if (normalized.includes("already") || normalized.includes("email already registered") || normalized.includes("409")) {
-    return "Bu e-posta ile kayıt zaten mevcut.";
+  if (normalized.includes("already") || normalized.includes("email already registered") || normalized.includes("409") || normalized.includes("zaten kayitli")) {
+    return "Bu e-posta adresi zaten kayıtlı. Şifrenizi hatırlamıyorsanız, giriş sayfasındaki 'Şifremi unuttum' seçeneğini kullanın.";
   }
   if (normalized.includes("invite") || normalized.includes("davet") || normalized.includes("400")) {
     return "Kayıt bilgileri geçersiz veya davet key hatalı.";

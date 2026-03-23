@@ -231,11 +231,8 @@ def logout_refresh_token(db: Session, *, refresh_token: str):
 
 
 def request_password_reset(db: Session, *, email: str) -> None:
-    import logging
-
+    """Request password reset. Raises EmailSendError if email cannot be sent."""
     from app.services.email_service import send_password_reset_email
-
-    logger = logging.getLogger(__name__)
 
     normalized_email = email.strip().lower()
     user = get_user_by_email(db, normalized_email)
