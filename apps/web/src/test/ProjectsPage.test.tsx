@@ -92,9 +92,9 @@ vi.mock("@core/ui/ExportModal", () => ({
   ExportModal: () => null,
 }));
 
-function renderPage() {
+function renderPage(initialEntries: string[] = ["/projects?project=p1"]) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <ProjectsPage />
     </MemoryRouter>,
   );
@@ -192,10 +192,87 @@ describe("ProjectsPage", () => {
 
   it("atanmış proje yoksa uyari gosterir", async () => {
     mockFetchProjects.mockResolvedValueOnce([]);
-    renderPage();
+    renderPage(["/projects"]);
 
     await waitFor(() => {
       expect(screen.getByText(/henüz size atanmış bir proje yok/i)).toBeInTheDocument();
     });
+  });
+
+  it("proje seçilmemişse kart grid gösterir", async () => {
+    renderPage(["/projects"]);
+
+    await waitFor(() => {
+      expect(screen.getByText("Projeler")).toBeInTheDocument();
+      expect(screen.getByText("Apollo API")).toBeInTheDocument();
+      expect(screen.getByText("3 anahtar")).toBeInTheDocument();
+    });
+  });
+
+  it("kart grid'de tag badge'leri ve PROD badge'i gösterir", async () => {
+    const multiProjects: ProjectSummary[] = [
+      { id: "p1", name: "Apollo API", tags: ["api", "backend"], keyCount: 3, prodAccess: true },
+      { id: "p2", name: "Web App", tags: [], keyCount: 0, prodAccess: false },
+    ];
+    mockFetchProjects.mockReset();
+    mockFetchProjects.mockResolvedValue(multiProjects);
+    renderPage(["/projects"]);
+
+    await waitFor(() => {
+      expect(screen.getByText("2 proje")).toBeInTheDocument();
+      expect(screen.getByText("Apollo API")).toBeInTheDocument();
+      expect(screen.getByText("Web App")).toBeInTheDocument();
+    });
+
+    // Tag badges
+    expect(screen.getByText("api")).toBeInTheDocument();
+    expect(screen.getByText("backend")).toBeInTheDocument();
+
+    // PROD badge only on Apollo API (prodAccess: true)
+    expect(screen.getByText("PROD")).toBeInTheDocument();
+
+    // Key counts
+    expect(screen.getByText("3 anahtar")).toBeInTheDocument();
+    expect(screen.getByText("0 anahtar")).toBeInTheDocument();
+  });
+
+  it("karta tıklayınca key listesine geçer", async () => {
+    const user = userEvent.setup();
+    renderPage(["/projects"]);
+
+    await waitFor(() => {
+      expect(screen.getByText("Apollo API")).toBeInTheDocument();
+    });
+
+    // Click the project card
+    await user.click(screen.getByText("Apollo API"));
+
+    // Should now show key list view with env tabs
+    await waitFor(() => {
+      expect(screen.getByRole("tab", { name: "DEV" })).toBeInTheDocument();
+    });
+  });
+
+  it("geri butonu kart grid'e döndürür", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    // Wait for key list to load
+    await waitFor(() => {
+      expect(screen.getByText("Apollo API")).toBeInTheDocument();
+      expect(screen.getByRole("tab", { name: "DEV" })).toBeInTheDocument();
+    });
+
+    // Click back button
+    await user.click(screen.getByTitle("Projelere dön"));
+
+    // Should now show card grid
+    await waitFor(() => {
+      expect(screen.getByText("Projeler")).toBeInTheDocument();
+      expect(screen.getByText("3 anahtar")).toBeInTheDocument();
+    });
+
+    // Env tabs should no longer be visible
+    expect(screen.queryByRole("tab", { name: "DEV" })).not.toBeInTheDocument();
   });
 });

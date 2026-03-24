@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
+  ArrowLeft,
   Copy,
   Download,
   Edit2,
@@ -281,6 +282,56 @@ function CopyFormatCard({
   );
 }
 
+// ─── Project cards grid (landing view) ─────────────────────────────────────────
+
+function ProjectCardsGrid({
+  projects,
+  onSelect,
+}: {
+  projects: ProjectSummary[];
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-6 p-6">
+      <div>
+        <h1 className="text-xl font-semibold text-[var(--foreground)]">Projeler</h1>
+        <p className="mt-0.5 text-sm text-[var(--muted-foreground)]">
+          {projects.length} proje
+        </p>
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {projects.map((project) => (
+          <Card
+            key={project.id}
+            className="cursor-pointer transition-colors hover:border-[var(--primary)]/50"
+            onClick={() => onSelect(project.id)}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">{project.name}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+              {project.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {project.tags.map((tag) => (
+                    <Badge key={tag} variant="secondary">{tag}</Badge>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
+                <Key className="h-3.5 w-3.5" />
+                <span>{project.keyCount} anahtar</span>
+              </div>
+              {project.prodAccess && (
+                <Badge variant="outline" className="w-fit text-xs">PROD</Badge>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export function ProjectsPage() {
@@ -359,7 +410,9 @@ export function ProjectsPage() {
     if (queryEnv) setActiveEnv(queryEnv);
   }, [queryEnv]);
 
-  const activeProject = projects.find((p) => p.id === queryProject) ?? projects[0] ?? null;
+  const activeProject = queryProject
+    ? (projects.find((p) => p.id === queryProject) ?? null)
+    : null;
   const canAccessProd = activeProject?.prodAccess ?? false;
 
   useEffect(() => {
@@ -631,22 +684,30 @@ export function ProjectsPage() {
 
   // ─── Empty state (no project) ───────────────────────────────────────────────
   if (!activeProject) {
-    return (
-      <div className="flex h-full items-center justify-center p-8">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--muted)]">
-            <FolderOpen className="h-8 w-8 text-[var(--muted-foreground)]" />
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-[var(--foreground)]">
-              Atanmış proje bulunmuyor
-            </h3>
-            <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-              Henüz size atanmış bir proje yok. Yöneticinizden proje ataması talep edin.
-            </p>
+    if (projects.length === 0) {
+      return (
+        <div className="flex h-full items-center justify-center p-8">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--muted)]">
+              <FolderOpen className="h-8 w-8 text-[var(--muted-foreground)]" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-[var(--foreground)]">
+                Atanmış proje bulunmuyor
+              </h3>
+              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                Henüz size atanmış bir proje yok. Yöneticinizden proje ataması talep edin.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      );
+    }
+    return (
+      <ProjectCardsGrid
+        projects={projects}
+        onSelect={(id) => updateQuery({ project: id })}
+      />
     );
   }
 
@@ -667,11 +728,21 @@ export function ProjectsPage() {
 
       {/* Page header */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold text-[var(--foreground)]">{activeProject.name}</h1>
-          <p className="mt-0.5 text-sm text-[var(--muted-foreground)]">
-            {visibleSecrets.length} anahtar
-          </p>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => updateQuery({ project: null, env: null, secret: null })}
+            title="Projelere dön"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-xl font-semibold text-[var(--foreground)]">{activeProject.name}</h1>
+            <p className="mt-0.5 text-sm text-[var(--muted-foreground)]">
+              {visibleSecrets.length} anahtar
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button

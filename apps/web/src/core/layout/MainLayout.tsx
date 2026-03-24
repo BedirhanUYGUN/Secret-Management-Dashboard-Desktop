@@ -304,14 +304,25 @@ export function MainLayout() {
       <main className="flex flex-1 flex-col overflow-hidden" id="main-content">
         <header className="flex h-14 items-center justify-between border-b border-[var(--border)] px-6">
           <div className="flex items-center gap-1 text-sm">
-            {breadcrumb.map((part, index) => (
-              <span key={index} className="flex items-center gap-1">
-                {index > 0 && <ChevronRight className="h-3 w-3 text-[var(--muted-foreground)]" />}
-                <span className={index === breadcrumb.length - 1 ? "font-medium" : "text-[var(--muted-foreground)]"}>
-                  {part}
+            {breadcrumb.map((part, index) => {
+              const isLast = index === breadcrumb.length - 1;
+              const isClickableRoot = index === 0 && !isLast && pathname === "/projects" && searchParams.has("project");
+
+              return (
+                <span key={index} className="flex items-center gap-1">
+                  {index > 0 && <ChevronRight className="h-3 w-3 text-[var(--muted-foreground)]" />}
+                  {isClickableRoot ? (
+                    <Link to="/projects" className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors">
+                      {part}
+                    </Link>
+                  ) : (
+                    <span className={isLast ? "font-medium" : "text-[var(--muted-foreground)]"}>
+                      {part}
+                    </span>
+                  )}
                 </span>
-              </span>
-            ))}
+              );
+            })}
           </div>
           <div className="flex items-center gap-2">
             {isTauriRuntime() && (
