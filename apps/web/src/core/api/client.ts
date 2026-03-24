@@ -29,7 +29,7 @@ import {
 } from "../platform/tokenStorage";
 
 const RAW_API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
-const API_BASE_URL = RAW_API_BASE_URL.startsWith("http://") || RAW_API_BASE_URL.startsWith("https://")
+const API_BASE_URL = RAW_API_BASE_URL.startsWith("/") || RAW_API_BASE_URL.startsWith("http://") || RAW_API_BASE_URL.startsWith("https://")
   ? RAW_API_BASE_URL
   : `https://${RAW_API_BASE_URL}`;
 
@@ -126,6 +126,10 @@ function assertDesktopApiUrlAllowed() {
     return;
   }
 
+  if (API_BASE_URL.startsWith("/")) {
+    return;
+  }
+
   const origin = new URL(API_BASE_URL).origin;
   if (!DESKTOP_ALLOWED_API_ORIGINS.has(origin)) {
     throw new Error(`Desktop modunda izin verilmeyen API origin: ${origin}`);
@@ -177,16 +181,19 @@ export function clearTokens() {
 }
 
 function buildUrl(path: string, query?: Record<string, string | undefined>) {
-  const url = new URL(path, API_BASE_URL);
+  const isRelative = API_BASE_URL.startsWith("/");
+  const url = isRelative
+    ? new URL(`${API_BASE_URL}${path}`, window.location.origin)
+    : new URL(path, API_BASE_URL);
   if (!query) {
-    return url.toString();
+    return isRelative ? url.pathname + url.search : url.toString();
   }
   Object.entries(query).forEach(([key, value]) => {
     if (value !== undefined && value !== "") {
       url.searchParams.set(key, value);
     }
   });
-  return url.toString();
+  return isRelative ? url.pathname + url.search : url.toString();
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {

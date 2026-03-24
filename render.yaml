@@ -15,8 +15,6 @@ services:
         value: 30
       - key: REFRESH_TOKEN_EXPIRE_DAYS
         value: 7
-      - key: COOKIE_SAMESITE
-        value: "none"
       - key: SUPABASE_AUTH_ENABLED
         value: "false"
       - key: JWT_SECRET_KEY

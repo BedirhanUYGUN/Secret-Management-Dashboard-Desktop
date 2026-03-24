@@ -64,11 +64,6 @@ class Settings(BaseSettings):
     def auto_cookie_secure(self):
         if self.APP_ENV == "development":
             self.COOKIE_SECURE = False
-        else:
-            # Production: cross-origin (Netlify→Render) cookie göndermek için
-            # SameSite=None + Secure=True gerekir.
-            if self.COOKIE_SAMESITE == "lax":
-                self.COOKIE_SAMESITE = "none"
         if "*" in self.CORS_ORIGINS:
             raise ValueError("CORS_ORIGINS wildcard ('*') is not allowed")
         return self

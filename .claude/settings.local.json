@@ -11,7 +11,8 @@
       "Bash(npm run *)",
       "Bash(npx tsc *)",
       "Bash(mkdir *)",
-      "Bash(cd \"C:/Users/Bedirhan/Desktop/Projects/Secret-Management-Dashboard-Desktop/apps/web\" && npx eslint src/features/audit/AuditPage.tsx src/features/project-manage/ProjectManagePage.tsx src/features/projects/ProjectsPage.tsx 2>&1)"
+      "Bash(cd \"C:/Users/Bedirhan/Desktop/Projects/Secret-Management-Dashboard-Desktop/apps/web\" && npx eslint src/features/audit/AuditPage.tsx src/features/project-manage/ProjectManagePage.tsx src/features/projects/ProjectsPage.tsx 2>&1)",
+      "Bash(find /c/Users/Bedirhan/Desktop/Projects/Secret-Management-Dashboard-Desktop -name \"nginx*\" -o -name \"*proxy*\" -o -name \"*server*\" | grep -E \"\\\\.\\(conf|cfg|toml|yaml|yml\\)$\")"
     ]
   }
 }
