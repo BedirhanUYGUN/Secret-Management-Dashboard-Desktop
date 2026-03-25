@@ -360,7 +360,7 @@ export function fetchProjectSecrets(params: {
   env?: Environment;
   provider?: string;
   tag?: string;
-  type?: SecretType;
+  type?: string;
 }) {
   return request<Secret[]>(`/projects/${params.projectId}/secrets`, {
     query: {
@@ -416,7 +416,7 @@ export function searchSecrets(params: {
   provider?: string;
   tag?: string;
   environment?: Environment;
-  type?: SecretType;
+  type?: string;
 }) {
   return request<Secret[]>("/search", {
     query: {

@@ -2,7 +2,7 @@ from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
-from app.db.models.enums import EnvironmentEnum, SecretTypeEnum
+from app.db.models.enums import EnvironmentEnum
 
 
 class ImportPairOut(BaseModel):
@@ -26,7 +26,7 @@ class ImportCommitRequest(BaseModel):
     environment: EnvironmentEnum
     content: str
     provider: str = "Imported"
-    type: SecretTypeEnum = SecretTypeEnum.key
+    type: str = "key"
     conflictStrategy: Literal["skip", "overwrite"] = "skip"
     tags: List[str] = Field(default_factory=list)
 

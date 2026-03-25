@@ -54,7 +54,7 @@ import { DropdownMenu, DropdownMenuItem, DropdownMenuSeparator } from "@core/ui/
 import { cn } from "@core/ui/cn";
 
 const envTabs: Environment[] = ["local", "dev", "prod"];
-const typeOptions: SecretType[] = ["key", "token", "endpoint"];
+const defaultTypeOptions = ["key", "token", "endpoint", "url", "credential", "certificate"];
 
 type SortKey = "name" | "provider" | "type" | "environment" | "updatedAt";
 type SortDir = "asc" | "desc";
@@ -184,17 +184,18 @@ function SecretFormFields({
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="field-type">Tip</Label>
-        <Select
+        <Input
           id="field-type"
+          list="secret-type-options"
+          placeholder="Örn: key, token, url"
           value={form.type}
-          onChange={(e) => onChange({ type: e.target.value as SecretType })}
-        >
-          {typeOptions.map((t) => (
-            <option key={t} value={t}>
-              {t.toUpperCase()}
-            </option>
+          onChange={(e) => onChange({ type: e.target.value })}
+        />
+        <datalist id="secret-type-options">
+          {defaultTypeOptions.map((t) => (
+            <option key={t} value={t} />
           ))}
-        </Select>
+        </datalist>
       </div>
 
       <div className="border-t border-[var(--border)] pt-4 grid grid-cols-2 gap-4">
@@ -354,7 +355,7 @@ export function ProjectsPage() {
 
   const [providerFilter, setProviderFilter] = useState("all");
   const [tagFilter, setTagFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState<SecretType | "all">("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
 
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createForm, setCreateForm] = useState<SecretFormState>(emptyForm);
@@ -511,6 +512,10 @@ export function ProjectsPage() {
     () => Array.from(new Set(visibleSecrets.flatMap((item) => item.tags))),
     [visibleSecrets],
   );
+  const secretTypes = useMemo(
+    () => Array.from(new Set([...defaultTypeOptions, ...visibleSecrets.map((s) => s.type)])).sort(),
+    [visibleSecrets],
+  );
 
   const readSecretValue = async (secretId: string, reason: string) => {
     const revealed = await revealSecretValue({ secretId, reason });
@@ -520,13 +525,20 @@ export function ProjectsPage() {
   const copySecret = async (secret: Secret, mode: "value" | "env" | "json" | "python" | "node") => {
     if (!user) return;
     try {
-      const reason = window.prompt(
-        "Bu anahtarı neden görüntülemek/kopyalamak istediğinizi kısaca yazın:",
-        "Lokal geliştirme doğrulaması",
-      );
-      if (!reason || reason.trim().length < 3) return;
+      const isAdmin = user?.role === "admin";
+      let reason: string;
+      if (isAdmin) {
+        reason = "Admin erişimi";
+      } else {
+        const prompted = window.prompt(
+          "Bu anahtarı neden görüntülemek/kopyalamak istediğinizi kısaca yazın:",
+          "Lokal geliştirme doğrulaması",
+        );
+        if (!prompted || prompted.trim().length < 3) return;
+        reason = prompted.trim();
+      }
 
-      const value = await readSecretValue(secret.id, reason.trim());
+      const value = await readSecretValue(secret.id, reason);
       let payload = value;
       if (mode === "env") payload = `${secret.keyName}=${value}`;
       if (mode === "json") payload = JSON.stringify({ [secret.keyName]: value }, null, 2);
@@ -553,11 +565,13 @@ export function ProjectsPage() {
     }
     setIsRevealing(true);
     try {
-      if (revealReason.trim().length < 3) {
+      const isAdmin = user?.role === "admin";
+      const reason = isAdmin ? (revealReason.trim() || "Admin erişimi") : revealReason.trim();
+      if (!isAdmin && reason.length < 3) {
         setErrorMessage("Anahtarı görüntülemek için neden alanını doldurun.");
         return;
       }
-      const value = await readSecretValue(selectedSecret.id, revealReason.trim());
+      const value = await readSecretValue(selectedSecret.id, reason);
       setRevealedValue(value);
       setShowPlainValue(true);
     } catch (error) {
@@ -849,10 +863,10 @@ export function ProjectsPage() {
         <Select
           className="w-36"
           value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value as SecretType | "all")}
+          onChange={(e) => setTypeFilter(e.target.value)}
         >
           <option value="all">Tüm tipler</option>
-          {typeOptions.map((t) => (
+          {secretTypes.map((t) => (
             <option key={t} value={t}>{t.toUpperCase()}</option>
           ))}
         </Select>
@@ -1094,16 +1108,18 @@ export function ProjectsPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0 flex flex-col gap-3">
-                    <div className="flex flex-col gap-1.5">
-                      <Label htmlFor="reveal-reason">Görüntüleme nedeni</Label>
-                      <Textarea
-                        id="reveal-reason"
-                        rows={2}
-                        value={revealReason}
-                        onChange={(e) => setRevealReason(e.target.value)}
-                        placeholder="Örn: Prod doğrulaması için değeri kontrol ediyorum"
-                      />
-                    </div>
+                    {user?.role !== "admin" && (
+                      <div className="flex flex-col gap-1.5">
+                        <Label htmlFor="reveal-reason">Görüntüleme nedeni</Label>
+                        <Textarea
+                          id="reveal-reason"
+                          rows={2}
+                          value={revealReason}
+                          onChange={(e) => setRevealReason(e.target.value)}
+                          placeholder="Örn: Prod doğrulaması için değeri kontrol ediyorum"
+                        />
+                      </div>
+                    )}
                     <div className="flex items-center gap-3 rounded-md border border-[var(--border)] bg-[var(--muted)] px-4 py-3">
                       <code className="flex-1 font-mono text-sm text-[var(--foreground)] break-all">
                         {showPlainValue && revealedValue ? revealedValue : "••••••••••••••••"}

@@ -3,7 +3,6 @@ from datetime import datetime
 
 from sqlalchemy import (
     DateTime,
-    Enum,
     ForeignKey,
     Integer,
     LargeBinary,
@@ -14,7 +13,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
-from app.db.models.enums import SecretTypeEnum
 
 
 class Secret(Base):
@@ -32,9 +30,7 @@ class Secret(Base):
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     provider: Mapped[str] = mapped_column(String(255), nullable=False)
-    type: Mapped[SecretTypeEnum] = mapped_column(
-        Enum(SecretTypeEnum, name="secret_type", native_enum=False), nullable=False
-    )
+    type: Mapped[str] = mapped_column(String(100), nullable=False)
     key_name: Mapped[str] = mapped_column(String(255), nullable=False)
     value_encrypted: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     key_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)

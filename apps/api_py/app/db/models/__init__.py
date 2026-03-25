@@ -1,5 +1,5 @@
 from app.db.models.audit import AuditEvent
-from app.db.models.enums import EnvironmentEnum, RoleEnum, SecretTypeEnum
+from app.db.models.enums import EnvironmentEnum, RoleEnum
 from app.db.models.project import (
     Environment,
     EnvironmentAccess,
@@ -28,7 +28,6 @@ __all__ = [
     "Secret",
     "SecretNote",
     "SecretTag",
-    "SecretTypeEnum",
     "SecretVersion",
     "User",
 ]

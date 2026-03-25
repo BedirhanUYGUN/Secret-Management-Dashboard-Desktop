@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from app.db.models.enums import EnvironmentEnum, SecretTypeEnum
+from app.db.models.enums import EnvironmentEnum
 
 
 class SecretOut(BaseModel):
@@ -11,7 +11,7 @@ class SecretOut(BaseModel):
     projectId: str
     name: str
     provider: str
-    type: SecretTypeEnum
+    type: str
     environment: EnvironmentEnum
     keyName: str
     version: int
@@ -26,7 +26,7 @@ class SecretOut(BaseModel):
 class SecretCreateRequest(BaseModel):
     name: str
     provider: str
-    type: SecretTypeEnum
+    type: str
     environment: EnvironmentEnum
     keyName: str
     value: str
@@ -37,7 +37,7 @@ class SecretCreateRequest(BaseModel):
 class SecretUpdateRequest(BaseModel):
     name: Optional[str] = None
     provider: Optional[str] = None
-    type: Optional[SecretTypeEnum] = None
+    type: Optional[str] = None
     keyName: Optional[str] = None
     value: Optional[str] = None
     tags: Optional[List[str]] = None

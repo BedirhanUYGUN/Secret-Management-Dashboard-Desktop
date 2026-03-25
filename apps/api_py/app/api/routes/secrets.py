@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db_session, require_roles
-from app.db.models.enums import EnvironmentEnum, SecretTypeEnum
+from app.db.models.enums import EnvironmentEnum, RoleEnum
 from app.db.repositories.domain_repo import (
     add_audit_event,
     create_secret,
@@ -34,7 +34,7 @@ def get_project_secrets(
     env: Optional[EnvironmentEnum] = Query(default=None),
     provider: Optional[str] = Query(default=None),
     tag: Optional[str] = Query(default=None),
-    type: Optional[SecretTypeEnum] = Query(default=None),
+    type: Optional[str] = Query(default=None),
     user=Depends(get_current_user),
     db: Session = Depends(get_db_session),
 ):
@@ -133,11 +133,15 @@ def reveal_secret(
     db: Session = Depends(get_db_session),
 ): 
     normalized_reason = (reason or "").strip()
-    if len(normalized_reason) < 3:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Reveal reason is required",
-        )
+    if user.role == RoleEnum.admin:
+        if not normalized_reason:
+            normalized_reason = "Admin erişimi"
+    else:
+        if len(normalized_reason) < 3:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Reveal reason is required",
+            )
 
     value = get_secret_value(db, str(user.id), secret_id)
     if not value:

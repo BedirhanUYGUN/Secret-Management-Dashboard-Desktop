@@ -22,7 +22,6 @@ from app.db.models import (
     Secret,
     SecretNote,
     SecretTag,
-    SecretTypeEnum,
     SecretVersion,
     User,
 )
@@ -300,7 +299,7 @@ def list_secrets(
     env: Optional[EnvironmentEnum] = None,
     provider: Optional[str] = None,
     tag: Optional[str] = None,
-    secret_type: Optional[SecretTypeEnum] = None,
+    secret_type: Optional[str] = None,
     q: Optional[str] = None,
 ) -> List[Dict]:
     query = (

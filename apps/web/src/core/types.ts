@@ -2,7 +2,7 @@ export type Role = "admin" | "member" | "viewer";
 
 export type Environment = "local" | "dev" | "prod";
 
-export type SecretType = "key" | "token" | "endpoint";
+export type SecretType = string;
 
 export type Project = {
   id: string;
